@@ -1,3 +1,4 @@
+import { createHash } from "node:crypto";
 import * as vscode from "vscode";
 import { DEFAULT_BASE_URL, normalizeBaseUrl, serverRootUrl } from "./client";
 import { explainProbeFailure, type ProbeResult } from "./diagnostics";
@@ -8,12 +9,22 @@ export const SECRET_API_KEY = "omnicopilot.apiKey";
  * as a JSON array, newest last. It lives next to the key so that it travels
  * with it to every window, remote host and profile that can read the key. */
 export const SECRET_API_KEY_ORIGINS = "omnicopilot.apiKeyOrigins";
+/** SecretStorage entry of a workspace's own key: this prefix + 16 hex characters of a
+ * hash of the workspace identity, so the identity (a path) never appears in a name. */
+export const SECRET_API_KEY_WORKSPACE_PREFIX = "omnicopilot.apiKey.ws.";
+/** The approved origins of that workspace key, next to it, like the global key's list. */
+export const SECRET_API_KEY_ORIGINS_WORKSPACE_PREFIX = "omnicopilot.apiKeyOrigins.ws.";
+/** workspaceState entry (a boolean): this workspace uses its own key when one is stored. */
+export const STATE_USE_WORKSPACE_KEY = "omnicopilot.useWorkspaceKey";
 /** How many approved origins are kept; the oldest is dropped first. */
 const MAX_APPROVED_ORIGINS = 5;
 /** globalState entry listing the plain-HTTP origins the user was already warned about. */
 const STATE_INSECURE_WARNED = "omnicopilot.insecureOriginsWarned";
 /** workspaceState entry holding the ignored workspace URL the user was last told about. */
 const STATE_IGNORED_URL_NOTICE = "omnicopilot.ignoredUrlNotice";
+
+/** Where a key is stored: the user's global key, or the one of the open workspace. */
+export type KeyScope = "workspace" | "global";
 
 export interface Connection {
   /** Normalized API base URL (always ends in `/v1`). */
@@ -29,6 +40,89 @@ export interface Connection {
   approvedOrigins: string[];
   /** A server URL this workspace's settings set and that is not used (see `ignoredWorkspaceUrl`). */
   ignoredWorkspaceUrl: string | undefined;
+  /** Which stored key is in effect (the one `apiKey`, `hasStoredKey` and `keyWithheld` describe). */
+  keyScope: KeyScope | "none";
+  /** A workspace is open, so it can have a key of its own. */
+  workspaceKeyAvailable: boolean;
+  /** This workspace is set to use its own key (stored or not yet). */
+  useWorkspaceKey: boolean;
+}
+
+/** `hash` is the first 16 hex characters of the SHA-256 of the workspace identity. */
+function workspaceHash(workspaceId: string): string {
+  return createHash("sha256").update(workspaceId).digest("hex").slice(0, 16);
+}
+
+/** SecretStorage entry of the key of the workspace with this identity. */
+export function workspaceSecretName(workspaceId: string): string {
+  return SECRET_API_KEY_WORKSPACE_PREFIX + workspaceHash(workspaceId);
+}
+
+/** SecretStorage entry of the origins approved for that workspace key. */
+export function workspaceOriginsSecretName(workspaceId: string): string {
+  return SECRET_API_KEY_ORIGINS_WORKSPACE_PREFIX + workspaceHash(workspaceId);
+}
+
+/**
+ * What identifies the open workspace: its saved workspace file, else the first
+ * folder. An untitled workspace file has no stable name (it changes once saved),
+ * so it does not count. Undefined when no workspace is open.
+ */
+export function workspaceIdentity(args: {
+  workspaceFile?: string;
+  firstFolder?: string;
+}): string | undefined {
+  const file = args.workspaceFile?.trim();
+  if (file && !/^untitled:/i.test(file)) return file;
+  return args.firstFolder?.trim() || undefined;
+}
+
+function currentWorkspaceIdentity(): string | undefined {
+  return workspaceIdentity({
+    workspaceFile: vscode.workspace.workspaceFile?.toString(),
+    firstFolder: vscode.workspace.workspaceFolders?.[0]?.uri.toString(),
+  });
+}
+
+/**
+ * Which key is in effect: the workspace's own when a workspace is open, the
+ * switch is on and one is stored; else the global one when stored; else none.
+ */
+export function chooseKeyScope(args: {
+  workspaceId?: string;
+  useWorkspaceKey: boolean;
+  workspaceKey?: string;
+  globalKey?: string;
+}): { scope: KeyScope | "none"; key?: string } {
+  if (args.workspaceId && args.useWorkspaceKey && args.workspaceKey) {
+    return { scope: "workspace", key: args.workspaceKey };
+  }
+  if (args.globalKey) return { scope: "global", key: args.globalKey };
+  return { scope: "none" };
+}
+
+/** The two secrets of one scope; a workspace scope needs an open workspace. */
+function secretNames(scope: KeyScope): { key: string; origins: string } {
+  if (scope === "global") return { key: SECRET_API_KEY, origins: SECRET_API_KEY_ORIGINS };
+  const id = currentWorkspaceIdentity();
+  if (!id) throw new Error("No workspace is open, so there is no workspace key.");
+  return { key: workspaceSecretName(id), origins: workspaceOriginsSecretName(id) };
+}
+
+/** The stored key of one scope, for the "Set API Key" prompt to show. */
+export async function readStoredKey(
+  context: vscode.ExtensionContext,
+  scope: KeyScope
+): Promise<string | undefined> {
+  return (await context.secrets.get(secretNames(scope).key)) || undefined;
+}
+
+function useWorkspaceKeySwitch(context: vscode.ExtensionContext): boolean {
+  return context.workspaceState.get<boolean>(STATE_USE_WORKSPACE_KEY, false) === true;
+}
+
+async function setUseWorkspaceKey(context: vscode.ExtensionContext, on: boolean): Promise<void> {
+  await context.workspaceState.update(STATE_USE_WORKSPACE_KEY, on);
 }
 
 /** Scheme, lower-case host and port of a base URL, without any path. */
@@ -92,16 +186,18 @@ export function parseApprovedOrigins(raw: string | undefined): string[] | undefi
 }
 
 async function readApprovedOrigins(
-  context: vscode.ExtensionContext
+  context: vscode.ExtensionContext,
+  name: string = SECRET_API_KEY_ORIGINS
 ): Promise<string[] | undefined> {
-  return parseApprovedOrigins(await context.secrets.get(SECRET_API_KEY_ORIGINS));
+  return parseApprovedOrigins(await context.secrets.get(name));
 }
 
 async function writeApprovedOrigins(
   context: vscode.ExtensionContext,
-  origins: readonly string[]
+  origins: readonly string[],
+  name: string = SECRET_API_KEY_ORIGINS
 ): Promise<void> {
-  await context.secrets.store(SECRET_API_KEY_ORIGINS, JSON.stringify(origins));
+  await context.secrets.store(name, JSON.stringify(origins));
 }
 
 /** The fields of `inspect("baseUrl")` the server URL may come from. */
@@ -240,23 +336,52 @@ export async function resolveConnection(context: vscode.ExtensionContext): Promi
   const setting = readUrlSetting();
   const baseUrl = setting.baseUrl;
   const origin = originOf(baseUrl);
-  const storedKey = (await context.secrets.get(SECRET_API_KEY)) || undefined;
-  const approvedOrigins = await readApprovedOrigins(context);
+  const workspaceId = currentWorkspaceIdentity();
+  const useWorkspaceKey = useWorkspaceKeySwitch(context);
+  const globalKey = (await context.secrets.get(SECRET_API_KEY)) || undefined;
+  const workspaceKey = workspaceId
+    ? (await context.secrets.get(workspaceSecretName(workspaceId))) || undefined
+    : undefined;
 
-  const decision = decideKeyUse({ storedKey, approvedOrigins, currentOrigin: origin });
+  const chosen = chooseKeyScope({ workspaceId, useWorkspaceKey, workspaceKey, globalKey });
+  // The key goes only to origins approved FOR THAT KEY: the list read is the chosen key's own.
+  const originsName =
+    chosen.scope === "workspace" && workspaceId
+      ? workspaceOriginsSecretName(workspaceId)
+      : SECRET_API_KEY_ORIGINS;
+  const stored = await readApprovedOrigins(context, originsName);
+  // Only the global key can predate the list (1.4.0). A workspace key is always
+  // written with one, so a missing list there is damage and withholds the key.
+  const approvedOrigins = chosen.scope === "workspace" ? (stored ?? []) : stored;
+
+  const decision = decideKeyUse({ storedKey: chosen.key, approvedOrigins, currentOrigin: origin });
   if (decision.bindNow) {
-    await writeApprovedOrigins(context, [origin]);
+    await writeApprovedOrigins(context, [origin], originsName);
     await warnIfInsecure(context, origin);
   }
   return {
     baseUrl,
     origin,
     apiKey: decision.apiKey,
-    hasStoredKey: Boolean(storedKey),
+    hasStoredKey: Boolean(chosen.key),
     keyWithheld: decision.keyWithheld,
     approvedOrigins: decision.bindNow ? [origin] : (approvedOrigins ?? []),
     ignoredWorkspaceUrl: setting.ignoredWorkspaceUrl,
+    keyScope: chosen.scope,
+    workspaceKeyAvailable: workspaceId !== undefined,
+    useWorkspaceKey,
   };
+}
+
+/**
+ * The scope a write that "acts on the key in effect" targets: the workspace's when
+ * that key is in effect, the global one otherwise. A plain read, with none of the
+ * bookkeeping `resolveConnection` does.
+ */
+export async function keyScopeInEffect(context: vscode.ExtensionContext): Promise<KeyScope> {
+  const workspaceId = currentWorkspaceIdentity();
+  if (!workspaceId || !useWorkspaceKeySwitch(context)) return "global";
+  return (await context.secrets.get(workspaceSecretName(workspaceId))) ? "workspace" : "global";
 }
 
 /**
@@ -284,45 +409,85 @@ export async function showIgnoredWorkspaceUrlNotice(context: vscode.ExtensionCon
 }
 
 /**
- * Store a new key, approved for one origin only: that of `baseUrl` when given (the
- * URL the user is saving in the panel), else the one currently configured.
+ * Store a new key in one scope (the global key by default), approved for one
+ * origin only: that of `baseUrl` when given (the URL the user is saving in the
+ * panel), else the one currently configured. Storing a workspace key also turns
+ * on this workspace's use of its own key.
  */
 export async function storeApiKey(
   context: vscode.ExtensionContext,
   key: string,
-  baseUrl?: string
+  baseUrl?: string,
+  scope: KeyScope = "global"
 ): Promise<void> {
+  const names = secretNames(scope);
   const origin = originOf(baseUrl ?? configuredBaseUrl());
   // Fail-closed at every step: first an empty list (whichever key is stored is
   // withheld everywhere), then the new key, then its one approved origin. The old
   // key is never approved for the new origin, nor the new key for the old ones,
   // and a key is never left without a list (which would read as pre-1.4.0).
-  await writeApprovedOrigins(context, []);
-  await context.secrets.store(SECRET_API_KEY, key);
-  await writeApprovedOrigins(context, [origin]);
+  await writeApprovedOrigins(context, [], names.origins);
+  await context.secrets.store(names.key, key);
+  await writeApprovedOrigins(context, [origin], names.origins);
+  if (scope === "workspace") await setUseWorkspaceKey(context, true);
   await warnIfInsecure(context, origin);
 }
 
 /**
- * Explicit user action: also send the stored key to the origin of `baseUrl` when
- * given (the URL the user is saving in the panel), else to the one configured.
+ * Explicit user action: also send the stored key of one scope to the origin of
+ * `baseUrl` when given (the URL the user is saving in the panel), else to the one
+ * configured. It never approves anything for the other scope's key.
  */
 export async function rebindApiKey(
   context: vscode.ExtensionContext,
-  baseUrl?: string
+  baseUrl?: string,
+  scope: KeyScope = "global"
 ): Promise<void> {
-  if (!(await context.secrets.get(SECRET_API_KEY))) return;
+  const names = secretNames(scope);
+  if (!(await context.secrets.get(names.key))) return;
   const origin = originOf(baseUrl ?? configuredBaseUrl());
-  const approved = (await readApprovedOrigins(context)) ?? [];
+  const approved = (await readApprovedOrigins(context, names.origins)) ?? [];
   const next = [...approved.filter((item) => item !== origin), origin].slice(-MAX_APPROVED_ORIGINS);
-  await writeApprovedOrigins(context, next);
+  await writeApprovedOrigins(context, next, names.origins);
   await warnIfInsecure(context, origin);
 }
 
-export async function clearApiKey(context: vscode.ExtensionContext): Promise<void> {
+/** Delete one scope's key and its list; the other scope's key is untouched.
+ * Clearing the workspace key also turns this workspace's switch off. */
+export async function clearApiKey(
+  context: vscode.ExtensionContext,
+  scope: KeyScope = "global"
+): Promise<void> {
+  const names = secretNames(scope);
   // The key first: a key left without its list would read as one from before 1.4.0.
-  await context.secrets.delete(SECRET_API_KEY);
-  await context.secrets.delete(SECRET_API_KEY_ORIGINS);
+  await context.secrets.delete(names.key);
+  await context.secrets.delete(names.origins);
+  if (scope === "workspace") await setUseWorkspaceKey(context, false);
+}
+
+/**
+ * The panel's Save: the key typed (if any), the "only in this workspace" box and
+ * the URL being saved. Ticked with a key typed stores a workspace key; unticked
+ * with a key typed stores the global one and turns the switch off; with no key
+ * typed only the switch changes, and the URL is approved for the key then in
+ * effect. Without an open workspace the box means nothing. Returns whether a key
+ * was stored.
+ */
+export async function saveKeyFromPanel(
+  context: vscode.ExtensionContext,
+  args: { key: string; useWorkspaceKey: boolean; url: string }
+): Promise<boolean> {
+  const hasWorkspace = currentWorkspaceIdentity() !== undefined;
+  const useWorkspace = hasWorkspace && args.useWorkspaceKey;
+  if (hasWorkspace && !useWorkspace) await setUseWorkspaceKey(context, false);
+
+  if (args.key) {
+    await storeApiKey(context, args.key, args.url, useWorkspace ? "workspace" : "global");
+    return true;
+  }
+  if (useWorkspace) await setUseWorkspaceKey(context, true);
+  await rebindApiKey(context, args.url, await keyScopeInEffect(context));
+  return false;
 }
 
 /** Tell the user, once per origin, that a key bound to plain HTTP travels in the clear. */
@@ -375,7 +540,11 @@ export async function warnIfKeyWithheld(
   );
   if (pick === useHere) {
     // Approve the server the warning named, even if the setting moved again meanwhile.
-    await rebindApiKey(context, connection.baseUrl);
+    await rebindApiKey(
+      context,
+      connection.baseUrl,
+      connection.keyScope === "workspace" ? "workspace" : "global"
+    );
     await onRebound();
   } else if (pick === openPanel) {
     void vscode.commands.executeCommand("omnicopilot.manage");

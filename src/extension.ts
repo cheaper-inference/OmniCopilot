@@ -2,8 +2,9 @@ import * as vscode from "vscode";
 import { OmniRouteClient, serverRootUrl } from "./client";
 import { configureCliTool } from "./cliBridge";
 import {
-  SECRET_API_KEY,
   clearApiKey,
+  keyScopeInEffect,
+  readStoredKey,
   resolveConnection,
   showIgnoredWorkspaceUrlNotice,
   createWithheldKeyWatcher,
@@ -260,7 +261,9 @@ async function setApiKey(
   log: vscode.LogOutputChannel,
   optionalFlow = false
 ): Promise<void> {
-  const existing = await context.secrets.get(SECRET_API_KEY);
+  // The command works on the key in effect: this workspace's own, or the global one.
+  const scope = await keyScopeInEffect(context);
+  const existing = await readStoredKey(context, scope);
   const key = await vscode.window.showInputBox({
     title: vscode.l10n.t("OmniRoute API key"),
     prompt: optionalFlow
@@ -275,10 +278,10 @@ async function setApiKey(
   if (key === undefined) return;
 
   if (key.trim()) {
-    await storeApiKey(context, key.trim());
+    await storeApiKey(context, key.trim(), undefined, scope);
     log.info("API key stored in SecretStorage");
   } else if (existing) {
-    await clearApiKey(context);
+    await clearApiKey(context, scope);
     log.info("API key cleared");
   }
   if (!optionalFlow) await provider?.refresh();

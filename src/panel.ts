@@ -4,11 +4,12 @@ import { DEFAULT_BASE_URL, OmniRouteClient, serverRootUrl } from "./client";
 import {
   clearApiKey,
   describeProbeFailure,
+  keyScopeInEffect,
   keyWithheldMessage,
   plainNotificationText,
-  rebindApiKey,
   resolveConnection,
-  storeApiKey,
+  saveKeyFromPanel,
+  type KeyScope,
 } from "./connection";
 import { formatExplanation } from "./diagnostics";
 import { fetchUsage } from "./usage";
@@ -22,6 +23,12 @@ interface PanelStatus {
   url: string;
   modelCount: number | null;
   hasKey: boolean;
+  /** Which stored key is in effect, for the line under the key field. */
+  keyScope: KeyScope | "none";
+  /** A workspace is open, so the "only in this workspace" box is offered. */
+  workspaceKeyAvailable: boolean;
+  /** This workspace is set to use its own key. */
+  useWorkspaceKey: boolean;
   detail?: string;
   /** A server URL this workspace's settings set and that is ignored, in a sentence. */
   urlNote?: string;
@@ -70,6 +77,29 @@ export function nextUrlFieldValue(args: {
 /** Source of `nextUrlFieldValue` as the webview script embeds it (an expression). */
 export function embeddedNextUrlFieldValue(): string {
   return nextUrlFieldValue.toString();
+}
+
+/**
+ * What the "only in this workspace" box should show when a new status arrives:
+ * it follows the host while it still shows what the host reported last, and a box
+ * the user changed is left alone until Save, like the URL field.
+ *
+ * The webview script runs this same function: its source is embedded there, so
+ * it must not reference anything outside itself.
+ */
+export function nextCheckboxValue(args: {
+  current: boolean;
+  lastReported: boolean | undefined;
+  reported: boolean;
+}): boolean {
+  return args.lastReported === undefined || args.current === args.lastReported
+    ? args.reported
+    : args.current;
+}
+
+/** Source of `nextCheckboxValue` as the webview script embeds it (an expression). */
+export function embeddedNextCheckboxValue(): string {
+  return nextCheckboxValue.toString();
 }
 
 /** Sidebar webview: connection status, server URL and API key form,
@@ -148,13 +178,12 @@ export class OmniPanelProvider implements vscode.WebviewViewProvider {
         // the one place a stored key is approved for a changed origin. Approve
         // first, then write the setting: the configuration change then finds the
         // key approved instead of reporting it withheld.
-        const key = String(msg.apiKey ?? "").trim();
-        if (key) {
-          await storeApiKey(this.context, key, url);
-          this.log.info("API key stored via panel");
-        } else {
-          await rebindApiKey(this.context, url);
-        }
+        const stored = await saveKeyFromPanel(this.context, {
+          key: String(msg.apiKey ?? "").trim(),
+          useWorkspaceKey: msg.useWorkspaceKey === true,
+          url,
+        });
+        if (stored) this.log.info("API key stored via panel");
 
         // An unchanged URL is not written again (Save with only a new key).
         if (url !== serverRootUrl((await resolveConnection(this.context)).baseUrl)) {
@@ -169,7 +198,8 @@ export class OmniPanelProvider implements vscode.WebviewViewProvider {
       }
 
       case "clearKey":
-        await clearApiKey(this.context);
+        // Only the key in effect goes: this workspace's own, or the global one.
+        await clearApiKey(this.context, await keyScopeInEffect(this.context));
         this.log.info("API key cleared via panel");
         await this.onSettingsSaved();
         await this.refreshStatus();
@@ -223,6 +253,9 @@ export class OmniPanelProvider implements vscode.WebviewViewProvider {
       url: serverRootUrl(url),
       modelCount,
       hasKey: connection.hasStoredKey,
+      keyScope: connection.keyScope,
+      workspaceKeyAvailable: connection.workspaceKeyAvailable,
+      useWorkspaceKey: connection.useWorkspaceKey,
       detail,
       urlNote: connection.ignoredWorkspaceUrl
         ? vscode.l10n.t(
@@ -248,6 +281,9 @@ export class OmniPanelProvider implements vscode.WebviewViewProvider {
       clearKey: t("Clear key"),
       clearKeyTitle: t("Remove the stored API key"),
       keyStored: t("A key is stored in the OS keychain. Leave the field empty to keep it."),
+      useWorkspaceKey: t("Use this key only in this workspace"),
+      usingWorkspaceKey: t("Using this workspace's key"),
+      usingGlobalKey: t("Using your global key"),
       keyNone: t("No key stored — only needed when your OmniRoute requires one."),
       onlineWithCount: t("Online — {0} models available"),
       online: t("Online"),
@@ -332,6 +368,9 @@ export class OmniPanelProvider implements vscode.WebviewViewProvider {
   button.link:hover { background: transparent; text-decoration: underline; }
   .badge { font-weight: 600; }
   .warn { color: var(--omni-warn); font-size: 11.5px; margin-top: 8px; word-break: break-word; white-space: pre-line; }
+  label.check { display: flex; align-items: center; gap: 6px; margin: 8px 0 0; font-size: 11.5px;
+    text-transform: none; letter-spacing: normal; color: var(--vscode-foreground); }
+  label.check input { width: auto; margin: 0; }
   .keyhint { font-size: 11px; color: var(--vscode-descriptionForeground); margin-top: 3px; }
   .usage-row { margin-bottom: 8px; }
   .bar { height: 4px; margin-top: 4px; border-radius: 2px; background: var(--omni-track); outline: var(--omni-track-outline); overflow: hidden; }
@@ -360,7 +399,9 @@ export class OmniPanelProvider implements vscode.WebviewViewProvider {
 
   <label for="key">${S.apiKey}</label>
   <input id="key" type="password" placeholder="${S.keyPlaceholder}" />
+  <label class="check" id="wsRow" for="useWs" style="display:none"><input id="useWs" type="checkbox" /><span id="useWsText"></span></label>
   <div class="keyhint" id="keyHint"></div>
+  <div class="keyhint" id="keyScope"></div>
 
   <div class="row">
     <button id="save">${S.saveTest.replace("&", "&amp;")}</button>
@@ -389,14 +430,24 @@ export class OmniPanelProvider implements vscode.WebviewViewProvider {
     const vscodeApi = acquireVsCodeApi();
     const $ = (id) => document.getElementById(id);
     const nextUrlFieldValue = ${embeddedNextUrlFieldValue()};
+    const nextCheckboxValue = ${embeddedNextCheckboxValue()};
     // The URL the host reported last; the field follows the host while it holds it.
     let lastReportedUrl;
+    // Same for the "only in this workspace" box.
+    let lastReportedUseWorkspaceKey;
+    $("useWsText").textContent = S.useWorkspaceKey;
 
     $("save").addEventListener("click", () => {
       // What is saved becomes the host's value: let the next status replace it
       // with the normalised URL the host stored.
       lastReportedUrl = $("url").value;
-      vscodeApi.postMessage({ type: "save", url: $("url").value, apiKey: $("key").value });
+      lastReportedUseWorkspaceKey = $("useWs").checked;
+      vscodeApi.postMessage({
+        type: "save",
+        url: $("url").value,
+        apiKey: $("key").value,
+        useWorkspaceKey: $("useWs").checked,
+      });
       $("key").value = "";
       $("statusText").textContent = S.testing;
     });
@@ -442,6 +493,15 @@ export class OmniPanelProvider implements vscode.WebviewViewProvider {
       note.textContent = msg.urlNote || "";
       note.style.display = msg.urlNote ? "block" : "none";
       $("keyHint").textContent = msg.hasKey ? S.keyStored : S.keyNone;
+      $("wsRow").style.display = msg.workspaceKeyAvailable ? "flex" : "none";
+      $("useWs").checked = nextCheckboxValue({
+        current: $("useWs").checked,
+        lastReported: lastReportedUseWorkspaceKey,
+        reported: msg.useWorkspaceKey === true,
+      });
+      lastReportedUseWorkspaceKey = msg.useWorkspaceKey === true;
+      $("keyScope").textContent =
+        msg.keyScope === "workspace" ? S.usingWorkspaceKey : msg.keyScope === "global" ? S.usingGlobalKey : "";
       const st = $("statusText");
       st.textContent = "";
       if (msg.online) {

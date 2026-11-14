@@ -108,7 +108,27 @@ export enum ConfigurationTarget {
   WorkspaceFolder = 3,
 }
 
+/** A URI as far as the code under test uses one: its scheme and its string form. */
+function mockUri(value: string) {
+  return { scheme: value.split(":")[0] ?? "", toString: () => value };
+}
+
+/** Describe the open workspace: the folders' URIs, the workspace file's URI and
+ * the name VS Code shows. Without arguments the window has no workspace open. */
+export function setMockWorkspace(
+  open: { name?: string; folders?: string[]; workspaceFile?: string } = {}
+): void {
+  workspace.name = open.name;
+  workspace.workspaceFile = open.workspaceFile === undefined ? undefined : mockUri(open.workspaceFile);
+  workspace.workspaceFolders = open.folders?.length
+    ? open.folders.map((folder) => ({ uri: mockUri(folder) }))
+    : undefined;
+}
+
 export const workspace = {
+  name: undefined as string | undefined,
+  workspaceFile: undefined as { scheme: string; toString(): string } | undefined,
+  workspaceFolders: undefined as Array<{ uri: { scheme: string; toString(): string } }> | undefined,
   onDidChangeConfiguration: (..._args: unknown[]) => disposable(),
   getConfiguration(_section?: string) {
     return {
