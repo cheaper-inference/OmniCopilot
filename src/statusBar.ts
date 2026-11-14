@@ -3,7 +3,7 @@ import * as vscode from "vscode";
 import { OmniRouteClient, serverRootUrl } from "./client";
 import { describeProbeFailure, keyWithheldMessage, type Connection } from "./connection";
 import type { ProbeResult } from "./diagnostics";
-import { dailyUsageLine, exactPercentLeft, type UsageLimitView } from "./usage";
+import { dailyUsageLine, type UsageLimitView } from "./usage";
 
 const PROBE_TIMEOUT_MS = 4000;
 /** The usage numbers are read at most this often, whoever asks. */
@@ -67,8 +67,9 @@ export function statusPresentation(args: { status: Status; keyWithheld: boolean 
 
 /**
  * The text appended to the status for the key's daily limit: " · 76%", the share
- * of it left, rounded down. Empty without the setting, on a server that is not
- * online, with a withheld key, or when the key has no daily limit.
+ * of it left. It is given the whole number the daily line shows; a fraction would be
+ * rounded down. Empty without the setting, on a server that is not online, with a
+ * withheld key, or when the key has no daily limit.
  */
 export function statusBarUsageSuffix(args: {
   enabled: boolean;
@@ -96,7 +97,7 @@ export function shouldRefreshUsage(args: {
 
 /** What the status bar remembers of the key's daily limit between two readings. */
 export interface UsageSample {
-  /** Unrounded share of the daily limit left (0-100). */
+  /** Share of the daily limit left (0-100): the whole number the daily line shows. */
   percentLeft: number;
   /** The tooltip line, already worded. */
   line: string;
@@ -242,11 +243,12 @@ export class ConnectionStatusBar implements vscode.Disposable {
     return result.ok;
   }
 
-  restart(): void {
-    // A changed key, server or setting makes the last reading worthless, and any poll
-    // that began before it stale.
+  /** Start over after a change: any poll that began before is stale. A changed key or
+   * server also makes the last usage reading worthless; `keepUsage` is for a change
+   * that leaves the reading and its 5-minute floor alone (a setting it does not show). */
+  restart(options: { keepUsage?: boolean } = {}): void {
     this.connectionGeneration++;
-    this.dropUsage();
+    if (!options.keepUsage) this.dropUsage();
     this.applyVisibility();
     this.scheduleLoop();
     this.pollInBackground();
@@ -295,8 +297,11 @@ export class ConnectionStatusBar implements vscode.Disposable {
     this.checkNow().catch((err: unknown) => this.log.warn(`Connection check failed: ${String(err)}`));
   }
 
+  /** The number is shown: the item is visible and the usage setting is on. A hidden
+   * status bar reads nothing. */
   private usageEnabled(): boolean {
-    return vscode.workspace.getConfiguration("omnicopilot").get<boolean>("statusBarUsage", true);
+    const config = vscode.workspace.getConfiguration("omnicopilot");
+    return config.get<boolean>("statusBar", true) && config.get<boolean>("statusBarUsage", true);
   }
 
   /** Read the key's usage when the setting is on, a key is in effect and the minimum
@@ -347,7 +352,8 @@ export class ConnectionStatusBar implements vscode.Disposable {
         this.lastUsageAttemptAt = now;
         try {
           const personal = await this.fetchPersonalUsage!(connection);
-          const percentLeft = personal ? exactPercentLeft(personal.dailySpentUsd, personal.dailyLimitUsd) : null;
+          // The panel's rounding, so the number next to the status is the one in the daily line.
+          const percentLeft = personal ? personal.dailyPercentLeft : null;
           const line = personal ? dailyUsageLine(personal, vscode.l10n.t) : null;
           reading =
             personal && percentLeft !== null && line !== null

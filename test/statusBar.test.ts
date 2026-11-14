@@ -292,6 +292,14 @@ describe("ConnectionStatusBar daily quota", () => {
     statusBar.dispose();
   });
 
+  it("shows the same whole number as the daily line it puts in the tooltip (75.6 % left)", async () => {
+    const { statusBar, item } = bar({ fetchPersonal: async () => personal(5, 1.22) });
+    await statusBar.checkNow();
+    await vi.waitFor(() => expect(item().tooltip).toContain("(76% left)"));
+    expect(item().text).toBe("$(circle-filled) OmniRoute · 76%");
+    statusBar.dispose();
+  });
+
   it("sends the key and root of the connection it polled", async () => {
     const { statusBar, fetchPersonal, connection } = bar({});
     await statusBar.checkNow();

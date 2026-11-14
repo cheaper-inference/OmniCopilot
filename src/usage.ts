@@ -134,8 +134,9 @@ export function percentLeft(spent: number, limit: number | null): number | null 
   return exact === null ? null : Math.round(exact);
 }
 
-/** The share of the limit still available, unrounded and clamped to 0-100, for
- * callers that round it their own way (the status bar rounds down). */
+/** The share of the limit still available, unrounded and clamped to 0-100.
+ * `percentLeft` rounds it once for every place that shows it (panel, tooltip and
+ * status bar alike). */
 export function exactPercentLeft(spent: number, limit: number | null): number | null {
   if (typeof limit !== "number" || !Number.isFinite(limit) || limit <= 0) return null;
   return Math.max(0, Math.min(100, (1 - spent / limit) * 100));
