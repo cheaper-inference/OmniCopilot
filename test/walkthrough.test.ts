@@ -141,6 +141,14 @@ describe("getting-started walkthrough", () => {
     expect(seen).toBeGreaterThan(0);
   });
 
+  it("says in the utility step that its settings need a recent VS Code", () => {
+    const step = (walkthrough?.steps as Step[]).find((s) => s.id === "utility");
+    const markdown = readFileSync(resolve(root, step!.media.markdown), "utf8");
+    expect(markdown).toContain(
+      "These settings exist in recent versions of VS Code; on an older one the search comes back empty."
+    );
+  });
+
   it("keeps the command links of every translated description intact", () => {
     const locales = readdirSync(root).filter((f) => /^package\.nls\..+\.json$/.test(f));
     for (const file of locales) {
