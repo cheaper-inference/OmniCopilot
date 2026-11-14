@@ -23,7 +23,6 @@
   "OmniRoute detected! Your models are ready — open the Copilot Chat model picker and choose any OmniRoute model.": "OmniRoute detected! Your models are ready — open the Copilot Chat model picker and choose any OmniRoute model.",
   "OmniRoute is a free, open-source AI router: one endpoint, 340+ providers (90+ free), auto-fallback. Install it with npm and this extension lights up automatically.": "OmniRoute is a free, open-source AI router: one endpoint, 340+ providers (90+ free), auto-fallback. Install it with npm and this extension lights up automatically.",
   "OmniRoute is unreachable. Check that it is running (npx omniroute) and that omnicopilot.baseUrl points at it.": "OmniRoute is unreachable. Check that it is running (npx omniroute) and that omnicopilot.baseUrl points at it.",
-  "OmniRoute model list refreshed.": "OmniRoute model list refreshed.",
   "OmniRoute on GitHub": "OmniRoute on GitHub",
   "Extension settings": "Extension settings",
   "My usage": "My usage",
@@ -86,5 +85,19 @@
   "{0} (retried {1}×)": "{0} (retried {1}×)",
   "{0}% left": "{0}% left",
   "{0} left": "{0} left",
-  "unlimited": "unlimited"
+  "unlimited": "unlimited",
+  "Continue": "Continue",
+  "This workspace's API key will be written to the configuration of {0}, which all your projects share.": "This workspace's API key will be written to the configuration of {0}, which all your projects share.",
+  "Models listed from {1}: {0}.": "Models listed from {1}: {0}.",
+  "API key for this workspace": "API key for this workspace",
+  "Free": "Free",
+  "{0} in · {1} out per 1M": "{0} in · {1} out per 1M",
+  "Use this key only in this workspace": "Use this key only in this workspace",
+  "Using this workspace's key": "Using this workspace's key",
+  "Using your global key": "Using your global key",
+  "Set API key": "Set API key",
+  "OmniRoute at {0} rejected the API key (HTTP {1}).": "OmniRoute at {0} rejected the API key (HTTP {1}).",
+  "OmniRoute at {0} needs an API key (HTTP {1}).": "OmniRoute at {0} needs an API key (HTTP {1}).",
+  "The model's answer was cut off before the tool call was complete. Raise omnicopilot.maxOutputTokens or ask for smaller steps.": "The model's answer was cut off before the tool call was complete. Raise omnicopilot.maxOutputTokens or ask for smaller steps.",
+  "The model sent a tool call with invalid arguments.": "The model sent a tool call with invalid arguments."
 }

@@ -23,7 +23,6 @@
   "OmniRoute detected! Your models are ready — open the Copilot Chat model picker and choose any OmniRoute model.": "已偵測到 OmniRoute！您的模型已就緒 — 開啟 Copilot Chat 模型選擇器，選擇任何 OmniRoute 模型。",
   "OmniRoute is a free, open-source AI router: one endpoint, 340+ providers (90+ free), auto-fallback. Install it with npm and this extension lights up automatically.": "OmniRoute 是免費的開放原始碼 AI 路由器：單一端點、340 多個提供者（90 多個免費）、自動容錯移轉。使用 npm 安裝後，此延伸模組會自動啟用。",
   "OmniRoute is unreachable. Check that it is running (npx omniroute) and that omnicopilot.baseUrl points at it.": "無法連線至 OmniRoute。請檢查它是否正在執行（npx omniroute），以及 omnicopilot.baseUrl 是否指向它。",
-  "OmniRoute model list refreshed.": "OmniRoute 模型清單已重新整理。",
   "OmniRoute on GitHub": "GitHub 上的 OmniRoute",
   "Extension settings": "擴充功能設定",
   "My usage": "我的用量",
@@ -86,5 +85,19 @@
   "{0}% left": "剩餘 {0}%",
   "{0} left": "剩餘 {0}",
   "unlimited": "無限制",
-  "Could not read the connection status.": "無法讀取連線狀態。"
+  "Could not read the connection status.": "無法讀取連線狀態。",
+  "Continue": "繼續",
+  "This workspace's API key will be written to the configuration of {0}, which all your projects share.": "此工作區的 API 金鑰將寫入 {0} 的設定中，您所有的專案都共用該設定。",
+  "Models listed from {1}: {0}.": "已從 {1} 取得模型：{0} 個。",
+  "API key for this workspace": "此工作區的 API 金鑰",
+  "Free": "免費",
+  "{0} in · {1} out per 1M": "輸入 {0} · 輸出 {1} / 1M",
+  "Use this key only in this workspace": "僅在此工作區使用此金鑰",
+  "Using this workspace's key": "正在使用此工作區的金鑰",
+  "Using your global key": "正在使用您的全域金鑰",
+  "Set API key": "設定 API 金鑰",
+  "OmniRoute at {0} rejected the API key (HTTP {1}).": "位於 {0} 的 OmniRoute 拒絕了該 API 金鑰（HTTP {1}）。",
+  "OmniRoute at {0} needs an API key (HTTP {1}).": "位於 {0} 的 OmniRoute 需要 API 金鑰（HTTP {1}）。",
+  "The model's answer was cut off before the tool call was complete. Raise omnicopilot.maxOutputTokens or ask for smaller steps.": "模型的回應在工具呼叫完成之前被截斷。請調高 omnicopilot.maxOutputTokens，或將工作拆分為較小的步驟。",
+  "The model sent a tool call with invalid arguments.": "模型傳送的工具呼叫含有無效的引數。"
 }

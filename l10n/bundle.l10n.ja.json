@@ -23,7 +23,6 @@
   "OmniRoute detected! Your models are ready — open the Copilot Chat model picker and choose any OmniRoute model.": "OmniRouteを検出しました！モデルの準備ができています — Copilot Chatのモデルピッカーを開き、任意のOmniRouteモデルを選択してください。",
   "OmniRoute is a free, open-source AI router: one endpoint, 340+ providers (90+ free), auto-fallback. Install it with npm and this extension lights up automatically.": "OmniRouteは無料のオープンソースAIルーターです。単一のエンドポイント、340以上のプロバイダー（うち90以上が無料）、自動フォールバック。npmでインストールすると、この拡張機能は自動的に有効になります。",
   "OmniRoute is unreachable. Check that it is running (npx omniroute) and that omnicopilot.baseUrl points at it.": "OmniRouteに到達できません。起動していること（npx omniroute）と、omnicopilot.baseUrlがそれを指していることを確認してください。",
-  "OmniRoute model list refreshed.": "OmniRouteのモデル一覧を更新しました。",
   "OmniRoute on GitHub": "GitHub上のOmniRoute",
   "Extension settings": "拡張機能の設定",
   "My usage": "自分の使用量",
@@ -86,5 +85,19 @@
   "{0}% left": "残り{0}%",
   "{0} left": "残り{0}",
   "unlimited": "無制限",
-  "Could not read the connection status.": "接続状態を読み取れませんでした。"
+  "Could not read the connection status.": "接続状態を読み取れませんでした。",
+  "Continue": "続行",
+  "This workspace's API key will be written to the configuration of {0}, which all your projects share.": "このワークスペースのAPIキーは、すべてのプロジェクトで共有される {0} の構成に書き込まれます。",
+  "Models listed from {1}: {0}.": "{1} から取得したモデル: {0}個。",
+  "API key for this workspace": "このワークスペース用のAPIキー",
+  "Free": "無料",
+  "{0} in · {1} out per 1M": "入力 {0} · 出力 {1} / 1M",
+  "Use this key only in this workspace": "このキーをこのワークスペースでのみ使用する",
+  "Using this workspace's key": "このワークスペースのキーを使用中",
+  "Using your global key": "グローバルキーを使用中",
+  "Set API key": "APIキーの設定",
+  "OmniRoute at {0} rejected the API key (HTTP {1}).": "{0} のOmniRouteがAPIキーを拒否しました（HTTP {1}）。",
+  "OmniRoute at {0} needs an API key (HTTP {1}).": "{0} のOmniRouteにはAPIキーが必要です（HTTP {1}）。",
+  "The model's answer was cut off before the tool call was complete. Raise omnicopilot.maxOutputTokens or ask for smaller steps.": "モデルの応答がツール呼び出しの完了前に途切れました。omnicopilot.maxOutputTokensを引き上げるか、より小さなステップで依頼してください。",
+  "The model sent a tool call with invalid arguments.": "モデルが無効な引数を含むツール呼び出しを送信しました。"
 }

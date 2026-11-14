@@ -28,5 +28,17 @@
   "cfg.defaultReasoningEffort.xhigh": "Çox yüksək — dəstəkləməyən modellərdə aşağı salınır",
   "cfg.cliPath": "\"Configure Coding CLI\" əmrinin istifadə etdiyi OmniRoute CLI-nin yolu.",
   "cfg.exposeToAgentsWindow": "Eksperimental: OmniRoute modellərini Copilot Agents window model seçicisində də göstərir. VS Code-un chat.agentHost.byokModels.enabled parametri və agent host-un yenidən başladılması tələb olunur; dəyişə bilən təklif olunmuş VS Code API-sindən istifadə edir.",
-  "cfg.defaultReasoningEffort.max": "Maksimum — ən yüksək səviyyə. OmniRoute onu təklif etməyən modellərdə aşağı salır."
+  "cfg.defaultReasoningEffort.max": "Maksimum — ən yüksək səviyyə. OmniRoute onu təklif etməyən modellərdə aşağı salır.",
+  "cfg.statusBarUsage": "Bağlantı statusunun yanında açarın gündəlik limitindən nə qədərinin qaldığını göstər.",
+  "cfg.sendProjectName": "Hər söhbət sorğusu ilə açıq iş sahəsinin adını OmniRoute-a göndər ki, istifadə layihə üzrə qruplaşdırıla bilsin. Standart olaraq söndürülüb.",
+  "walkthrough.title": "OmniRoute ilə başlayın",
+  "walkthrough.description": "OmniRoute şlüzünüzün modellərini Copilot Chat model seçicisinə əlavə edin.",
+  "walkthrough.run.title": "OmniRoute-u işə salın",
+  "walkthrough.run.description": "OmniRoute bu genişlənmənin əlaqə qurduğu şlüzdür. Onu quraşdırın və işlək saxlayın. Standart olaraq http://localhost:20128 ünvanında cavab verir.\n[OmniRoute-u quraşdır](command:omnicopilot.installOmniRoute)\n[Bağlantını yoxla](command:omnicopilot.checkConnection)",
+  "walkthrough.connect.title": "Qoşulun",
+  "walkthrough.connect.description": "Bağlantı panelini açın. OmniRoute bu kompüterdə standart parametrlərlə işləyirsə, doldurulacaq heç nə yoxdur. Başqa yerdəki server üçün onun URL-ini və server tələb edərsə, API açarını daxil edin.\n[Bağlantı panelini aç](command:omnicopilot.manage)",
+  "walkthrough.pickModel.title": "Modellərinizi seçin",
+  "walkthrough.pickModel.description": "\"Modelləri idarə et\" bölməsini açın, OmniRoute-u seçin və söhbət model seçicisində görmək istədiyiniz modelləri işarələyin.\n[Modelləri idarə et](command:workbench.action.chat.manage)",
+  "walkthrough.utility.title": "Başlıqlar, commit mesajları və redaktor daxilində söhbət üçün OmniRoute-u istifadə edin",
+  "walkthrough.utility.description": "Söhbət başlıqları, commit mesajları və redaktor daxilində söhbət öz model parametrlərindən istifadə edir. Bunların da şlüzünüzdə işləməsi üçün onları OmniRoute modelinə yönəldin.\n[Parametrləri aç](command:workbench.action.openSettings?%5B%22chat.utility%22%5D)"
 }

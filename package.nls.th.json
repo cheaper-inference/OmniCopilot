@@ -28,5 +28,17 @@
   "cfg.defaultReasoningEffort.xhigh": "สูงมาก — ลดระดับสำหรับโมเดลที่ไม่รองรับ",
   "cfg.cliPath": "พาธไปยัง OmniRoute CLI ซึ่งใช้โดยคำสั่ง \"กำหนดค่า CLI สำหรับเขียนโค้ด\"",
   "cfg.exposeToAgentsWindow": "ทดลอง: แสดงโมเดล OmniRoute ในตัวเลือกโมเดลของหน้าต่าง Agents ของ Copilot ด้วย ต้องใช้การตั้งค่า VS Code chat.agentHost.byokModels.enabled และรีสตาร์ต agent host; ใช้ API ที่เสนอของ VS Code ซึ่งอาจเปลี่ยนแปลงได้",
-  "cfg.defaultReasoningEffort.max": "สูงสุด — ระดับบนสุด OmniRoute จะลดระดับให้สำหรับโมเดลที่ไม่มีระดับนี้"
+  "cfg.defaultReasoningEffort.max": "สูงสุด — ระดับบนสุด OmniRoute จะลดระดับให้สำหรับโมเดลที่ไม่มีระดับนี้",
+  "cfg.statusBarUsage": "แสดงโควตารายวันของคีย์ที่เหลืออยู่ ถัดจากสถานะการเชื่อมต่อ",
+  "cfg.sendProjectName": "ส่งชื่อพื้นที่ทำงานที่เปิดอยู่ไปยัง OmniRoute พร้อมกับทุกคำขอแชท เพื่อให้จัดกลุ่มการใช้งานตามโปรเจกต์ได้ ปิดไว้เป็นค่าเริ่มต้น",
+  "walkthrough.title": "เริ่มต้นใช้งาน OmniRoute",
+  "walkthrough.description": "นำโมเดลจากเกตเวย์ OmniRoute ของคุณไปไว้ในตัวเลือกโมเดลของ Copilot Chat",
+  "walkthrough.run.title": "เรียกใช้ OmniRoute",
+  "walkthrough.run.description": "OmniRoute คือเกตเวย์ที่ส่วนขยายนี้เชื่อมต่อด้วย ติดตั้งแล้วปล่อยให้ทำงานต่อไป โดยค่าเริ่มต้นจะตอบที่ http://localhost:20128\n[ติดตั้ง OmniRoute](command:omnicopilot.installOmniRoute)\n[ตรวจสอบการเชื่อมต่อ](command:omnicopilot.checkConnection)",
+  "walkthrough.connect.title": "เชื่อมต่อ",
+  "walkthrough.connect.description": "เปิดแผงการเชื่อมต่อ หาก OmniRoute ทำงานบนเครื่องนี้ด้วยการตั้งค่าเริ่มต้น ก็ไม่ต้องกรอกอะไร สำหรับเซิร์ฟเวอร์ที่อยู่ที่อื่น ให้ป้อน URL ของเซิร์ฟเวอร์ และหากเซิร์ฟเวอร์ต้องการ ให้ป้อนคีย์ API ด้วย\n[เปิดแผงการเชื่อมต่อ](command:omnicopilot.manage)",
+  "walkthrough.pickModel.title": "เลือกโมเดลของคุณ",
+  "walkthrough.pickModel.description": "เปิด จัดการโมเดล แล้วเลือก OmniRoute และติ๊กโมเดลที่ต้องการในตัวเลือกโมเดลของแชท\n[จัดการโมเดล](command:workbench.action.chat.manage)",
+  "walkthrough.utility.title": "ใช้ OmniRoute สำหรับชื่อแชท ข้อความคอมมิต และแชทอินไลน์",
+  "walkthrough.utility.description": "ชื่อแชท ข้อความคอมมิต และแชทอินไลน์ใช้การตั้งค่าโมเดลของตัวเอง ชี้ไปที่โมเดล OmniRoute เพื่อให้งานเหล่านั้นทำงานบนเกตเวย์ของคุณด้วย\n[เปิดการตั้งค่า](command:workbench.action.openSettings?%5B%22chat.utility%22%5D)"
 }

@@ -28,5 +28,17 @@
   "cfg.defaultReasoningEffort.xhigh": "Juu sana — hupunguzwa kwa modeli zisizounga mkono",
   "cfg.cliPath": "Njia ya CLI ya OmniRoute, inayotumiwa na amri ya \"Sanidi CLI ya Uandishi wa Msimbo\".",
   "cfg.exposeToAgentsWindow": "Ya majaribio: huonyesha pia modeli za OmniRoute kwenye kichagua-modeli cha dirisha la Agents la Copilot. Inahitaji mpangilio wa VS Code chat.agentHost.byokModels.enabled na kuwasha upya agent host; hutumia API pendekezwa ya VS Code inayoweza kubadilika.",
-  "cfg.defaultReasoningEffort.max": "Upeo — kiwango cha juu kabisa. OmniRoute huipunguza kwa modeli ambazo hazina kiwango hiki."
+  "cfg.defaultReasoningEffort.max": "Upeo — kiwango cha juu kabisa. OmniRoute huipunguza kwa modeli ambazo hazina kiwango hiki.",
+  "cfg.statusBarUsage": "Onyesha kiasi kilichosalia cha kikomo cha kila siku cha ufunguo karibu na hali ya muunganisho.",
+  "cfg.sendProjectName": "Tuma jina la eneo la kazi lililofunguliwa kwa OmniRoute kwa kila ombi la gumzo, ili matumizi yaweze kupangwa kwa mradi. Imezimwa kwa chaguomsingi.",
+  "walkthrough.title": "Anza na OmniRoute",
+  "walkthrough.description": "Weka modeli za lango lako la OmniRoute kwenye kichaguzi cha modeli cha Copilot Chat.",
+  "walkthrough.run.title": "Endesha OmniRoute",
+  "walkthrough.run.description": "OmniRoute ni lango ambalo kiendelezi hiki huwasiliana nalo. Lisakinishe na uliache liendelee kufanya kazi. Kwa chaguomsingi, hujibu kwenye http://localhost:20128.\n[Sakinisha OmniRoute](command:omnicopilot.installOmniRoute)\n[Kagua Muunganisho](command:omnicopilot.checkConnection)",
+  "walkthrough.connect.title": "Unganisha",
+  "walkthrough.connect.description": "Fungua paneli ya muunganisho. Ikiwa OmniRoute inaendeshwa kwenye mashine hii kwa mipangilio chaguomsingi, hakuna cha kujaza. Kwa seva iliyo mahali pengine, weka URL yake na, ikiomba, ufunguo wa API.\n[Fungua paneli ya muunganisho](command:omnicopilot.manage)",
+  "walkthrough.pickModel.title": "Chagua modeli zako",
+  "walkthrough.pickModel.description": "Fungua Manage Models, chagua OmniRoute na uweke tiki kwenye modeli unazotaka katika kichaguzi cha modeli cha gumzo.\n[Fungua Manage Models](command:workbench.action.chat.manage)",
+  "walkthrough.utility.title": "Tumia OmniRoute kwa vichwa vya gumzo, ujumbe wa commit na gumzo la ndani ya kihariri",
+  "walkthrough.utility.description": "Vichwa vya gumzo, ujumbe wa commit na gumzo la ndani ya kihariri hutumia mipangilio yao ya modeli. Vielekeze kwenye modeli ya OmniRoute ili vifanye kazi kwenye lango lako pia.\n[Fungua Mipangilio](command:workbench.action.openSettings?%5B%22chat.utility%22%5D)"
 }

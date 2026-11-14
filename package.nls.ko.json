@@ -28,5 +28,17 @@
   "cfg.defaultReasoningEffort.xhigh": "매우 높음 — 미지원 모델에서는 하향 조정",
   "cfg.cliPath": "\"코딩 CLI 구성\" 명령에서 사용하는 OmniRoute CLI의 경로입니다.",
   "cfg.exposeToAgentsWindow": "실험적: Copilot Agents 창의 모델 선택기에도 OmniRoute 모델을 표시합니다. VS Code 설정 chat.agentHost.byokModels.enabled 및 agent host 재시작이 필요하며, 변경될 수 있는 VS Code 제안 API를 사용합니다.",
-  "cfg.defaultReasoningEffort.max": "최대 — 최상위 단계. 지원하지 않는 모델에서는 OmniRoute가 하향 조정합니다."
+  "cfg.defaultReasoningEffort.max": "최대 — 최상위 단계. 지원하지 않는 모델에서는 OmniRoute가 하향 조정합니다.",
+  "cfg.statusBarUsage": "연결 상태 옆에 키의 일일 한도가 얼마나 남았는지 표시합니다.",
+  "cfg.sendProjectName": "채팅 요청을 보낼 때마다 열려 있는 작업 영역의 이름을 OmniRoute로 보내, 프로젝트별로 사용량을 묶어 볼 수 있게 합니다. 기본값은 꺼짐입니다.",
+  "walkthrough.title": "OmniRoute 시작하기",
+  "walkthrough.description": "OmniRoute 게이트웨이의 모델을 Copilot Chat 모델 선택기에 추가합니다.",
+  "walkthrough.run.title": "OmniRoute 실행",
+  "walkthrough.run.description": "OmniRoute는 이 확장이 통신하는 게이트웨이입니다. 설치한 뒤 계속 실행해 두세요. 기본적으로 다음 주소에서 응답합니다: http://localhost:20128.\n[OmniRoute 설치](command:omnicopilot.installOmniRoute)\n[연결 확인](command:omnicopilot.checkConnection)",
+  "walkthrough.connect.title": "연결",
+  "walkthrough.connect.description": "연결 패널을 엽니다. OmniRoute가 기본 설정으로 이 컴퓨터에서 실행 중이면 입력할 내용이 없습니다. 다른 곳에 있는 서버라면 URL을 입력하고, 요구하는 경우 API 키도 입력하세요.\n[연결 패널 열기](command:omnicopilot.manage)",
+  "walkthrough.pickModel.title": "모델 선택",
+  "walkthrough.pickModel.description": "모델 관리를 열어 OmniRoute를 선택하고, 채팅 모델 선택기에서 사용할 모델에 체크 표시하세요.\n[모델 관리](command:workbench.action.chat.manage)",
+  "walkthrough.utility.title": "제목, 커밋 메시지, 인라인 채팅에 OmniRoute 사용",
+  "walkthrough.utility.description": "채팅 제목, 커밋 메시지, 인라인 채팅은 각각 별도의 모델 설정을 사용합니다. 이 작업도 게이트웨이에서 실행하려면 OmniRoute 모델을 지정하세요.\n[설정 열기](command:workbench.action.openSettings?%5B%22chat.utility%22%5D)"
 }

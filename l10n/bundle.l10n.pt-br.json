@@ -23,7 +23,6 @@
   "OmniRoute detected! Your models are ready — open the Copilot Chat model picker and choose any OmniRoute model.": "OmniRoute detectado! Seus modelos estão prontos — abra o seletor de modelos do Copilot Chat e escolha qualquer modelo do OmniRoute.",
   "OmniRoute is a free, open-source AI router: one endpoint, 340+ providers (90+ free), auto-fallback. Install it with npm and this extension lights up automatically.": "O OmniRoute é um roteador de IA gratuito e de código aberto: um único endpoint, mais de 340 provedores (mais de 90 gratuitos), fallback automático. Instale com npm e esta extensão é ativada automaticamente.",
   "OmniRoute is unreachable. Check that it is running (npx omniroute) and that omnicopilot.baseUrl points at it.": "O OmniRoute está inacessível. Verifique se ele está em execução (npx omniroute) e se omnicopilot.baseUrl aponta para ele.",
-  "OmniRoute model list refreshed.": "Lista de modelos do OmniRoute atualizada.",
   "OmniRoute on GitHub": "OmniRoute no GitHub",
   "Extension settings": "Configurações da extensão",
   "My usage": "Meu uso",
@@ -86,5 +85,19 @@
   "{0}% left": "{0}% restante",
   "{0} left": "{0} restante",
   "unlimited": "ilimitado",
-  "Could not read the connection status.": "Não foi possível ler o status da conexão."
+  "Could not read the connection status.": "Não foi possível ler o status da conexão.",
+  "Continue": "Continuar",
+  "This workspace's API key will be written to the configuration of {0}, which all your projects share.": "A chave de API deste espaço de trabalho será gravada na configuração de {0}, que todos os seus projetos compartilham.",
+  "Models listed from {1}: {0}.": "Modelos listados a partir de {1}: {0}.",
+  "API key for this workspace": "Chave de API para este espaço de trabalho",
+  "Free": "Grátis",
+  "{0} in · {1} out per 1M": "{0} entrada · {1} saída por 1 mi",
+  "Use this key only in this workspace": "Usar esta chave somente neste espaço de trabalho",
+  "Using this workspace's key": "Usando a chave deste espaço de trabalho",
+  "Using your global key": "Usando sua chave global",
+  "Set API key": "Definir chave de API",
+  "OmniRoute at {0} rejected the API key (HTTP {1}).": "O OmniRoute em {0} rejeitou a chave de API (HTTP {1}).",
+  "OmniRoute at {0} needs an API key (HTTP {1}).": "O OmniRoute em {0} precisa de uma chave de API (HTTP {1}).",
+  "The model's answer was cut off before the tool call was complete. Raise omnicopilot.maxOutputTokens or ask for smaller steps.": "A resposta do modelo foi cortada antes de a chamada da ferramenta ser concluída. Aumente omnicopilot.maxOutputTokens ou peça etapas menores.",
+  "The model sent a tool call with invalid arguments.": "O modelo enviou uma chamada de ferramenta com argumentos inválidos."
 }

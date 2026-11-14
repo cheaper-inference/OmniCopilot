@@ -28,5 +28,17 @@
   "cfg.defaultReasoningEffort.xhigh": "மிக அதிகம் — ஆதரவில்லாத மாதிரிகளில் குறைக்கப்படும்",
   "cfg.cliPath": "\"கோடிங் CLI ஐ உள்ளமை\" கட்டளையால் பயன்படுத்தப்படும் OmniRoute CLI இன் பாதை.",
   "cfg.exposeToAgentsWindow": "சோதனை: Copilot-இன் Agents window மாடல் தேர்வியிலும் OmniRoute மாடல்களைக் காட்டுகிறது. VS Code அமைப்பு chat.agentHost.byokModels.enabled மற்றும் agent host மறுதொடக்கம் தேவை; மாறக்கூடிய முன்மொழியப்பட்ட VS Code API-ஐப் பயன்படுத்துகிறது.",
-  "cfg.defaultReasoningEffort.max": "அதிகபட்சம் — உச்ச நிலை. இதை வழங்காத மாதிரிகளுக்கு OmniRoute இதைக் குறைக்கும்."
+  "cfg.defaultReasoningEffort.max": "அதிகபட்சம் — உச்ச நிலை. இதை வழங்காத மாதிரிகளுக்கு OmniRoute இதைக் குறைக்கும்.",
+  "cfg.statusBarUsage": "இணைப்பு நிலையின் அருகே, விசையின் தினசரி வரம்பில் எவ்வளவு மீதமுள்ளது என்பதைக் காண்பி.",
+  "cfg.sendProjectName": "ஒவ்வொரு அரட்டைக் கோரிக்கையுடனும் திறந்துள்ள பணியிடத்தின் பெயரை OmniRoute சேவையகத்துக்கு அனுப்பு, இதனால் பயன்பாட்டைத் திட்ட வாரியாகக் குழுவாக்கலாம். இயல்பாக முடக்கம்.",
+  "walkthrough.title": "OmniRoute உடன் தொடங்குங்கள்",
+  "walkthrough.description": "உங்கள் OmniRoute நுழைவாயிலின் மாடல்களை Copilot Chat மாடல் தேர்வியில் சேர்க்கவும்.",
+  "walkthrough.run.title": "OmniRoute ஐ இயக்குங்கள்",
+  "walkthrough.run.description": "இந்த நீட்டிப்பு தொடர்புகொள்ளும் நுழைவாயில்தான் OmniRoute. அதை நிறுவி இயங்கிக்கொண்டே இருக்க விடுங்கள். இயல்பாக அது http://localhost:20128 முகவரியில் பதிலளிக்கும்.\n[OmniRoute ஐ நிறுவு](command:omnicopilot.installOmniRoute)\n[இணைப்பைச் சரிபார்](command:omnicopilot.checkConnection)",
+  "walkthrough.connect.title": "இணைக்கவும்",
+  "walkthrough.connect.description": "இணைப்புப் பலகத்தைத் திறக்கவும். OmniRoute உங்கள் சொந்தக் கணினியில் இயல்புநிலை அமைப்புகளுடன் இயங்கினால், எதையும் நிரப்ப வேண்டியதில்லை. வேறு இடத்தில் உள்ள சேவையகத்துக்கு, அதன் URL ஐயும், அது கேட்டால் API விசையையும் உள்ளிடவும்.\n[இணைப்புப் பலகத்தைத் திற](command:omnicopilot.manage)",
+  "walkthrough.pickModel.title": "உங்கள் மாடல்களைத் தேர்ந்தெடுங்கள்",
+  "walkthrough.pickModel.description": "\"மாடல்களை நிர்வகி\" என்பதைத் திறந்து, OmniRoute ஐத் தேர்ந்தெடுத்து, அரட்டை மாடல் தேர்வியில் உங்களுக்கு வேண்டிய மாடல்களில் டிக் இடுங்கள்.\n[மாடல்களை நிர்வகி](command:workbench.action.chat.manage)",
+  "walkthrough.utility.title": "தலைப்புகள், கமிட் செய்திகள் மற்றும் இன்லைன் அரட்டைக்கு OmniRoute ஐப் பயன்படுத்துங்கள்",
+  "walkthrough.utility.description": "அரட்டைத் தலைப்புகள், கமிட் செய்திகள் மற்றும் இன்லைன் அரட்டை ஆகியவை தங்களுக்கென தனி மாடல் அமைப்புகளைப் பயன்படுத்துகின்றன. அவற்றையும் உங்கள் நுழைவாயிலில் இயக்க, OmniRoute மாடலுக்கு அமைக்கவும்.\n[அமைப்புகளைத் திற](command:workbench.action.openSettings?%5B%22chat.utility%22%5D)"
 }

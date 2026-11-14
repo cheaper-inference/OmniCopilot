@@ -28,5 +28,17 @@
   "cfg.defaultReasoningEffort.xhigh": "خیلی زیاد — برای مدل‌های فاقد پشتیبانی کاهش می‌یابد",
   "cfg.cliPath": "مسیر OmniRoute CLI که فرمان \"Configure Coding CLI\" از آن استفاده می‌کند.",
   "cfg.exposeToAgentsWindow": "آزمایشی: مدل‌های OmniRoute را در انتخاب‌گر مدل پنجرهٔ Agents در Copilot نیز نمایش می‌دهد. به تنظیم chat.agentHost.byokModels.enabled در VS Code و راه‌اندازی مجدد agent host نیاز دارد؛ از یک API پیشنهادی VS Code استفاده می‌کند که ممکن است تغییر کند.",
-  "cfg.defaultReasoningEffort.max": "حداکثر — بالاترین سطح. OmniRoute آن را برای مدل‌هایی که ارائه نمی‌دهند کاهش می‌دهد."
+  "cfg.defaultReasoningEffort.max": "حداکثر — بالاترین سطح. OmniRoute آن را برای مدل‌هایی که ارائه نمی‌دهند کاهش می‌دهد.",
+  "cfg.statusBarUsage": "نمایش مقدار باقی‌مانده از سقف روزانهٔ کلید در کنار وضعیت اتصال.",
+  "cfg.sendProjectName": "ارسال نام فضای کار باز به OmniRoute با هر درخواست گفتگو، تا بتوان مصرف را بر اساس پروژه گروه‌بندی کرد. به‌طور پیش‌فرض خاموش است.",
+  "walkthrough.title": "شروع کار با OmniRoute",
+  "walkthrough.description": "مدل‌های دروازهٔ OmniRoute خود را در انتخابگر مدل Copilot Chat قرار دهید.",
+  "walkthrough.run.title": "اجرای OmniRoute",
+  "walkthrough.run.description": "دروازه‌ای که این افزونه با آن ارتباط برقرار می‌کند، OmniRoute است. آن را نصب کنید و در حال اجرا بگذارید. به‌طور پیش‌فرض در نشانی http://localhost:20128 پاسخ می‌دهد.\n[نصب OmniRoute](command:omnicopilot.installOmniRoute)\n[بررسی اتصال](command:omnicopilot.checkConnection)",
+  "walkthrough.connect.title": "اتصال",
+  "walkthrough.connect.description": "پنل اتصال را باز کنید. اگر OmniRoute با تنظیمات پیش‌فرض روی رایانهٔ خودتان اجرا می‌شود، چیزی برای پر کردن وجود ندارد. برای سروری در جای دیگر، نشانی URL آن و در صورت نیاز، کلید API را وارد کنید.\n[باز کردن پنل اتصال](command:omnicopilot.manage)",
+  "walkthrough.pickModel.title": "مدل‌های خود را انتخاب کنید",
+  "walkthrough.pickModel.description": "مدیریت مدل‌ها را باز کنید، OmniRoute را انتخاب کنید و مدل‌هایی را که می‌خواهید در انتخابگر مدل گفتگو باشند علامت بزنید.\n[مدیریت مدل‌ها](command:workbench.action.chat.manage)",
+  "walkthrough.utility.title": "استفاده از OmniRoute برای عنوان‌ها، پیام‌های کامیت و گفتگوی درون‌خطی",
+  "walkthrough.utility.description": "عنوان‌های گفتگو، پیام‌های کامیت و گفتگوی درون‌خطی تنظیمات مدل مخصوص خودشان را دارند. آن‌ها را به یک مدل OmniRoute اشاره دهید تا این‌ها هم روی دروازهٔ شما اجرا شوند.\n[باز کردن تنظیمات](command:workbench.action.openSettings?%5B%22chat.utility%22%5D)"
 }

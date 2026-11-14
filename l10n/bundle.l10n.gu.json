@@ -23,7 +23,6 @@
   "OmniRoute detected! Your models are ready — open the Copilot Chat model picker and choose any OmniRoute model.": "OmniRoute મળ્યું! તમારા મોડેલ્સ તૈયાર છે — Copilot Chat મોડેલ પિકર ખોલો અને કોઈપણ OmniRoute મોડેલ પસંદ કરો.",
   "OmniRoute is a free, open-source AI router: one endpoint, 340+ providers (90+ free), auto-fallback. Install it with npm and this extension lights up automatically.": "OmniRoute એ મફત, ઓપન-સોર્સ AI રાઉટર છે: એક એન્ડપોઇન્ટ, 340+ પ્રોવાઇડર્સ (90+ મફત), ઑટો-ફોલબૅક. તેને npm વડે ઇન્સ્ટોલ કરો અને આ એક્સ્ટેંશન આપમેળે સક્રિય થઈ જશે.",
   "OmniRoute is unreachable. Check that it is running (npx omniroute) and that omnicopilot.baseUrl points at it.": "OmniRoute સુધી પહોંચી શકાતું નથી. તપાસો કે તે ચાલી રહ્યું છે (npx omniroute) અને omnicopilot.baseUrl તેની તરફ પોઇન્ટ કરે છે.",
-  "OmniRoute model list refreshed.": "OmniRoute મોડેલ સૂચિ રિફ્રેશ થઈ.",
   "OmniRoute on GitHub": "GitHub પર OmniRoute",
   "Extension settings": "એક્સ્ટેન્શન સેટિંગ્સ",
   "My usage": "મારો વપરાશ",
@@ -86,5 +85,19 @@
   "{0}% left": "{0}% બાકી",
   "{0} left": "{0} બાકી",
   "unlimited": "અમર્યાદિત",
-  "Could not read the connection status.": "કનેક્શનની સ્થિતિ વાંચી શકાઈ નથી."
+  "Could not read the connection status.": "કનેક્શનની સ્થિતિ વાંચી શકાઈ નથી.",
+  "Continue": "ચાલુ રાખો",
+  "This workspace's API key will be written to the configuration of {0}, which all your projects share.": "આ વર્કસ્પેસની API કી {0} ટૂલના કૉન્ફિગરેશનમાં લખાશે, જે તમારા બધા પ્રોજેક્ટ્સ વચ્ચે શેર થાય છે.",
+  "Models listed from {1}: {0}.": "{1} સર્વર પરથી સૂચિબદ્ધ મોડેલ્સ: {0}.",
+  "API key for this workspace": "આ વર્કસ્પેસ માટે API કી",
+  "Free": "મફત",
+  "{0} in · {1} out per 1M": "{0} ઇનપુટ · {1} આઉટપુટ પ્રતિ 1M",
+  "Use this key only in this workspace": "આ કી ફક્ત આ વર્કસ્પેસમાં વાપરો",
+  "Using this workspace's key": "આ વર્કસ્પેસની કી વપરાઈ રહી છે",
+  "Using your global key": "તમારી ગ્લોબલ કી વપરાઈ રહી છે",
+  "Set API key": "API કી સેટ કરો",
+  "OmniRoute at {0} rejected the API key (HTTP {1}).": "{0} પરના OmniRoute સર્વરે API કી નકારી કાઢી (HTTP {1}).",
+  "OmniRoute at {0} needs an API key (HTTP {1}).": "{0} પરના OmniRoute સર્વરને API કી જોઈએ (HTTP {1}).",
+  "The model's answer was cut off before the tool call was complete. Raise omnicopilot.maxOutputTokens or ask for smaller steps.": "ટૂલ કૉલ પૂરો થાય તે પહેલાં મોડેલનો જવાબ કપાઈ ગયો. omnicopilot.maxOutputTokens સેટિંગની કિંમત વધારો અથવા નાના પગલાં માગો.",
+  "The model sent a tool call with invalid arguments.": "મોડેલે અમાન્ય આર્ગ્યુમેન્ટ્સ સાથે ટૂલ કૉલ મોકલ્યો."
 }

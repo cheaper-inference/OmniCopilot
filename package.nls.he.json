@@ -28,5 +28,17 @@
   "cfg.defaultReasoningEffort.xhigh": "גבוה מאוד — מופחת במודלים שאינם תומכים",
   "cfg.cliPath": "הנתיב אל OmniRoute CLI, המשמש את הפקודה \"Configure Coding CLI\".",
   "cfg.exposeToAgentsWindow": "ניסיוני: מציג את מודלי OmniRoute גם בבורר המודלים של חלון Agents ב-Copilot. דורש את הגדרת VS Code בשם chat.agentHost.byokModels.enabled והפעלה מחדש של ה-agent host; משתמש ב-API מוצע של VS Code שעשוי להשתנות.",
-  "cfg.defaultReasoningEffort.max": "מרבי — הרמה הגבוהה ביותר. OmniRoute מפחית אותה במודלים שאינם מציעים אותה."
+  "cfg.defaultReasoningEffort.max": "מרבי — הרמה הגבוהה ביותר. OmniRoute מפחית אותה במודלים שאינם מציעים אותה.",
+  "cfg.statusBarUsage": "הצגת כמה נותר ממכסת השימוש היומית של המפתח לצד מצב החיבור.",
+  "cfg.sendProjectName": "שליחת שם סביבת העבודה הפתוחה אל OmniRoute עם כל בקשת צ'אט, כך שאפשר לקבץ את השימוש לפי פרויקט. כבוי כברירת מחדל.",
+  "walkthrough.title": "תחילת העבודה עם OmniRoute",
+  "walkthrough.description": "הוסיפו את המודלים של שער OmniRoute שלכם לבורר המודלים של Copilot Chat.",
+  "walkthrough.run.title": "הפעלת OmniRoute",
+  "walkthrough.run.description": "השער שהתוסף הזה מתקשר איתו הוא OmniRoute. התקינו אותו והשאירו אותו פועל. כברירת מחדל הוא עונה בכתובת http://localhost:20128.\n[התקנת OmniRoute](command:omnicopilot.installOmniRoute)\n[בדיקת חיבור](command:omnicopilot.checkConnection)",
+  "walkthrough.connect.title": "חיבור",
+  "walkthrough.connect.description": "פתחו את חלונית החיבור. אם OmniRoute פועל במחשב שלכם עם הגדרות ברירת המחדל, אין מה למלא. עבור שרת במקום אחר, הזינו את כתובת ה-URL שלו ואת מפתח ה-API, אם הוא מבקש כזה.\n[פתיחת חלונית החיבור](command:omnicopilot.manage)",
+  "walkthrough.pickModel.title": "בחרו את המודלים שלכם",
+  "walkthrough.pickModel.description": "פתחו את ניהול המודלים, בחרו את OmniRoute וסמנו את המודלים שתרצו לראות בבורר המודלים של הצ'אט.\n[ניהול מודלים](command:workbench.action.chat.manage)",
+  "walkthrough.utility.title": "שימוש ב-OmniRoute לכותרות, להודעות קומיט ולצ'אט המוטמע",
+  "walkthrough.utility.description": "כותרות צ'אט, הודעות קומיט וצ'אט מוטמע משתמשים בהגדרות המודל שלהם. כוונו אותם למודל של OmniRoute כדי שגם אלה ירוצו על השער שלכם.\n[פתח הגדרות](command:workbench.action.openSettings?%5B%22chat.utility%22%5D)"
 }

@@ -23,7 +23,6 @@
   "OmniRoute detected! Your models are ready — open the Copilot Chat model picker and choose any OmniRoute model.": "OmniRoute זוהה! המודלים שלכם מוכנים — פתחו את בורר המודלים של Copilot Chat ובחרו כל מודל של OmniRoute.",
   "OmniRoute is a free, open-source AI router: one endpoint, 340+ providers (90+ free), auto-fallback. Install it with npm and this extension lights up automatically.": "OmniRoute הוא נתב AI חינמי בקוד פתוח: נקודת קצה אחת, יותר מ-340 ספקים (יותר מ-90 חינמיים), מעבר אוטומטי לגיבוי. התקינו אותו עם npm וההרחבה הזו תופעל אוטומטית.",
   "OmniRoute is unreachable. Check that it is running (npx omniroute) and that omnicopilot.baseUrl points at it.": "OmniRoute אינו נגיש. בדקו שהוא פועל (npx omniroute) ושההגדרה omnicopilot.baseUrl מצביעה עליו.",
-  "OmniRoute model list refreshed.": "רשימת המודלים של OmniRoute רועננה.",
   "OmniRoute on GitHub": "OmniRoute ב-GitHub",
   "Extension settings": "הגדרות התוסף",
   "My usage": "השימוש שלי",
@@ -86,5 +85,19 @@
   "{0}% left": "נותרו {0}%",
   "{0} left": "נותרו {0}",
   "unlimited": "ללא הגבלה",
-  "Could not read the connection status.": "לא ניתן לקרוא את מצב החיבור."
+  "Could not read the connection status.": "לא ניתן לקרוא את מצב החיבור.",
+  "Continue": "המשך",
+  "This workspace's API key will be written to the configuration of {0}, which all your projects share.": "מפתח ה-API של סביבת העבודה הזו ייכתב להגדרות של הכלי {0}, המשותפות לכל הפרויקטים שלכם.",
+  "Models listed from {1}: {0}.": "המודלים שהוצגו מהשרת {1}: {0}.",
+  "API key for this workspace": "מפתח API לסביבת העבודה הזו",
+  "Free": "חינם",
+  "{0} in · {1} out per 1M": "קלט {0} · פלט {1} ל-1M",
+  "Use this key only in this workspace": "שימוש במפתח הזה רק בסביבת העבודה הזו",
+  "Using this workspace's key": "נעשה שימוש במפתח של סביבת העבודה הזו",
+  "Using your global key": "נעשה שימוש במפתח הגלובלי שלכם",
+  "Set API key": "הגדרת מפתח API",
+  "OmniRoute at {0} rejected the API key (HTTP {1}).": "שרת OmniRoute בכתובת {0} דחה את מפתח ה-API (HTTP {1}).",
+  "OmniRoute at {0} needs an API key (HTTP {1}).": "שרת OmniRoute בכתובת {0} דורש מפתח API (HTTP {1}).",
+  "The model's answer was cut off before the tool call was complete. Raise omnicopilot.maxOutputTokens or ask for smaller steps.": "תשובת המודל נקטעה לפני שקריאת הכלי הושלמה. הגדילו את ערך ההגדרה omnicopilot.maxOutputTokens או בקשו צעדים קטנים יותר.",
+  "The model sent a tool call with invalid arguments.": "המודל שלח קריאת כלי עם ארגומנטים לא תקינים."
 }

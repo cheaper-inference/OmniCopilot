@@ -28,5 +28,17 @@
   "cfg.defaultReasoningEffort.xhigh": "অতি উচ্চ — যেসব মডেলে নেই সেখানে কমিয়ে দেওয়া হয়",
   "cfg.cliPath": "OmniRoute CLI-এর পাথ, যা \"Configure Coding CLI\" কমান্ড ব্যবহার করে।",
   "cfg.exposeToAgentsWindow": "পরীক্ষামূলক: Copilot-এর Agents window-এর মডেল পিকারেও OmniRoute মডেল দেখায়। VS Code-এর chat.agentHost.byokModels.enabled সেটিং এবং agent host পুনরায় চালু করা প্রয়োজন; একটি প্রস্তাবিত VS Code API ব্যবহার করে যা পরিবর্তিত হতে পারে।",
-  "cfg.defaultReasoningEffort.max": "সর্বোচ্চ — শীর্ষ স্তর। যেসব মডেলে এটি নেই, OmniRoute সেখানে এটি কমিয়ে দেয়।"
+  "cfg.defaultReasoningEffort.max": "সর্বোচ্চ — শীর্ষ স্তর। যেসব মডেলে এটি নেই, OmniRoute সেখানে এটি কমিয়ে দেয়।",
+  "cfg.statusBarUsage": "সংযোগের অবস্থার পাশে API কী-এর দৈনিক সীমার কতটা বাকি আছে তা দেখান।",
+  "cfg.sendProjectName": "প্রতিটি চ্যাট অনুরোধের সাথে খোলা ওয়ার্কস্পেসের নাম OmniRoute সার্ভারে পাঠান, যাতে ব্যবহার প্রজেক্ট অনুযায়ী গ্রুপ করা যায়। ডিফল্টভাবে বন্ধ।",
+  "walkthrough.title": "OmniRoute দিয়ে শুরু করুন",
+  "walkthrough.description": "আপনার OmniRoute গেটওয়ের মডেলগুলি Copilot Chat মডেল পিকারে যোগ করুন।",
+  "walkthrough.run.title": "OmniRoute চালান",
+  "walkthrough.run.description": "OmniRoute হলো সেই গেটওয়ে যার সাথে এই এক্সটেনশন কথা বলে। এটি ইনস্টল করুন এবং চালু রেখে দিন। ডিফল্টভাবে এটি http://localhost:20128 ঠিকানায় সাড়া দেয়।\n[OmniRoute ইনস্টল করুন](command:omnicopilot.installOmniRoute)\n[সংযোগ পরীক্ষা করুন](command:omnicopilot.checkConnection)",
+  "walkthrough.connect.title": "সংযোগ করুন",
+  "walkthrough.connect.description": "সংযোগ প্যানেল খুলুন। OmniRoute যদি আপনার নিজের কম্পিউটারে ডিফল্ট সেটিংসে চলে, তাহলে কিছু পূরণ করার দরকার নেই। অন্য কোথাও থাকা সার্ভারের জন্য তার URL দিন, আর সার্ভার চাইলে API কী-ও দিন।\n[সংযোগ প্যানেল খুলুন](command:omnicopilot.manage)",
+  "walkthrough.pickModel.title": "আপনার মডেল বেছে নিন",
+  "walkthrough.pickModel.description": "\"মডেল পরিচালনা করুন\" খুলুন, OmniRoute বেছে নিন এবং চ্যাট মডেল পিকারে যে মডেলগুলি চান সেগুলিতে টিক দিন।\n[মডেল পরিচালনা করুন](command:workbench.action.chat.manage)",
+  "walkthrough.utility.title": "শিরোনাম, কমিট বার্তা এবং ইনলাইন চ্যাটের জন্য OmniRoute ব্যবহার করুন",
+  "walkthrough.utility.description": "চ্যাটের শিরোনাম, কমিট বার্তা এবং ইনলাইন চ্যাট নিজস্ব মডেল সেটিংস ব্যবহার করে। এগুলোকে একটি OmniRoute মডেলের দিকে নির্দেশ করুন, যাতে এগুলোও আপনার গেটওয়েতে চলে।\n[সেটিংস খুলুন](command:workbench.action.openSettings?%5B%22chat.utility%22%5D)"
 }

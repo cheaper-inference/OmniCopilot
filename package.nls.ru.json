@@ -28,5 +28,17 @@
   "cfg.defaultReasoningEffort.xhigh": "Очень высокий — понижается для моделей без поддержки",
   "cfg.cliPath": "Путь к CLI OmniRoute, используемый командой «Настроить CLI для написания кода».",
   "cfg.exposeToAgentsWindow": "Экспериментально: показывает модели OmniRoute также в выборе моделей окна Agents в Copilot. Требуется настройка VS Code chat.agentHost.byokModels.enabled и перезапуск agent host; использует предлагаемый API VS Code, который может измениться.",
-  "cfg.defaultReasoningEffort.max": "Максимальный — самый высокий уровень. OmniRoute понижает его для моделей, которые его не поддерживают."
+  "cfg.defaultReasoningEffort.max": "Максимальный — самый высокий уровень. OmniRoute понижает его для моделей, которые его не поддерживают.",
+  "cfg.statusBarUsage": "Показывать рядом с состоянием подключения, сколько осталось от дневного лимита ключа.",
+  "cfg.sendProjectName": "Отправлять в OmniRoute название открытой рабочей области с каждым запросом чата, чтобы использование можно было группировать по проектам. По умолчанию отключено.",
+  "walkthrough.title": "Начало работы с OmniRoute",
+  "walkthrough.description": "Добавьте модели вашего шлюза OmniRoute в средство выбора моделей Copilot Chat.",
+  "walkthrough.run.title": "Запустить OmniRoute",
+  "walkthrough.run.description": "OmniRoute — шлюз, с которым работает это расширение. Установите его и оставьте запущенным. По умолчанию он отвечает по адресу http://localhost:20128.\n[Установить OmniRoute](command:omnicopilot.installOmniRoute)\n[Проверить подключение](command:omnicopilot.checkConnection)",
+  "walkthrough.connect.title": "Подключиться",
+  "walkthrough.connect.description": "Откройте панель подключения. Если OmniRoute работает на этом компьютере с настройками по умолчанию, ничего заполнять не нужно. Для сервера в другом месте укажите его URL-адрес и ключ API, если сервер его запрашивает.\n[Открыть панель подключения](command:omnicopilot.manage)",
+  "walkthrough.pickModel.title": "Выбрать модели",
+  "walkthrough.pickModel.description": "Откройте «Управление моделями», выберите OmniRoute и отметьте модели, которые нужны в средстве выбора моделей чата.\n[Управление моделями](command:workbench.action.chat.manage)",
+  "walkthrough.utility.title": "Использовать OmniRoute для заголовков, сообщений коммитов и встроенного чата",
+  "walkthrough.utility.description": "Заголовки чатов, сообщения коммитов и встроенный чат используют собственные настройки модели. Укажите для них модель OmniRoute, чтобы они тоже работали через ваш шлюз.\n[Открыть настройки](command:workbench.action.openSettings?%5B%22chat.utility%22%5D)"
 }

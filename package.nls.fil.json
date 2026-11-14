@@ -28,5 +28,17 @@
   "cfg.defaultReasoningEffort.xhigh": "Napakataas — ibinababa sa mga modelong walang suporta",
   "cfg.cliPath": "Path patungo sa OmniRoute CLI, ginagamit ng command na \"I-configure ang Coding CLI\".",
   "cfg.exposeToAgentsWindow": "Eksperimental: ipinapakita rin ang mga OmniRoute na modelo sa model picker ng Agents window ng Copilot. Nangangailangan ng VS Code setting na chat.agentHost.byokModels.enabled at pag-restart ng agent host; gumagamit ng proposed VS Code API na maaaring magbago.",
-  "cfg.defaultReasoningEffort.max": "Pinakamataas — ang pinakatuktok na antas. Ibinababa ito ng OmniRoute para sa mga modelong walang ganitong antas."
+  "cfg.defaultReasoningEffort.max": "Pinakamataas — ang pinakatuktok na antas. Ibinababa ito ng OmniRoute para sa mga modelong walang ganitong antas.",
+  "cfg.statusBarUsage": "Ipakita sa tabi ng status ng koneksyon kung gaano pa ang natitira sa pang-araw-araw na limitasyon ng key.",
+  "cfg.sendProjectName": "Ipadala ang pangalan ng bukas na workspace sa OmniRoute sa bawat chat request, para mapagsama-sama ang paggamit ayon sa proyekto. Naka-off bilang default.",
+  "walkthrough.title": "Magsimula sa OmniRoute",
+  "walkthrough.description": "Ilagay ang mga model ng iyong OmniRoute gateway sa model picker ng Copilot Chat.",
+  "walkthrough.run.title": "Patakbuhin ang OmniRoute",
+  "walkthrough.run.description": "Ang OmniRoute ang gateway na kinakausap ng extension na ito. I-install ito at hayaan itong tumakbo. Bilang default, sumasagot ito sa http://localhost:20128.\n[I-install ang OmniRoute](command:omnicopilot.installOmniRoute)\n[Suriin ang Koneksyon](command:omnicopilot.checkConnection)",
+  "walkthrough.connect.title": "Kumonekta",
+  "walkthrough.connect.description": "Buksan ang connection panel. Kung tumatakbo ang OmniRoute sa makinang ito gamit ang mga default na setting, wala kang kailangang punan. Para sa server sa ibang lugar, ilagay ang URL nito at, kung hinihingi nito, isang API key.\n[Buksan ang connection panel](command:omnicopilot.manage)",
+  "walkthrough.pickModel.title": "Piliin ang iyong mga model",
+  "walkthrough.pickModel.description": "Buksan ang Manage Models, piliin ang OmniRoute at lagyan ng tsek ang mga model na gusto mo sa chat model picker.\n[Buksan ang Manage Models](command:workbench.action.chat.manage)",
+  "walkthrough.utility.title": "Gamitin ang OmniRoute para sa mga pamagat, commit message at inline chat",
+  "walkthrough.utility.description": "Ang mga pamagat ng chat, commit message at inline chat ay may sariling mga setting ng model. Ituro ang mga ito sa isang OmniRoute model para tumakbo rin ang mga iyon sa iyong gateway.\n[Buksan ang Settings](command:workbench.action.openSettings?%5B%22chat.utility%22%5D)"
 }

@@ -23,7 +23,6 @@
   "OmniRoute detected! Your models are ready — open the Copilot Chat model picker and choose any OmniRoute model.": "OmniRoute కనుగొనబడింది! మీ మోడల్స్ సిద్ధంగా ఉన్నాయి — Copilot Chat మోడల్ పికర్‌ను తెరిచి ఏదైనా OmniRoute మోడల్‌ను ఎంచుకోండి.",
   "OmniRoute is a free, open-source AI router: one endpoint, 340+ providers (90+ free), auto-fallback. Install it with npm and this extension lights up automatically.": "OmniRoute ఒక ఉచిత, ఓపెన్-సోర్స్ AI రూటర్: ఒకే ఎండ్‌పాయింట్, 340+ ప్రొవైడర్లు (90+ ఉచితం), ఆటో-ఫాల్‌బ్యాక్. npmతో ఇన్‌స్టాల్ చేస్తే ఈ ఎక్స్‌టెన్షన్ ఆటోమేటిక్‌గా యాక్టివ్ అవుతుంది.",
   "OmniRoute is unreachable. Check that it is running (npx omniroute) and that omnicopilot.baseUrl points at it.": "OmniRouteను చేరుకోలేం. అది రన్ అవుతోందో (npx omniroute), omnicopilot.baseUrl దాన్ని సూచిస్తోందో తనిఖీ చేయండి.",
-  "OmniRoute model list refreshed.": "OmniRoute మోడల్ జాబితా రిఫ్రెష్ చేయబడింది.",
   "OmniRoute on GitHub": "GitHubలో OmniRoute",
   "Extension settings": "ఎక్స్‌టెన్షన్ సెట్టింగ్‌లు",
   "My usage": "నా వినియోగం",
@@ -86,5 +85,19 @@
   "{0}% left": "{0}% మిగిలి ఉంది",
   "{0} left": "{0} మిగిలి ఉంది",
   "unlimited": "అపరిమితం",
-  "Could not read the connection status.": "కనెక్షన్ స్థితిని చదవడం సాధ్యం కాలేదు."
+  "Could not read the connection status.": "కనెక్షన్ స్థితిని చదవడం సాధ్యం కాలేదు.",
+  "Continue": "కొనసాగించండి",
+  "This workspace's API key will be written to the configuration of {0}, which all your projects share.": "ఈ వర్క్‌స్పేస్ యొక్క API కీ {0} సాధనం యొక్క కాన్ఫిగరేషన్‌లో రాయబడుతుంది, దీన్ని మీ అన్ని ప్రాజెక్ట్‌లు షేర్ చేస్తాయి.",
+  "Models listed from {1}: {0}.": "{1} సర్వర్ నుండి జాబితా చేసిన మోడల్స్: {0}.",
+  "API key for this workspace": "ఈ వర్క్‌స్పేస్ కోసం API కీ",
+  "Free": "ఉచితం",
+  "{0} in · {1} out per 1M": "{0} ఇన్‌పుట్ · {1} అవుట్‌పుట్ / 1M",
+  "Use this key only in this workspace": "ఈ కీని ఈ వర్క్‌స్పేస్‌లో మాత్రమే ఉపయోగించండి",
+  "Using this workspace's key": "ఈ వర్క్‌స్పేస్ కీ ఉపయోగంలో ఉంది",
+  "Using your global key": "మీ గ్లోబల్ కీ ఉపయోగంలో ఉంది",
+  "Set API key": "API కీని సెట్ చేయండి",
+  "OmniRoute at {0} rejected the API key (HTTP {1}).": "{0} చిరునామా వద్ద ఉన్న OmniRoute సర్వర్ API కీని తిరస్కరించింది (HTTP {1}).",
+  "OmniRoute at {0} needs an API key (HTTP {1}).": "{0} చిరునామా వద్ద ఉన్న OmniRoute సర్వర్‌కు API కీ అవసరం (HTTP {1}).",
+  "The model's answer was cut off before the tool call was complete. Raise omnicopilot.maxOutputTokens or ask for smaller steps.": "సాధన కాల్ పూర్తికాకముందే మోడల్ సమాధానం తెగిపోయింది. omnicopilot.maxOutputTokens సెట్టింగ్ విలువను పెంచండి లేదా చిన్న దశలను అడగండి.",
+  "The model sent a tool call with invalid arguments.": "మోడల్ చెల్లని ఆర్గ్యుమెంట్‌లతో సాధన కాల్‌ను పంపింది."
 }

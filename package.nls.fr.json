@@ -28,5 +28,17 @@
   "cfg.defaultReasoningEffort.xhigh": "Très élevé — abaissé pour les modèles qui ne le gèrent pas",
   "cfg.cliPath": "Chemin de la CLI OmniRoute, utilisé par la commande \"Configure Coding CLI\".",
   "cfg.exposeToAgentsWindow": "Expérimental : affiche aussi les modèles OmniRoute dans le sélecteur de modèles de la fenêtre Agents de Copilot. Nécessite le paramètre VS Code chat.agentHost.byokModels.enabled et un redémarrage de l'agent host ; utilise une API proposée de VS Code susceptible de changer.",
-  "cfg.defaultReasoningEffort.max": "Maximal — le niveau le plus haut. OmniRoute l'abaisse pour les modèles qui ne le proposent pas."
+  "cfg.defaultReasoningEffort.max": "Maximal — le niveau le plus haut. OmniRoute l'abaisse pour les modèles qui ne le proposent pas.",
+  "cfg.statusBarUsage": "Afficher la part restante de la limite quotidienne de la clé à côté de l'état de la connexion.",
+  "cfg.sendProjectName": "Envoyer le nom de l'espace de travail ouvert à OmniRoute avec chaque requête de chat, afin de pouvoir regrouper l'utilisation par projet. Désactivé par défaut.",
+  "walkthrough.title": "Prise en main d'OmniRoute",
+  "walkthrough.description": "Ajoutez les modèles de votre passerelle OmniRoute au sélecteur de modèles de Copilot Chat.",
+  "walkthrough.run.title": "Lancez OmniRoute",
+  "walkthrough.run.description": "OmniRoute est la passerelle avec laquelle cette extension communique. Installez-la et laissez-la en cours d'exécution. Par défaut, elle répond sur http://localhost:20128.\n[Installer OmniRoute](command:omnicopilot.installOmniRoute)\n[Vérifier la connexion](command:omnicopilot.checkConnection)",
+  "walkthrough.connect.title": "Se connecter",
+  "walkthrough.connect.description": "Ouvrez le panneau de connexion. Si OmniRoute s'exécute sur cette machine avec ses paramètres par défaut, il n'y a rien à renseigner. Pour un serveur situé ailleurs, saisissez son URL et, s'il en demande une, une clé API.\n[Ouvrir le panneau de connexion](command:omnicopilot.manage)",
+  "walkthrough.pickModel.title": "Choisissez vos modèles",
+  "walkthrough.pickModel.description": "Ouvrez \"Gérer les modèles\", choisissez OmniRoute et cochez les modèles que vous voulez dans le sélecteur de modèles du chat.\n[Gérer les modèles](command:workbench.action.chat.manage)",
+  "walkthrough.utility.title": "Utilisez OmniRoute pour les titres, les messages de commit et le chat dans l'éditeur",
+  "walkthrough.utility.description": "Les titres de chat, les messages de commit et le chat dans l'éditeur utilisent leurs propres paramètres de modèle. Faites-les pointer vers un modèle OmniRoute pour les exécuter aussi sur votre passerelle.\n[Ouvrir les paramètres](command:workbench.action.openSettings?%5B%22chat.utility%22%5D)"
 }

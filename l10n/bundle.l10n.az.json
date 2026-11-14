@@ -23,7 +23,6 @@
   "OmniRoute detected! Your models are ready — open the Copilot Chat model picker and choose any OmniRoute model.": "OmniRoute aşkarlandı! Modelləriniz hazırdır — Copilot Chat model seçicisini açın və istənilən OmniRoute modelini seçin.",
   "OmniRoute is a free, open-source AI router: one endpoint, 340+ providers (90+ free), auto-fallback. Install it with npm and this extension lights up automatically.": "OmniRoute pulsuz, açıq mənbəli süni intellekt marşrutlayıcısıdır: bir endpoint, 340+ provayder (90+ pulsuz), avtomatik fallback. Onu npm ilə quraşdırın və bu genişlənmə avtomatik aktivləşəcək.",
   "OmniRoute is unreachable. Check that it is running (npx omniroute) and that omnicopilot.baseUrl points at it.": "OmniRoute-a çatmaq mümkün deyil. Onun işlədiyini (npx omniroute) və omnicopilot.baseUrl-in ona yönəldiyini yoxlayın.",
-  "OmniRoute model list refreshed.": "OmniRoute model siyahısı yeniləndi.",
   "OmniRoute on GitHub": "OmniRoute GitHub-da",
   "Extension settings": "Uzantı parametrləri",
   "My usage": "İstifadəm",
@@ -86,5 +85,19 @@
   "{0}% left": "%{0} qalıb",
   "{0} left": "{0} qalıb",
   "unlimited": "limitsiz",
-  "Could not read the connection status.": "Bağlantı statusu oxunamadı."
+  "Could not read the connection status.": "Bağlantı statusu oxunamadı.",
+  "Continue": "Davam et",
+  "This workspace's API key will be written to the configuration of {0}, which all your projects share.": "Bu iş sahəsinin API açarı bütün layihələrinizin paylaşdığı {0} konfiqurasiyasına yazılacaq.",
+  "Models listed from {1}: {0}.": "{1} serverindən siyahıya alınan modellər: {0}.",
+  "API key for this workspace": "Bu iş sahəsi üçün API açarı",
+  "Free": "Pulsuz",
+  "{0} in · {1} out per 1M": "{0} giriş · {1} çıxış / 1 mln",
+  "Use this key only in this workspace": "Bu açarı yalnız bu iş sahəsində istifadə et",
+  "Using this workspace's key": "Bu iş sahəsinin açarı istifadə olunur",
+  "Using your global key": "Qlobal açarınız istifadə olunur",
+  "Set API key": "API açarını təyin et",
+  "OmniRoute at {0} rejected the API key (HTTP {1}).": "{0} ünvanındakı OmniRoute API açarını rədd etdi (HTTP {1}).",
+  "OmniRoute at {0} needs an API key (HTTP {1}).": "{0} ünvanındakı OmniRoute API açarı tələb edir (HTTP {1}).",
+  "The model's answer was cut off before the tool call was complete. Raise omnicopilot.maxOutputTokens or ask for smaller steps.": "Modelin cavabı alət çağırışı başa çatmamış kəsildi. omnicopilot.maxOutputTokens dəyərini artırın və ya daha kiçik addımlar istəyin.",
+  "The model sent a tool call with invalid arguments.": "Model yanlış arqumentlərlə alət çağırışı göndərdi."
 }

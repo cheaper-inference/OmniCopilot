@@ -23,7 +23,6 @@
   "OmniRoute detected! Your models are ready — open the Copilot Chat model picker and choose any OmniRoute model.": "OmniRoute مل گیا! آپ کے ماڈلز تیار ہیں — Copilot Chat کا ماڈل پکر کھولیں اور کوئی بھی OmniRoute ماڈل منتخب کریں۔",
   "OmniRoute is a free, open-source AI router: one endpoint, 340+ providers (90+ free), auto-fallback. Install it with npm and this extension lights up automatically.": "OmniRoute ایک مفت، اوپن سورس AI روٹر ہے: ایک اینڈ پوائنٹ، 340+ فراہم کنندگان (90+ مفت)، خودکار فال بیک۔ اسے npm سے انسٹال کریں اور یہ ایکسٹینشن خود بخود فعال ہو جائے گی۔",
   "OmniRoute is unreachable. Check that it is running (npx omniroute) and that omnicopilot.baseUrl points at it.": "OmniRoute تک رسائی ممکن نہیں۔ چیک کریں کہ یہ چل رہا ہے (npx omniroute) اور omnicopilot.baseUrl اس کی طرف اشارہ کرتا ہے۔",
-  "OmniRoute model list refreshed.": "OmniRoute ماڈلز کی فہرست ریفریش ہو گئی۔",
   "OmniRoute on GitHub": "GitHub پر OmniRoute",
   "Extension settings": "ایکسٹینشن کی ترتیبات",
   "My usage": "میرا استعمال",
@@ -86,5 +85,19 @@
   "{0}% left": "{0}% باقی",
   "{0} left": "{0} باقی",
   "unlimited": "لامحدود",
-  "Could not read the connection status.": "کنکشن کی حالت پڑھی نہیں جا سکی۔"
+  "Could not read the connection status.": "کنکشن کی حالت پڑھی نہیں جا سکی۔",
+  "Continue": "جاری رکھیں",
+  "This workspace's API key will be written to the configuration of {0}, which all your projects share.": "اس ورک اسپیس کی API کلید ٹول {0} کی کنفیگریشن میں لکھی جائے گی، جو آپ کے تمام پروجیکٹس میں مشترک ہے۔",
+  "Models listed from {1}: {0}.": "سرور {1} سے درج شدہ ماڈلز: {0}۔",
+  "API key for this workspace": "اس ورک اسپیس کے لیے API کلید",
+  "Free": "مفت",
+  "{0} in · {1} out per 1M": "ان پٹ {0} · آؤٹ پٹ {1} فی 1M",
+  "Use this key only in this workspace": "یہ کلید صرف اس ورک اسپیس میں استعمال کریں",
+  "Using this workspace's key": "اس ورک اسپیس کی کلید استعمال ہو رہی ہے",
+  "Using your global key": "آپ کی گلوبل کلید استعمال ہو رہی ہے",
+  "Set API key": "API کلید سیٹ کریں",
+  "OmniRoute at {0} rejected the API key (HTTP {1}).": "ایڈریس {0} پر موجود OmniRoute سرور نے API کلید مسترد کر دی (HTTP {1})۔",
+  "OmniRoute at {0} needs an API key (HTTP {1}).": "ایڈریس {0} پر موجود OmniRoute سرور کو API کلید درکار ہے (HTTP {1})۔",
+  "The model's answer was cut off before the tool call was complete. Raise omnicopilot.maxOutputTokens or ask for smaller steps.": "ٹول کال مکمل ہونے سے پہلے ماڈل کا جواب کٹ گیا۔ سیٹنگ omnicopilot.maxOutputTokens کی قدر بڑھائیں یا چھوٹے مراحل مانگیں۔",
+  "The model sent a tool call with invalid arguments.": "ماڈل نے غلط آرگیومنٹس کے ساتھ ٹول کال بھیجی۔"
 }
