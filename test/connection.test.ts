@@ -13,6 +13,8 @@ import {
   storeApiKey,
   warnIfKeyWithheld,
   createWithheldKeyWatcher,
+  watchKeySecrets,
+  SECRET_CHANGE_SETTLE_MS,
   isLoopbackOrigin,
   originOf,
   ignoredWorkspaceUrl,
@@ -1232,5 +1234,129 @@ describe("a key is never paired with a list read at another moment", () => {
     const context = fakeContext();
     await storeApiKey(context, "sk-1");
     expect(await resolveConnection(context)).toMatchObject({ apiKey: "sk-1", keyWithheld: false });
+  });
+});
+
+describe("watchKeySecrets", () => {
+  const WS = "file:///work/acme";
+  const OTHER_WS = "file:///work/other";
+
+  beforeEach(() => vi.useFakeTimers({ toFake: ["setTimeout", "clearTimeout"] }));
+  afterEach(() => {
+    vi.useRealTimers();
+    vi.restoreAllMocks();
+    setMockWorkspace();
+  });
+
+  /** A context whose SecretStorage can announce a change, as VS Code does for another window's write. */
+  function watched() {
+    const listeners = new Set<(event: { key: string }) => void>();
+    const context = {
+      secrets: {
+        get: async () => undefined,
+        store: async () => undefined,
+        delete: async () => undefined,
+        onDidChange: (listener: (event: { key: string }) => void) => {
+          listeners.add(listener);
+          return { dispose: () => void listeners.delete(listener) };
+        },
+      },
+    } as unknown as vscode.ExtensionContext;
+    return { context, listenerCount: () => listeners.size, change: (key: string) => listeners.forEach((l) => l({ key })) };
+  }
+
+  it("calls back once, 150 ms after the last change of a burst (a key is stored in three writes)", async () => {
+    const { context, change } = watched();
+    const onChange = vi.fn(async () => undefined);
+    const watcher = watchKeySecrets(context, onChange, () => undefined);
+
+    change(SECRET_API_KEY_ORIGINS);
+    await vi.advanceTimersByTimeAsync(100);
+    change(SECRET_API_KEY);
+    await vi.advanceTimersByTimeAsync(100);
+    change(SECRET_API_KEY_ORIGINS);
+    await vi.advanceTimersByTimeAsync(SECRET_CHANGE_SETTLE_MS - 1);
+    expect(onChange).not.toHaveBeenCalled();
+    await vi.advanceTimersByTimeAsync(1);
+
+    expect(SECRET_CHANGE_SETTLE_MS).toBe(150);
+    expect(onChange).toHaveBeenCalledTimes(1);
+    watcher.dispose();
+  });
+
+  it("reacts to the global pair and to the pair of the open workspace, and to nothing else", async () => {
+    setMockWorkspace({ folders: [WS] });
+    const { context, change } = watched();
+    const onChange = vi.fn(async () => undefined);
+    const watcher = watchKeySecrets(context, onChange, () => undefined);
+    const settle = () => vi.advanceTimersByTimeAsync(SECRET_CHANGE_SETTLE_MS);
+
+    for (const name of [
+      SECRET_API_KEY,
+      SECRET_API_KEY_ORIGINS,
+      workspaceSecretName(WS),
+      workspaceOriginsSecretName(WS),
+    ]) {
+      change(name);
+      await settle();
+    }
+    expect(onChange).toHaveBeenCalledTimes(4);
+
+    onChange.mockClear();
+    for (const name of [
+      "some.other.extension.token",
+      "omnicopilot.somethingElse",
+      workspaceSecretName(OTHER_WS),
+      workspaceOriginsSecretName(OTHER_WS),
+    ]) {
+      change(name);
+      await settle();
+    }
+    expect(onChange).not.toHaveBeenCalled();
+    watcher.dispose();
+  });
+
+  it("ignores a workspace pair when no workspace is open", async () => {
+    const { context, change } = watched();
+    const onChange = vi.fn(async () => undefined);
+    const watcher = watchKeySecrets(context, onChange, () => undefined);
+
+    change(workspaceSecretName(WS));
+    await vi.advanceTimersByTimeAsync(SECRET_CHANGE_SETTLE_MS);
+
+    expect(onChange).not.toHaveBeenCalled();
+    watcher.dispose();
+  });
+
+  it("stops listening and drops a pending call when disposed", async () => {
+    const { context, change, listenerCount } = watched();
+    const onChange = vi.fn(async () => undefined);
+    const watcher = watchKeySecrets(context, onChange, () => undefined);
+    expect(listenerCount()).toBe(1);
+
+    change(SECRET_API_KEY);
+    watcher.dispose();
+    await vi.advanceTimersByTimeAsync(SECRET_CHANGE_SETTLE_MS * 2);
+
+    expect(listenerCount()).toBe(0);
+    expect(onChange).not.toHaveBeenCalled();
+  });
+
+  it("reports a failed refresh instead of leaving a rejection unhandled", async () => {
+    const { context, change } = watched();
+    const onError = vi.fn();
+    const watcher = watchKeySecrets(
+      context,
+      async () => {
+        throw new Error("refresh failed");
+      },
+      onError
+    );
+
+    change(SECRET_API_KEY);
+    await vi.advanceTimersByTimeAsync(SECRET_CHANGE_SETTLE_MS);
+
+    expect(onError).toHaveBeenCalledWith(expect.objectContaining({ message: "refresh failed" }));
+    watcher.dispose();
   });
 });

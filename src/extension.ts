@@ -8,6 +8,7 @@ import {
   resolveConnection,
   showIgnoredWorkspaceUrlNotice,
   createWithheldKeyWatcher,
+  watchKeySecrets,
   displayUrl,
   keyWithheldMessage,
   plainNotificationText,
@@ -75,16 +76,27 @@ export function activate(context: vscode.ExtensionContext): void {
 
   registerCommands(context, log);
 
+  // What a key that is approved, replaced or cleared changes: the status bar (and
+  // its usage number, through its restart), the picker's list and the panel.
+  const refreshAfterKeyChange = async () => {
+    statusBar?.restart();
+    await provider?.refresh();
+    await panel?.refreshStatus();
+  };
   const withheldKeyWatcher = createWithheldKeyWatcher(
     context,
-    async () => {
-      statusBar?.restart();
-      await provider?.refresh();
-      await panel?.refreshStatus();
-    },
+    refreshAfterKeyChange,
     (err) => log.warn(`Withheld-key check failed: ${String(err)}`)
   );
   context.subscriptions.push(withheldKeyWatcher);
+
+  // A key stored, replaced or cleared in another window of this machine arrives here.
+  context.subscriptions.push(
+    watchKeySecrets(context, async () => {
+      log.info("API key changed — refreshing models and status");
+      await refreshAfterKeyChange();
+    }, (err) => log.warn(`Refresh after an API key change failed: ${String(err)}`))
+  );
 
   context.subscriptions.push(
     vscode.workspace.onDidChangeConfiguration((e) => {

@@ -1,9 +1,9 @@
 import { afterEach, describe, expect, it, vi } from "vitest";
 import * as vscode from "vscode";
-import { ConfigurationTarget, configUpdates, setMockConfig, setMockInspect } from "./vscode.mock";
+import { ConfigurationTarget, configUpdates, setMockConfig, setMockInspect, setMockWorkspace } from "./vscode.mock";
 import { OmniRouteClient } from "../src/client";
 import type { ProbeResult } from "../src/diagnostics";
-import { storeApiKey } from "../src/connection";
+import { resolveConnection, storeApiKey } from "../src/connection";
 import { OmniPanelProvider } from "../src/panel";
 
 function fakeContext() {
@@ -425,4 +425,100 @@ describe("panel usage section: which state it shows", () => {
     ]);
     expect(posted[0]?.usage).toMatchObject({ kind: "disabled" });
   });
+});
+
+describe("panel Save of a new key together with a new server URL", () => {
+  afterEach(() => vi.restoreAllMocks());
+
+  const OLD = "https://old.example";
+  const NEW = "https://new.example";
+
+  /** Every observable step of the save, each followed by what `resolveConnection`
+   * would hand a request made at that very moment. */
+  async function recordedSave(opts: { workspaceKey: boolean }) {
+    vi.spyOn(OmniRouteClient.prototype, "probe").mockResolvedValue(offline);
+    setMockConfig({ baseUrl: OLD });
+    setMockWorkspace({ folders: ["file:///work/acme"] });
+    const secrets = new Map<string, string>();
+    const local = new Map<string, unknown>();
+    const steps: Array<{ step: string; origin: string; apiKey: string | undefined; approved: string[] }> = [];
+    const context = {
+      secrets: {
+        get: async (key: string) => secrets.get(key),
+        store: async (key: string, value: string) => {
+          secrets.set(key, value);
+          await snapshot(`store ${key.replace(/\.ws\.[0-9a-f]+$/, ".ws")}`);
+        },
+        delete: async (key: string) => {
+          secrets.delete(key);
+          await snapshot(`delete ${key}`);
+        },
+      },
+      globalState: { get: (_key: string, fallback?: unknown) => fallback, update: async () => undefined },
+      workspaceState: {
+        get: <T>(key: string, fallback?: T) => (local.has(key) ? (local.get(key) as T) : fallback),
+        update: async (key: string, value: unknown) => void local.set(key, value),
+      },
+    } as unknown as vscode.ExtensionContext;
+    async function snapshot(step: string) {
+      const connection = await resolveConnection(context);
+      steps.push({
+        step,
+        origin: connection.origin,
+        apiKey: connection.apiKey,
+        approved: connection.approvedOrigins,
+      });
+    }
+    const realGetConfiguration = vscode.workspace.getConfiguration.bind(vscode.workspace);
+    vi.spyOn(vscode.workspace, "getConfiguration").mockImplementation((section?: string) => {
+      const configuration = realGetConfiguration(section);
+      return {
+        ...configuration,
+        inspect: configuration.inspect,
+        update: async (key: string, value: unknown, target?: unknown) => {
+          await configuration.update(key, value, target as never);
+          await snapshot(`setting ${key}`);
+        },
+      } as never;
+    });
+
+    // The state before the save: an old key, approved for the old server only.
+    await storeApiKey(context, "sk-old", OLD, opts.workspaceKey ? "workspace" : "global");
+    steps.length = 0;
+
+    const log = { info: vi.fn(), warn: vi.fn(), error: vi.fn(), debug: vi.fn() };
+    const panel = new OmniPanelProvider(context, log as unknown as vscode.LogOutputChannel, async () => {
+      await snapshot("refresh requested");
+    });
+    await (panel as unknown as { handleMessage(m: Record<string, unknown>): Promise<void> }).handleMessage({
+      type: "save",
+      url: NEW,
+      apiKey: "sk-new",
+      useWorkspaceKey: opts.workspaceKey,
+    });
+    return steps;
+  }
+
+  it.each([[false], [true]])(
+    "never lets a key reach the wrong server at any step (workspace key: %s)",
+    async (workspaceKey) => {
+      const steps = await recordedSave({ workspaceKey });
+
+      // The recording has the writes of the save in it (a failing test names the missing one).
+      expect(steps.map((entry) => entry.step.split(" ")[0])).toEqual(expect.arrayContaining(["store", "setting", "refresh"]));
+      for (const entry of steps) {
+        // (a) the new key is never sent to, or approved for, the old server
+        if (entry.apiKey === "sk-new") expect(entry.origin, entry.step).toBe(NEW);
+        // (b) the old key is never sent to the new server
+        if (entry.apiKey === "sk-old") expect(entry.origin, entry.step).toBe(OLD);
+        // (c) a refresh that happens against the new server carries the new key
+        if (entry.origin === NEW) expect(entry.apiKey, entry.step).toBe("sk-new");
+        if (entry.step === "refresh requested") expect(entry.apiKey).toBe("sk-new");
+        // no step lists the new server as approved next to the old one, or the reverse
+        expect(entry.approved.filter((origin) => origin === OLD) .length > 0 && entry.approved.includes(NEW), entry.step).toBe(false);
+      }
+      const last = steps.at(-1)!;
+      expect(last).toMatchObject({ origin: NEW, apiKey: "sk-new", approved: [NEW] });
+    }
+  );
 });
