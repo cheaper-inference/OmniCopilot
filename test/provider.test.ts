@@ -364,6 +364,25 @@ describe("provider cut-off answers", () => {
     expect(toolCallParts(ctx.reported)).toHaveLength(0);
   });
 
+  it.each(["null", "[1]", "5", '"x"', "true"])(
+    "fails when the arguments are valid JSON but not an object (%s)",
+    async (args) => {
+      fetchMock.mockResolvedValue(sseResponse([toolCallChunk(args), finishChunk("tool_calls")]));
+      const ctx = makeProvider();
+      await expect(ask(ctx)).rejects.toThrow(INVALID);
+      expect(toolCallParts(ctx.reported)).toHaveLength(0);
+    }
+  );
+
+  it("treats whitespace-only arguments as a call without parameters", async () => {
+    fetchMock.mockResolvedValue(sseResponse([toolCallChunk("  \n "), finishChunk("tool_calls")]));
+    const ctx = makeProvider();
+    await ask(ctx);
+    const calls = toolCallParts(ctx.reported) as vscode.LanguageModelToolCallPart[];
+    expect(calls).toHaveLength(1);
+    expect(calls[0].input).toEqual({});
+  });
+
   it("treats empty arguments as a call without parameters", async () => {
     fetchMock.mockResolvedValue(sseResponse([toolCallChunk(""), finishChunk("tool_calls")]));
     const ctx = makeProvider();

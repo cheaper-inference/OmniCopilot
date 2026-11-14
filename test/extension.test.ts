@@ -331,6 +331,36 @@ describe("OmniRoute: Refresh models", () => {
     ext.dispose();
   });
 
+  const WITHHELD = {
+    [SECRET_API_KEY]: "sk-1",
+    [SECRET_API_KEY_ORIGINS]: JSON.stringify(["http://elsewhere.test"]),
+  };
+  const COULD_NOT_REACH = "Could not reach OmniRoute at http://localhost:20128. Is it running?";
+
+  it("shows only the could-not-reach message when the key is withheld and the server fails with a 500", async () => {
+    stubServer({ listingStatus: 500 });
+    setMockConfig({ baseUrl: "http://localhost:20128" });
+    const warn = vi.spyOn(vscode.window, "showWarningMessage");
+    const ext = activated(WITHHELD);
+
+    await ext.run("omnicopilot.refreshModels");
+
+    expect(texts(warn)).toEqual([COULD_NOT_REACH]);
+    ext.dispose();
+  });
+
+  it("shows only the could-not-reach message when the key is withheld and the server is unreachable", async () => {
+    stubUnreachable();
+    setMockConfig({ baseUrl: "http://localhost:20128" });
+    const warn = vi.spyOn(vscode.window, "showWarningMessage");
+    const ext = activated(WITHHELD);
+
+    await ext.run("omnicopilot.refreshModels");
+
+    expect(texts(warn)).toEqual([COULD_NOT_REACH]);
+    ext.dispose();
+  });
+
   it("shows the could-not-reach message for an unreachable server, not a success", async () => {
     stubUnreachable();
     setMockConfig({ baseUrl: "http://localhost:20128" });
@@ -390,6 +420,23 @@ describe("OmniRoute: Check connection after a real listing", () => {
     await ext.run("omnicopilot.checkConnection");
 
     expect(texts(warn)).toEqual(["OmniRoute at http://localhost:20128 needs an API key (HTTP 401)."]);
+    expect(texts(info).filter((text) => text.startsWith("Connected"))).toEqual([]);
+    ext.dispose();
+  });
+
+  it("shows only the could-not-reach message when the key is withheld and the listing fails with a 500", async () => {
+    stubServer({ listingStatus: 500 });
+    setMockConfig({ baseUrl: "http://localhost:20128" });
+    const info = vi.spyOn(vscode.window, "showInformationMessage");
+    const warn = vi.spyOn(vscode.window, "showWarningMessage");
+    const ext = activated({
+      [SECRET_API_KEY]: "sk-1",
+      [SECRET_API_KEY_ORIGINS]: JSON.stringify(["http://elsewhere.test"]),
+    });
+
+    await ext.run("omnicopilot.checkConnection");
+
+    expect(texts(warn)).toEqual(["Could not reach OmniRoute at http://localhost:20128. Is it running?"]);
     expect(texts(info).filter((text) => text.startsWith("Connected"))).toEqual([]);
     ext.dispose();
   });
