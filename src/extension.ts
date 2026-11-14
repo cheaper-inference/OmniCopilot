@@ -291,7 +291,11 @@ async function setApiKey(
     await clearApiKey(context, scope);
     log.info("API key cleared");
   }
+  // The same refresh a configuration change does, so the status bar (and its usage
+  // number) follows the key that was just stored or cleared.
+  statusBar?.restart();
   if (!optionalFlow) await provider?.refresh();
+  void panel?.refreshStatus();
 }
 
 /** One-time welcome: point users at the model picker or at installing OmniRoute. */

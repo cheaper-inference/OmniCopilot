@@ -1,3 +1,4 @@
+import { createHash } from "node:crypto";
 import * as vscode from "vscode";
 import { OmniRouteClient, serverRootUrl } from "./client";
 import { describeProbeFailure, keyWithheldMessage, type Connection } from "./connection";
@@ -129,6 +130,18 @@ export function nextUsageSample(
   }
 }
 
+/**
+ * What a usage reading was read for: the server, which stored key is in effect
+ * and a SHA-256 of the key itself (the key is never kept). Held in memory only,
+ * never logged. Two connections with the same fingerprint get the same numbers.
+ */
+export function connectionFingerprint(connection: Connection): string {
+  const keyHash = createHash("sha256")
+    .update(connection.apiKey ?? "")
+    .digest("hex");
+  return `${connection.origin}|${connection.keyScope}|${keyHash}`;
+}
+
 /** Status-bar "dot": green when the OmniRoute server answers the HEAD
  * /v1/models probe, red when it does not. Click → quick actions menu. */
 export class ConnectionStatusBar implements vscode.Disposable {
@@ -146,9 +159,13 @@ export class ConnectionStatusBar implements vscode.Disposable {
   /** The last reading of the key's daily limit, if one is still worth showing. */
   private usageSample: UsageSample | undefined;
   private lastUsageAttemptAt: number | undefined;
-  private usageInFlight = false;
-  /** Bumped by `restart`, so a reading that began before it is not applied after it. */
+  /** Generation of the read now out, if any: a read of an older generation never blocks. */
+  private usageInFlightGeneration: number | undefined;
+  /** Bumped when the key, the server or the setting changed, so a reading that began
+   * before is neither applied nor counted after it. */
   private usageGeneration = 0;
+  /** Fingerprint of the connection the sample (and the floor) belong to. */
+  private usageFingerprint: string | undefined;
 
   constructor(
     private readonly getClient: () => Promise<OmniRouteClient>,
@@ -188,6 +205,8 @@ export class ConnectionStatusBar implements vscode.Disposable {
     const client = await this.getClient();
     this.root = serverRootUrl(client.baseUrl);
     const connection = await this.getConnection?.();
+    // Before anything is drawn: a number read for another key or server goes at once.
+    if (connection) this.adoptUsageConnection(connection);
     this.keyNote = connection ? keyWithheldMessage(connection) : undefined;
     this.keyWithheld = connection?.keyWithheld ?? false;
     const result: ProbeResult = await client.probe(PROBE_TIMEOUT_MS);
@@ -195,7 +214,7 @@ export class ConnectionStatusBar implements vscode.Disposable {
       ? undefined
       : describeProbeFailure(client.baseUrl, result, PROBE_TIMEOUT_MS).summary;
     this.setStatus(result.ok ? "online" : "offline");
-    if (result.ok) this.refreshUsageIfDue();
+    if (result.ok) this.refreshUsageIfDue(connection);
     const pollOk = result.ok && result.status >= 200 && result.status < 300;
     const previousPollOk = this.lastPollOk;
     this.lastPollOk = pollOk;
@@ -205,12 +224,30 @@ export class ConnectionStatusBar implements vscode.Disposable {
 
   restart(): void {
     // A changed key, server or setting makes the last reading worthless.
-    this.usageGeneration++;
-    this.usageSample = undefined;
-    this.lastUsageAttemptAt = undefined;
+    this.dropUsage();
     this.applyVisibility();
     this.scheduleLoop();
     this.pollInBackground();
+    this.render();
+  }
+
+  /** Forget the number and the floor, and make any read still out harmless. */
+  private dropUsage(): void {
+    this.usageGeneration++;
+    this.usageSample = undefined;
+    this.lastUsageAttemptAt = undefined;
+    this.usageFingerprint = undefined;
+  }
+
+  /** Tie the sample to the connection in effect: when another key or server is in
+   * effect, the sample goes and the next read is not held back by the floor.
+   * Returns whether it dropped something. */
+  private adoptUsageConnection(connection: Connection): boolean {
+    const fingerprint = connectionFingerprint(connection);
+    const changed = this.usageFingerprint !== undefined && this.usageFingerprint !== fingerprint;
+    if (changed) this.dropUsage();
+    this.usageFingerprint = fingerprint;
+    return changed;
   }
 
   private applyVisibility(): void {
@@ -237,52 +274,59 @@ export class ConnectionStatusBar implements vscode.Disposable {
   }
 
   /** Read the key's usage when the setting is on, a key is in effect and the minimum
-   * interval has passed. Nothing waits for it; the status bar redraws when it lands. */
-  private refreshUsageIfDue(): void {
-    if (this.disposed || this.usageInFlight || !this.fetchPersonalUsage || !this.getConnection) return;
+   * interval has passed. Nothing waits for it; the status bar redraws when it lands.
+   * `known` is the connection a poll just resolved; without it the connection is resolved here. */
+  private refreshUsageIfDue(known?: Connection): void {
+    if (this.disposed || !this.fetchPersonalUsage || !this.getConnection) return;
     if (!this.usageEnabled()) {
       // Off: forget the number, so turning it on again reads at once.
-      this.usageSample = undefined;
-      this.lastUsageAttemptAt = undefined;
+      if (this.usageSample || this.lastUsageAttemptAt !== undefined) this.dropUsage();
       return;
     }
+    const generation = this.usageGeneration;
+    void this.readUsage(known, generation).catch((err: unknown) =>
+      this.log.warn(`Usage refresh failed: ${String(err)}`)
+    );
+  }
+
+  private async readUsage(known: Connection | undefined, generation: number): Promise<void> {
+    const connection = known ?? (await this.getConnection!());
+    // Anything that changed while the connection was being resolved wins over this read.
+    if (this.disposed || generation !== this.usageGeneration) return;
+    if (this.adoptUsageConnection(connection)) this.render();
+    const current = this.usageGeneration;
+    if (this.usageInFlightGeneration === current) return;
     const now = Date.now();
     if (!shouldRefreshUsage({ now, lastAttemptAt: this.lastUsageAttemptAt, minIntervalMs: USAGE_MIN_INTERVAL_MS })) {
       return;
     }
-    this.usageInFlight = true;
-    const generation = this.usageGeneration;
-    void this.readUsage(now, generation)
-      .catch((err: unknown) => this.log.warn(`Usage refresh failed: ${String(err)}`))
-      .finally(() => {
-        this.usageInFlight = false;
-      });
-  }
-
-  private async readUsage(startedAt: number, generation: number): Promise<void> {
-    const connection = await this.getConnection!();
-    let reading: UsageReading;
-    if (!connection.apiKey || connection.keyWithheld) {
-      // No key in effect: nothing to ask, and nothing to wait out when one is stored.
-      reading = { kind: "none" };
-    } else {
-      this.lastUsageAttemptAt = startedAt;
-      try {
-        const personal = await this.fetchPersonalUsage!(connection);
-        const percentLeft = personal ? exactPercentLeft(personal.dailySpentUsd, personal.dailyLimitUsd) : null;
-        const line = personal ? dailyUsageLine(personal, vscode.l10n.t) : null;
-        reading =
-          personal && percentLeft !== null && line !== null
-            ? { kind: "read", percentLeft, line }
-            : { kind: "none" };
-      } catch (err) {
-        this.log.debug(`Usage refresh failed: ${String(err)}`);
-        reading = { kind: "failed" };
+    this.usageInFlightGeneration = current;
+    try {
+      let reading: UsageReading;
+      if (!connection.apiKey || connection.keyWithheld) {
+        // No key in effect: nothing to ask, and no floor to wait out once one is stored.
+        reading = { kind: "none" };
+      } else {
+        this.lastUsageAttemptAt = now;
+        try {
+          const personal = await this.fetchPersonalUsage!(connection);
+          const percentLeft = personal ? exactPercentLeft(personal.dailySpentUsd, personal.dailyLimitUsd) : null;
+          const line = personal ? dailyUsageLine(personal, vscode.l10n.t) : null;
+          reading =
+            personal && percentLeft !== null && line !== null
+              ? { kind: "read", percentLeft, line }
+              : { kind: "none" };
+        } catch (err) {
+          this.log.debug(`Usage refresh failed: ${String(err)}`);
+          reading = { kind: "failed" };
+        }
       }
+      if (this.disposed || current !== this.usageGeneration) return;
+      this.usageSample = nextUsageSample(this.usageSample, reading);
+      this.render();
+    } finally {
+      if (this.usageInFlightGeneration === current) this.usageInFlightGeneration = undefined;
     }
-    if (this.disposed || generation !== this.usageGeneration) return;
-    this.usageSample = nextUsageSample(this.usageSample, reading);
-    this.render();
   }
 
   private setStatus(status: "online" | "offline"): void {

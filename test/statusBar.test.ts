@@ -9,6 +9,7 @@ import type { UsageLimitView } from "../src/usage";
 import {
   ConnectionStatusBar,
   applyStatus,
+  connectionFingerprint,
   nextUsageSample,
   shouldRefreshModels,
   shouldRefreshUsage,
@@ -394,5 +395,183 @@ describe("ConnectionStatusBar daily quota", () => {
     statusBar.restart();
     await vi.waitFor(() => expect(fetchPersonal).toHaveBeenCalledTimes(2));
     statusBar.dispose();
+  });
+
+  describe("the number belongs to the key and the server it was read for", () => {
+    const flush = async () => {
+      for (let i = 0; i < 5; i++) await Promise.resolve();
+    };
+
+    it("drops the number at once when another key is stored, and reads again without waiting", async () => {
+      const pending: Array<(view: UsageLimitView | null) => void> = [];
+      let calls = 0;
+      const { statusBar, fetchPersonal, item, connection } = bar({
+        fetchPersonal: () =>
+          ++calls === 1
+            ? Promise.resolve(personal(5))
+            : new Promise<UsageLimitView | null>((resolve) => void pending.push(resolve)),
+      });
+      await statusBar.checkNow();
+      await vi.waitFor(() => expect(item().text).toContain("76%"));
+
+      connection.apiKey = "sk-other"; // same server, another key; no restart(), 1 s later
+      now += 1000;
+      await statusBar.checkNow();
+
+      expect(item().text).toBe("$(circle-filled) OmniRoute");
+      expect(item().tooltip).not.toContain("Daily");
+      await vi.waitFor(() => expect(fetchPersonal).toHaveBeenCalledTimes(2));
+      pending[0]?.(personal(10, 2));
+      await vi.waitFor(() => expect(item().text).toContain("80%"));
+      statusBar.dispose();
+    });
+
+    it("drops the number when the key is cleared", async () => {
+      const { statusBar, fetchPersonal, item, connection } = bar({});
+      await statusBar.checkNow();
+      await vi.waitFor(() => expect(item().text).toContain("76%"));
+
+      connection.apiKey = undefined;
+      connection.hasStoredKey = false;
+      connection.keyScope = "none";
+      await statusBar.checkNow();
+
+      expect(item().text).toBe("$(circle-filled) OmniRoute");
+      await flush();
+      expect(fetchPersonal).toHaveBeenCalledTimes(1);
+      statusBar.dispose();
+    });
+
+    /** First read answers at once; later reads stay out until the test lets them go. */
+    const firstThenHeld = () => {
+      let calls = 0;
+      return () =>
+        ++calls === 1
+          ? Promise.resolve(personal(5))
+          : new Promise<UsageLimitView | null>(() => undefined);
+    };
+
+    it("drops the number when the key scope changes under the same key", async () => {
+      const { statusBar, item, connection } = bar({ fetchPersonal: firstThenHeld() });
+      await statusBar.checkNow();
+      await vi.waitFor(() => expect(item().text).toContain("76%"));
+      connection.keyScope = "workspace";
+      await statusBar.checkNow();
+      expect(item().text).toBe("$(circle-filled) OmniRoute");
+      statusBar.dispose();
+    });
+
+    it("drops the number when the server changes", async () => {
+      const { statusBar, fetchPersonal, item, connection } = bar({ fetchPersonal: firstThenHeld() });
+      await statusBar.checkNow();
+      await vi.waitFor(() => expect(item().text).toContain("76%"));
+
+      connection.origin = "http://other.test";
+      connection.baseUrl = "http://other.test/v1";
+      await statusBar.checkNow();
+
+      expect(item().text).toBe("$(circle-filled) OmniRoute");
+      await vi.waitFor(() => expect(fetchPersonal).toHaveBeenCalledTimes(2));
+      statusBar.dispose();
+    });
+
+    it("keeps the number while the connection stays the same", async () => {
+      const { statusBar, fetchPersonal, item } = bar({});
+      await statusBar.checkNow();
+      await vi.waitFor(() => expect(item().text).toContain("76%"));
+      await statusBar.checkNow();
+      await flush();
+      expect(item().text).toContain("76%");
+      expect(fetchPersonal).toHaveBeenCalledTimes(1);
+      statusBar.dispose();
+    });
+
+    it("ignores a read that finishes after restart()", async () => {
+      const pending: Array<(view: UsageLimitView | null) => void> = [];
+      let calls = 0;
+      const { statusBar, fetchPersonal, item } = bar({
+        fetchPersonal: () =>
+          ++calls === 1
+            ? new Promise<UsageLimitView | null>((resolve) => void pending.push(resolve))
+            : Promise.resolve(null),
+      });
+      await statusBar.checkNow();
+      await vi.waitFor(() => expect(fetchPersonal).toHaveBeenCalledTimes(1));
+
+      statusBar.restart(); // a changed key or setting, while the first read is still out
+      await vi.waitFor(() => expect(fetchPersonal).toHaveBeenCalledTimes(2)); // not blocked by the stale one
+      await flush();
+      pending[0]?.(personal(5)); // the old read finally lands
+      await flush();
+
+      expect(item().text).toBe("$(circle-filled) OmniRoute");
+      statusBar.dispose();
+    });
+
+    it("lets a read that was waiting for the connection when restart() ran change nothing", async () => {
+      const releases: Array<(value: Connection) => void> = [];
+      const { statusBar, fetchPersonal, connection } = bar({});
+      const resolveConnection = vi
+        .fn<() => Promise<Connection>>()
+        .mockImplementationOnce(() => new Promise<Connection>((resolve) => void releases.push(resolve)))
+        .mockImplementationOnce(() => new Promise<Connection>((resolve) => void releases.push(resolve)))
+        .mockResolvedValue(connection);
+      (statusBar as unknown as { getConnection: unknown }).getConnection = resolveConnection;
+
+      statusBar.reportActivity(true); // a chat response; its usage read waits for the connection
+      await vi.waitFor(() => expect(releases).toHaveLength(1));
+      statusBar.restart(); // its poll waits for the connection too
+      await vi.waitFor(() => expect(releases).toHaveLength(2));
+
+      releases[0]?.(connection); // the stale read resumes first
+      for (let i = 0; i < 5; i++) await Promise.resolve();
+      expect(fetchPersonal).not.toHaveBeenCalled(); // it neither read nor took the floor
+
+      releases[1]?.(connection);
+      await vi.waitFor(() => expect(fetchPersonal).toHaveBeenCalledTimes(1));
+      statusBar.dispose();
+    });
+
+    it("removes the suffix from the status bar as soon as restart() runs with the setting off", async () => {
+      const { statusBar, item } = bar({});
+      await statusBar.checkNow();
+      await vi.waitFor(() => expect(item().text).toContain("76%"));
+
+      setMockConfig({ statusBarUsage: false });
+      statusBar.restart();
+
+      expect(item().text).toBe("$(circle-filled) OmniRoute"); // synchronously, not at the next poll
+      statusBar.dispose();
+    });
+
+    it("clears the number on restart() before any probe answers", async () => {
+      const { statusBar, item } = bar({});
+      await statusBar.checkNow();
+      await vi.waitFor(() => expect(item().text).toContain("76%"));
+      statusBar.restart();
+      expect(item().text).not.toContain("%");
+      statusBar.dispose();
+    });
+  });
+});
+
+describe("connectionFingerprint", () => {
+  const base = {
+    origin: "http://gateway.test",
+    apiKey: "sk-secret-key",
+    keyScope: "global",
+  } as Connection;
+
+  it("changes with the origin, the key scope and the key", () => {
+    const fp = connectionFingerprint(base);
+    expect(connectionFingerprint({ ...base })).toBe(fp);
+    expect(connectionFingerprint({ ...base, origin: "http://other.test" })).not.toBe(fp);
+    expect(connectionFingerprint({ ...base, keyScope: "workspace" })).not.toBe(fp);
+    expect(connectionFingerprint({ ...base, apiKey: "sk-other" })).not.toBe(fp);
+    expect(connectionFingerprint({ ...base, apiKey: undefined })).not.toBe(fp);
+  });
+
+  it("never contains the key", () => {
+    expect(connectionFingerprint(base)).not.toContain("sk-secret-key");
   });
 });

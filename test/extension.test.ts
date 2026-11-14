@@ -124,6 +124,33 @@ describe("Set API Key", () => {
     ext.dispose();
   });
 
+  it("makes the status bar read the usage again with the new key, without waiting for the 5-minute floor", async () => {
+    const usageKeys: string[] = [];
+    vi.stubGlobal(
+      "fetch",
+      vi.fn(async (url: string, init?: RequestInit) => {
+        if (String(url).includes("/api/usage/om-usage")) {
+          usageKeys.push(String((init?.headers as Record<string, string> | undefined)?.Authorization));
+          return new Response(JSON.stringify({ allowed: true, personal: null, provider: null }), {
+            headers: { "content-type": "application/json" },
+          });
+        }
+        return new Response(JSON.stringify({ data: [] }), { status: 200 });
+      })
+    );
+    setMockConfig({ baseUrl: "https://a.example" });
+    const ext = activated();
+    ext.secrets.set("omnicopilot.apiKey", "sk-global");
+    ext.secrets.set("omnicopilot.apiKeyOrigins", JSON.stringify(["https://a.example"]));
+    await vi.waitFor(() => expect(usageKeys).toContain("Bearer sk-global"));
+
+    vi.spyOn(vscode.window, "showInputBox").mockResolvedValue("sk-new");
+    await ext.run("omnicopilot.setApiKey");
+
+    await vi.waitFor(() => expect(usageKeys).toContain("Bearer sk-new"));
+    ext.dispose();
+  });
+
   it("writes the workspace pair and leaves the global pair alone when the switch is on and a workspace key is stored", async () => {
     const ext = setUp({ workspaceKey: true, switchOn: true });
     const box = await typing(ext, "sk-new");
