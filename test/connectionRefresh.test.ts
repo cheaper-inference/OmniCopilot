@@ -340,6 +340,32 @@ describe("the status bar's usage reads after a settings change", () => {
     h.dispose();
   });
 
+  it("keeps the number on screen through that change, from the restart to the poll that follows it", async () => {
+    vi.useFakeTimers();
+    const items: Array<{ text: string }> = [];
+    const createItem = vscode.window.createStatusBarItem as (...args: unknown[]) => { text: string };
+    vi.spyOn(vscode.window, "createStatusBarItem").mockImplementation(((...args: unknown[]) => {
+      const item = createItem(...args);
+      items.push(item);
+      return item;
+    }) as never);
+    const h = harness({ secrets: GLOBAL });
+    await h.settle(50);
+    const item = items[0];
+    expect(item.text).toContain(" · 50%");
+
+    for (const value of ["g", "gl"]) {
+      // The write fires the configuration change, which restarts the status bar.
+      await h.setSetting("modelFilter", value);
+      expect(item.text, `${value}: right after the restart`).toContain(" · 50%");
+      await h.settle(5);
+      expect(item.text, `${value}: after the poll it started`).toContain(" · 50%");
+      await h.settle(1000);
+      expect(item.text, `${value}: settled`).toContain(" · 50%");
+    }
+    h.dispose();
+  });
+
   it.each(["baseUrl", "statusBarUsage"])("reads the usage again at once after a change of %s", async (key) => {
     vi.useFakeTimers();
     const h = harness({ secrets: GLOBAL });
