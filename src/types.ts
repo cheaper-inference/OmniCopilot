@@ -122,6 +122,14 @@ export interface ChatRequest {
   tool_choice?: "auto" | "required";
   temperature?: number;
   max_tokens?: number;
+  top_p?: number;
+  /** One stop sequence, or up to four. */
+  stop?: string | string[];
+  seed?: number;
+  presence_penalty?: number;
+  frequency_penalty?: number;
+  /** `{ type: "json_object" }`, `{ type: "json_schema", … }`, …: passed through as given. */
+  response_format?: { type: string; [key: string]: unknown };
   /** Canonical reasoning tier (none/low/medium/high/xhigh/max). OmniRoute maps it
    * onto each provider's own field — reasoning_effort, reasoning.effort or a
    * thinking budget — and an explicit value here always wins over its own

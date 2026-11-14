@@ -12,6 +12,7 @@ import {
   resolveReasoningEffort,
   type EffortSchema,
 } from "./reasoning";
+import { requestParamsFromModelOptions } from "./requestParams";
 import { DEFAULT_RETRY_POLICY, nextRetryDelay } from "./retry";
 import { createToolNameAliases } from "./toolNames";
 import type { ChatRequest, OmniRouteCombo, OmniRouteModel, StreamUsage } from "./types";
@@ -395,6 +396,10 @@ export class OmniRouteChatProvider
     if (typeof modelOptions?.temperature === "number") {
       request.temperature = modelOptions.temperature;
     }
+    Object.assign(
+      request,
+      requestParamsFromModelOptions(modelOptions, { maxOutputTokens: model.maxOutputTokens })
+    );
 
     // #7: forward extended-thinking effort. The picker choice (then any per-request value) wins;
     // the configured default only reaches models the catalog marks as reasoning-

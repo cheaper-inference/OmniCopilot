@@ -413,6 +413,71 @@ describe("provider cut-off answers", () => {
   });
 });
 
+describe("provider request parameters", () => {
+  let fetchMock: ReturnType<typeof vi.fn>;
+
+  beforeEach(() => {
+    fetchMock = vi.fn();
+    vi.stubGlobal("fetch", fetchMock);
+  });
+  afterEach(() => vi.unstubAllGlobals());
+
+  async function bodyFor(modelOptions: Record<string, unknown> | undefined, maxOutputTokens = 1000) {
+    fetchMock.mockResolvedValue(sseResponse([{ choices: [{ delta: { content: "ok" } }] }]));
+    const { provider, progress, token } = makeProvider();
+    await provider.provideLanguageModelChatResponse(
+      { ...(modelInfo(false) as object), maxOutputTokens } as never,
+      [
+        {
+          role: vscode.LanguageModelChatMessageRole.User,
+          content: [new vscode.LanguageModelTextPart("go")],
+        } as never,
+      ],
+      { tools: [], toolMode: 1, modelOptions } as never,
+      progress,
+      token
+    );
+    return requestBody(fetchMock) as Record<string, unknown>;
+  }
+
+  it("sends the standard sampling parameters a caller passes in modelOptions", async () => {
+    const body = await bodyFor({
+      temperature: 0.3,
+      max_tokens: 200,
+      topP: 0.9,
+      stop: ["\n"],
+      seed: 7,
+      presence_penalty: 0.5,
+      frequency_penalty: -0.5,
+      response_format: { type: "json_object" },
+    });
+    expect(body).toMatchObject({
+      temperature: 0.3,
+      max_tokens: 200,
+      top_p: 0.9,
+      stop: ["\n"],
+      seed: 7,
+      presence_penalty: 0.5,
+      frequency_penalty: -0.5,
+      response_format: { type: "json_object" },
+    });
+  });
+
+  it("caps max_tokens at the output limit the model was listed with", async () => {
+    expect((await bodyFor({ max_tokens: 5000 }, 1000)).max_tokens).toBe(1000);
+  });
+
+  it("sends none of them when the caller passes none, or passes bad values", async () => {
+    const plain = await bodyFor(undefined);
+    const bad = await bodyFor({ max_tokens: -1, top_p: 5, stop: [], seed: 1.5, response_format: {} });
+    for (const body of [plain, bad]) {
+      for (const key of ["max_tokens", "top_p", "stop", "seed", "presence_penalty", "frequency_penalty", "response_format"]) {
+        expect(body).not.toHaveProperty(key);
+      }
+    }
+  });
+});
+
 describe("provider rejected key", () => {
   let fetchMock: ReturnType<typeof vi.fn>;
 
