@@ -2,6 +2,7 @@ import { runInNewContext } from "node:vm";
 import { describe, expect, it } from "vitest";
 import type * as vscode from "vscode";
 import { OmniPanelProvider, embeddedNextUrlFieldValue, nextUrlFieldValue } from "../src/panel";
+import { listedModels } from "./panelHelpers";
 
 const A = "https://a.example";
 const B = "https://b.example";
@@ -36,7 +37,8 @@ describe("the panel script's copy of nextUrlFieldValue", () => {
     const panel = new OmniPanelProvider(
       {} as vscode.ExtensionContext,
       {} as vscode.LogOutputChannel,
-      async () => undefined
+      async () => undefined,
+      listedModels()
     );
     return (panel as unknown as { html(): string }).html();
   }

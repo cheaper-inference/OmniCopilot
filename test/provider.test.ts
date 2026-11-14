@@ -1435,3 +1435,99 @@ describe("provider project header", () => {
     }
   });
 });
+
+describe("provider current listing (what the panel reports)", () => {
+  let fetchMock: ReturnType<typeof vi.fn>;
+  const rows = [
+    { id: "a/one" },
+    { id: "a/two" },
+    { id: "b/three" },
+    { id: "a/embed", type: "embedding" },
+  ];
+  const catalogDownloads = () =>
+    fetchMock.mock.calls.filter(([url]) => String(url).includes("/models")).length;
+
+  beforeEach(() => {
+    fetchMock = vi.fn(async (url: string) =>
+      String(url).includes("/combos")
+        ? new Response("{}", { status: 404 })
+        : new Response(JSON.stringify({ object: "list", data: rows }), { status: 200 })
+    );
+    vi.stubGlobal("fetch", fetchMock);
+  });
+  afterEach(() => vi.unstubAllGlobals());
+
+  it("counts the models the picker lists, after the chat-model filter and omnicopilot.modelFilter", async () => {
+    const { provider } = makeProvider({ config: { modelFilter: "^a/" } });
+
+    const listing = await provider.currentListing();
+
+    expect(listing).toMatchObject({ ok: true, count: 2 });
+    expect(listing.infos.map((info) => info.id)).toEqual(["a/one", "a/two"]);
+  });
+
+  it("lists once for callers that ask while it runs, and not again afterwards", async () => {
+    const { provider } = makeProvider();
+
+    const [first, second] = await Promise.all([provider.currentListing(), provider.currentListing()]);
+    await provider.currentListing();
+
+    expect(first).toBe(second);
+    expect(catalogDownloads()).toBe(1);
+  });
+
+  it("reports the last listing the picker's own call made, without another download", async () => {
+    const { provider, token } = makeProvider();
+    await provider.provideLanguageModelChatInformation({ silent: true }, token);
+    expect(catalogDownloads()).toBe(1);
+
+    expect(await provider.currentListing()).toMatchObject({ ok: true, count: 3 });
+    expect(catalogDownloads()).toBe(1);
+  });
+
+  it("lists again after refresh(), because the connection or the filter may have changed", async () => {
+    const { provider } = makeProvider();
+    await provider.currentListing();
+
+    await provider.refresh();
+    await provider.currentListing();
+
+    expect(catalogDownloads()).toBe(2);
+  });
+
+  it("does not keep a listing that was started before a refresh()", async () => {
+    let release: (() => void) | undefined;
+    fetchMock.mockImplementationOnce(
+      (url: string) =>
+        new Promise<Response>((resolve) => {
+          release = () => resolve(new Response(JSON.stringify({ object: "list", data: rows }), { status: 200 }));
+          void url;
+        })
+    );
+    const { provider } = makeProvider();
+    const stale = provider.currentListing();
+    await vi.waitFor(() => expect(release).toBeDefined());
+
+    await provider.refresh();
+    release?.();
+    await stale;
+    await provider.currentListing();
+
+    expect(catalogDownloads()).toBe(2);
+  });
+
+  it("does not keep a failed listing: the next call lists again, and never prompts", async () => {
+    fetchMock.mockImplementationOnce(async () => new Response("{}", { status: 401 }));
+    const warn = vi.spyOn(vscode.window, "showWarningMessage");
+    const { provider } = makeProvider();
+
+    const failed = await provider.currentListing();
+    const retried = await provider.currentListing();
+
+    expect(failed).toMatchObject({ ok: false, count: 0, failure: { status: 401 } });
+    expect(failed.failure?.message).toContain("401");
+    expect(retried).toMatchObject({ ok: true, count: 3 });
+    expect(warn).not.toHaveBeenCalled();
+    warn.mockRestore();
+  });
+});

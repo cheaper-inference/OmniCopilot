@@ -66,10 +66,15 @@ export function activate(context: vscode.ExtensionContext): void {
   context.subscriptions.push(vscode.lm.registerLanguageModelChatProvider(VENDOR, provider));
   log.info(`Language model chat provider registered (vendor: ${VENDOR})`);
 
-  panel = new OmniPanelProvider(context, log, async () => {
-    statusBar?.restart();
-    await provider?.refresh();
-  });
+  panel = new OmniPanelProvider(
+    context,
+    log,
+    async () => {
+      statusBar?.restart();
+      await provider?.refresh();
+    },
+    () => provider!.currentListing()
+  );
   context.subscriptions.push(
     vscode.window.registerWebviewViewProvider(OmniPanelProvider.viewId, panel)
   );

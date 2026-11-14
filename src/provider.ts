@@ -88,8 +88,9 @@ export interface ModelListing {
   /** How many models the picker lists: the entries above, counted once per model
    * (the Agents-window clones share their model's id). */
   count: number;
-  /** Why it failed: an HTTP status the server answered with, or no status at all. */
-  failure?: { status?: number };
+  /** Why it failed: an HTTP status the server answered with, or no status at all,
+   * and the client's own sentence about it. */
+  failure?: { status?: number; message?: string };
   /** The stored key was not sent to this server (see `Connection.keyWithheld`). */
   keyWithheld: boolean;
 }
@@ -173,6 +174,13 @@ export class OmniRouteChatProvider
   private reasoningModelIds = new Set<string>();
   /** Tiers each model advertises (`capabilities.effort_tiers`), by id. */
   private effortTiersById = new Map<string, string[]>();
+  /** What the last listing that succeeded came to, until the next `refresh()`. */
+  private lastListing: ModelListing | undefined;
+  /** The listing `currentListing` started and that has not finished yet. */
+  private pendingListing: Promise<ModelListing> | undefined;
+  /** Counts `refresh()` calls: a listing that finishes after one belongs to a
+   * connection that may no longer be the current one. */
+  private refreshGeneration = 0;
 
   constructor(private readonly deps: ProviderDeps) {}
 
@@ -182,6 +190,9 @@ export class OmniRouteChatProvider
 
   /** Re-query the catalog and tell VS Code the model list changed. */
   async refresh(): Promise<void> {
+    this.refreshGeneration += 1;
+    this.lastListing = undefined;
+    this.pendingListing = undefined;
     this.cachedModels = [];
     this.cachedCombos = [];
     this.reasoningModelIds.clear();
@@ -220,6 +231,33 @@ export class OmniRouteChatProvider
    * models until the user fixes the connection.
    */
   async listModels(options: { silent: boolean }, token?: vscode.CancellationToken): Promise<ModelListing> {
+    const generation = this.refreshGeneration;
+    const listing = await this.listFromServer(options, token);
+    if (generation === this.refreshGeneration) this.lastListing = listing.ok ? listing : undefined;
+    return listing;
+  }
+
+  /**
+   * What the picker lists right now, for a view that only reports it (the panel):
+   * the last listing that succeeded, else one silent listing that every caller
+   * asking while it runs shares. Read-only: it never prompts, and a failed
+   * listing is not kept, so the next call lists again.
+   */
+  currentListing(): Promise<ModelListing> {
+    if (this.lastListing) return Promise.resolve(this.lastListing);
+    if (!this.pendingListing) {
+      const pending = this.listModels({ silent: true }).finally(() => {
+        if (this.pendingListing === pending) this.pendingListing = undefined;
+      });
+      this.pendingListing = pending;
+    }
+    return this.pendingListing;
+  }
+
+  private async listFromServer(
+    options: { silent: boolean },
+    token?: vscode.CancellationToken
+  ): Promise<ModelListing> {
     const { client, connection } = await this.connect();
     const serverUrl = serverRootUrl(client.baseUrl);
 
@@ -235,6 +273,7 @@ export class OmniRouteChatProvider
       this.deps.onActivity?.(!isNetworkError(err));
       this.deps.log.warn(`Model discovery failed: ${String(err)}`);
       const status = err instanceof OmniRouteRequestError ? err.info.status : undefined;
+      const message = err instanceof Error ? err.message : String(err);
       if (!options.silent) {
         if (!isKeyRejection(status)) {
           void this.offerConnectionHelp(serverUrl);
@@ -249,7 +288,7 @@ export class OmniRouteChatProvider
         ok: false,
         count: 0,
         serverUrl,
-        failure: { status },
+        failure: { status, message },
         keyWithheld: connection.keyWithheld,
       };
     }

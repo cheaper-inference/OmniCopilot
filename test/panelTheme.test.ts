@@ -1,12 +1,14 @@
 import { describe, expect, it } from "vitest";
 import type * as vscode from "vscode";
 import { OmniPanelProvider } from "../src/panel";
+import { listedModels } from "./panelHelpers";
 
 function panelCss(): string {
   const panel = new OmniPanelProvider(
     {} as vscode.ExtensionContext,
     {} as vscode.LogOutputChannel,
-    async () => undefined
+    async () => undefined,
+    listedModels()
   );
   const html = (panel as unknown as { html(): string }).html();
   const css = /<style>([\s\S]*?)<\/style>/.exec(html)?.[1] ?? "";
