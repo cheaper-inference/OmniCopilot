@@ -522,6 +522,32 @@ describe("provider rejected key", () => {
     expect(ctx.activity).toEqual([true]);
   });
 
+  it.each([401, 403])("says the server needs a key, not that it rejected one, when none is stored (%s)", async (status) => {
+    modelsAnswers(status);
+    const warn = vi.spyOn(vscode.window, "showWarningMessage").mockResolvedValue("Set API key" as never);
+    const exec = vi.spyOn(vscode.commands, "executeCommand");
+    const ctx = makeProvider();
+
+    await ctx.provider.provideLanguageModelChatInformation({ silent: false }, ctx.token);
+    await flush();
+
+    expect(warn).toHaveBeenCalledTimes(1);
+    expect(warn.mock.calls[0][0]).toBe(`OmniRoute at http://gateway.test needs an API key (HTTP ${status}).`);
+    expect(warn.mock.calls[0][1]).toBe("Set API key");
+    expect(exec).toHaveBeenCalledWith("omnicopilot.setApiKey");
+  });
+
+  it("does not let the address become a link in the needs-a-key message either", async () => {
+    modelsAnswers(401);
+    const warn = vi.spyOn(vscode.window, "showWarningMessage").mockResolvedValue(undefined);
+    const ctx = makeProvider({ config: { baseUrl: "[x](command:y)" } });
+    await ctx.provider.provideLanguageModelChatInformation({ silent: false }, ctx.token);
+    await flush();
+    const text = String(warn.mock.calls[0][0]);
+    expect(text).toContain("needs an API key (HTTP 401)");
+    expect(text).not.toContain("](");
+  });
+
   it("does not run the command when the notification is dismissed", async () => {
     modelsAnswers(401);
     vi.spyOn(vscode.window, "showWarningMessage").mockResolvedValue(undefined);
@@ -582,6 +608,8 @@ describe("provider rejected key", () => {
     modelsAnswers(401);
     const warn = vi.spyOn(vscode.window, "showWarningMessage").mockResolvedValue(undefined);
     const ctx = makeProvider({ config: { baseUrl: "[x](command:y)" } });
+    await ctx.context.secrets.store(SECRET_API_KEY, "sk-1");
+    await ctx.context.secrets.store(SECRET_API_KEY_ORIGINS, JSON.stringify(["http://[x](command:y)"]));
     await ctx.provider.provideLanguageModelChatInformation({ silent: false }, ctx.token);
     await flush();
     expect(warn).toHaveBeenCalledTimes(1);
