@@ -19,6 +19,21 @@ function serverUrlReads(method) {
   );
 }
 
+const PROJECT_NAME_MESSAGE =
+  "Read omnicopilot.sendProjectName with inspect() and use only globalValue: a workspace must not be able to opt the user in.";
+
+/** Calls of `.get("sendProjectName")` (or ".sendProjectName"), as in `serverUrlReads`. */
+function projectNameReads() {
+  const callee = ["[callee.property.name=get]", "[callee.property.value=get]"];
+  const argument = [
+    "[arguments.0.value=/(^|\\.)sendProjectName$/]",
+    "[arguments.0.type='TemplateLiteral'][arguments.0.expressions.length=0][arguments.0.quasis.0.value.cooked=/(^|\\.)sendProjectName$/]",
+  ];
+  return callee.flatMap((c) =>
+    argument.map((a) => ({ selector: `CallExpression${c}${a}`, message: PROJECT_NAME_MESSAGE }))
+  );
+}
+
 export default tseslint.config(
   ...tseslint.configs.recommended,
   {
@@ -28,14 +43,14 @@ export default tseslint.config(
       "no-implied-eval": "error",
       "@typescript-eslint/no-explicit-any": "error",
       "@typescript-eslint/no-unused-vars": ["error", { argsIgnorePattern: "^_" }],
-      "no-restricted-syntax": ["error", ...serverUrlReads("/^(get|inspect)$/")],
+      "no-restricted-syntax": ["error", ...serverUrlReads("/^(get|inspect)$/"), ...projectNameReads()],
     },
   },
   {
     // The connection module is the one place that reads the setting, through inspect().
     files: ["src/connection.ts"],
     rules: {
-      "no-restricted-syntax": ["error", ...serverUrlReads("/^get$/")],
+      "no-restricted-syntax": ["error", ...serverUrlReads("/^get$/"), ...projectNameReads()],
     },
   }
 );

@@ -1,6 +1,6 @@
 import { afterEach, beforeEach, describe, expect, it, vi } from "vitest";
 import * as vscode from "vscode";
-import { setMockConfig, setMockWorkspace, setThinkingPartAvailable } from "./vscode.mock";
+import { setMockConfig, setMockInspect, setMockWorkspace, setThinkingPartAvailable } from "./vscode.mock";
 import { OmniRouteChatProvider } from "../src/provider";
 import { aliasToolName } from "../src/toolNames";
 
@@ -1027,8 +1027,9 @@ describe("provider project header", () => {
     setMockWorkspace();
   });
 
-  async function chat(config: Record<string, unknown>) {
+  async function chat(config: Record<string, unknown>, inspected?: Record<string, unknown>) {
     const { provider, progress, token } = makeProvider({ config });
+    if (inspected) setMockInspect("sendProjectName", inspected);
     await provider.provideLanguageModelChatResponse(
       modelInfo(false),
       [
@@ -1058,6 +1059,24 @@ describe("provider project header", () => {
 
   it("sends no header when no workspace is open", async () => {
     expect(await chat({ sendProjectName: true })).not.toHaveProperty("x-omniroute-project");
+  });
+
+  it("takes the opt-in from the user level only: a workspace or folder value of true sends nothing", async () => {
+    setMockWorkspace({ name: "acme", folders: ["file:///work/acme"] });
+    expect(await chat({}, { workspaceValue: true })).not.toHaveProperty("x-omniroute-project");
+    fetchMock.mockClear();
+    expect(await chat({}, { workspaceFolderValue: true })).not.toHaveProperty("x-omniroute-project");
+    fetchMock.mockClear();
+    expect(await chat({ sendProjectName: false }, { workspaceValue: true })).not.toHaveProperty(
+      "x-omniroute-project"
+    );
+  });
+
+  it("sends the header for a user-level true, whatever the workspace says", async () => {
+    setMockWorkspace({ name: "acme", folders: ["file:///work/acme"] });
+    expect(
+      (await chat({ sendProjectName: true }, { workspaceValue: false }))["x-omniroute-project"]
+    ).toBe("acme");
   });
 
   it("reduces the name to printable ASCII", async () => {
