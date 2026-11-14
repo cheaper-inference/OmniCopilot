@@ -630,6 +630,12 @@ function isKeySecretName(name: string): boolean {
  * this is how a window learns that another one stored or cleared the key. Changes to
  * any other secret are ignored. The workspace pair is the open workspace's own, read
  * when each change arrives. Dispose it with the extension.
+ *
+ * It relies on a refresh not writing a secret: a refresh that did would fire this
+ * watcher again. The one exception is `resolveConnection` adopting a key that has no
+ * approved-servers list (one stored before 1.4.0) by writing the list; that write
+ * fires one more change and refresh, and the second pass finds the list, so it
+ * cannot repeat.
  */
 export function watchKeySecrets(
   context: vscode.ExtensionContext,

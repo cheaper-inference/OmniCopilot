@@ -1,4 +1,4 @@
-import { afterEach, describe, expect, it, vi } from "vitest";
+import { afterEach, beforeEach, describe, expect, it, vi } from "vitest";
 import * as vscode from "vscode";
 import { registeredCommands, setMockConfig, setMockWorkspace } from "./vscode.mock";
 import {
@@ -471,9 +471,13 @@ describe("OmniRoute: Check connection after a real listing", () => {
 
 describe("a key changed in another window", () => {
   const WS = "file:///work/acme";
-  const settle = () => new Promise<void>((resolve) => setTimeout(resolve, 450));
+  // Fake timers: the 150 ms debounce and the start-up poll run on advanced time, not on waits.
+  // Only the timer functions are faked, so promises and the stubbed fetch run as usual.
+  const settle = () => vi.advanceTimersByTimeAsync(450);
 
+  beforeEach(() => vi.useFakeTimers({ toFake: ["setTimeout", "clearTimeout", "setInterval", "clearInterval"] }));
   afterEach(() => {
+    vi.useRealTimers();
     vi.unstubAllGlobals();
     vi.restoreAllMocks();
     setMockWorkspace();
@@ -516,7 +520,8 @@ describe("a key changed in another window", () => {
       [SECRET_API_KEY_ORIGINS]: JSON.stringify(["https://a.example"]),
     });
     const statuses: Array<Record<string, unknown>> = [];
-    panelProvider?.resolveWebviewView({
+    let onVisible: (() => void) | undefined;
+    const view = {
       visible: true,
       webview: {
         options: {},
@@ -524,17 +529,25 @@ describe("a key changed in another window", () => {
         onDidReceiveMessage: () => ({ dispose() {} }),
         postMessage: async (message: Record<string, unknown>) => void statuses.push(message),
       },
-      onDidChangeVisibility: () => ({ dispose() {} }),
-    });
+      onDidChangeVisibility: (cb: () => void) => {
+        onVisible = cb;
+        return { dispose() {} };
+      },
+    };
+    panelProvider?.resolveWebviewView(view);
     /** How many times the model picker was told to list again. */
     const listings = () => pickerRefreshes;
-    return { ext, requests, statuses, listings };
+    const becameVisible = () => {
+      view.visible = true;
+      onVisible?.();
+    };
+    return { ext, view, requests, statuses, listings, becameVisible };
   }
 
   it("refreshes the model list, the status bar's usage and the panel", async () => {
     const { ext, requests, statuses, listings } = open();
-    await vi.waitFor(() => expect(requests.some((r) => r.url.includes("/api/usage/om-usage"))).toBe(true));
     await settle();
+    expect(requests.some((r) => r.url.includes("/api/usage/om-usage"))).toBe(true);
     const listingsBefore = listings();
     const statusesBefore = statuses.length;
 
@@ -580,7 +593,26 @@ describe("a key changed in another window", () => {
     ext.changedElsewhere(workspaceSecretName(WS), "sk-ws");
     await settle();
     expect(listings()).toBeGreaterThan(before);
-    ext.changedElsewhere(workspaceOriginsSecretName(WS), JSON.stringify(["https://a.example"]));
+    ext.dispose();
+  });
+
+  it("builds no status while the panel is hidden, and a fresh one when it is shown again", async () => {
+    const { ext, view, statuses, listings, becameVisible } = open();
+    await settle();
+    const statusesBefore = statuses.length;
+    const listingsBefore = listings();
+
+    view.visible = false;
+    ext.changedElsewhere(SECRET_API_KEY, "sk-while-hidden");
+    await settle();
+    // The model list and the status bar still follow the key; only the hidden panel is left alone.
+    expect(listings()).toBeGreaterThan(listingsBefore);
+    expect(statuses.length).toBe(statusesBefore);
+
+    becameVisible();
+    await settle();
+    expect(statuses.length).toBe(statusesBefore + 1);
+    expect(statuses.at(-1)).toMatchObject({ type: "status", hasKey: true });
     ext.dispose();
   });
 
@@ -600,7 +632,12 @@ describe("a key changed in another window", () => {
 });
 
 describe("the panel's model count and its refreshes", () => {
+  // Fake timer functions only: the start-up poll and the waits below run on advanced time.
+  const settle = (ms = 300) => vi.advanceTimersByTimeAsync(ms);
+
+  beforeEach(() => vi.useFakeTimers({ toFake: ["setTimeout", "clearTimeout", "setInterval", "clearInterval"] }));
   afterEach(() => {
+    vi.useRealTimers();
     vi.unstubAllGlobals();
     vi.restoreAllMocks();
   });
@@ -700,7 +737,7 @@ describe("the panel's model count and its refreshes", () => {
   it("shows the number of models the picker lists, after the chat-model filter and omnicopilot.modelFilter", async () => {
     const { ext, statuses } = open({ modelFilter: "^a/" });
 
-    await vi.waitFor(() => expect(lastStatus(statuses)).toBeDefined());
+    await settle();
 
     // Four rows in the catalog; the embedding row and b/three are not in the picker.
     expect(lastStatus(statuses)).toMatchObject({ online: true, modelCount: 2 });
@@ -710,20 +747,20 @@ describe("the panel's model count and its refreshes", () => {
   it("adds no catalog download of its own when the panel opens, sends ready or becomes visible", async () => {
     const { ext, statuses, catalogDownloads, ready, pickerListing, becameVisible } = open();
     // Start-up settles: the first poll finds the server and the host lists again.
-    await new Promise((resolve) => setTimeout(resolve, 300));
-    await vi.waitFor(() => expect(lastStatus(statuses)).toBeDefined());
+    await settle();
+    expect(lastStatus(statuses)).toBeDefined();
     const providersOwn = catalogDownloads();
 
     void ready();
     becameVisible();
-    await new Promise((resolve) => setTimeout(resolve, 100));
+    await settle(100);
     expect(catalogDownloads()).toBe(providersOwn);
 
     // The picker listing again is the provider's own, and the panel then reads its count.
     await pickerListing();
     expect(catalogDownloads()).toBe(providersOwn + 1);
     becameVisible();
-    await new Promise((resolve) => setTimeout(resolve, 100));
+    await settle(100);
     expect(catalogDownloads()).toBe(providersOwn + 1);
     expect(lastStatus(statuses)).toMatchObject({ modelCount: 3 });
     ext.dispose();
@@ -731,17 +768,75 @@ describe("the panel's model count and its refreshes", () => {
 
   it("does not refresh while hidden, and does once it is visible again", async () => {
     const { ext, view, statuses, configurationChanged, becameVisible } = open();
-    await vi.waitFor(() => expect(lastStatus(statuses)).toBeDefined());
-    await new Promise((resolve) => setTimeout(resolve, 50));
+    await settle();
     const before = statuses.length;
 
     view.visible = false;
     configurationChanged();
-    await new Promise((resolve) => setTimeout(resolve, 100));
+    await settle(100);
     expect(statuses.length).toBe(before);
 
     becameVisible();
-    await vi.waitFor(() => expect(statuses.length).toBe(before + 1));
+    await settle(100);
+    expect(statuses.length).toBe(before + 1);
+    ext.dispose();
+  });
+});
+
+describe("the status bar without a key in effect", () => {
+  beforeEach(() => vi.useFakeTimers({ toFake: ["setTimeout", "clearTimeout", "setInterval", "clearInterval"] }));
+  afterEach(() => {
+    vi.useRealTimers();
+    vi.unstubAllGlobals();
+    vi.restoreAllMocks();
+  });
+
+  const usageRequests = (fetchMock: ReturnType<typeof vi.fn>) =>
+    fetchMock.mock.calls
+      .map((call) => String(call[0]))
+      .filter((url) => url.includes("/api/usage/") || url.includes("/v1/me/status"));
+
+  function serverThatAnswersEverything() {
+    const fetchMock = vi.fn(async (url: string, init?: RequestInit) => {
+      if (init?.method === "HEAD") return new Response(null, { status: 200 });
+      if (String(url).includes("/api/usage/")) {
+        return new Response(JSON.stringify({ allowed: true, personal: null, provider: null }), {
+          headers: { "content-type": "application/json" },
+        });
+      }
+      return new Response(JSON.stringify({ object: "list", data: [] }), { status: 200 });
+    });
+    vi.stubGlobal("fetch", fetchMock);
+    return fetchMock;
+  }
+
+  it.each([
+    ["no key is stored", {}],
+    [
+      "the stored key is withheld from this server",
+      { [SECRET_API_KEY]: "sk-1", [SECRET_API_KEY_ORIGINS]: JSON.stringify(["https://elsewhere.example"]) },
+    ],
+  ])("makes no usage request when %s", async (_name, secrets) => {
+    const fetchMock = serverThatAnswersEverything();
+    setMockConfig({ baseUrl: "https://a.example" });
+    const ext = activated(secrets);
+
+    await vi.advanceTimersByTimeAsync(500);
+
+    // The poll did run (a HEAD probe), and still asked nothing about usage.
+    expect(fetchMock.mock.calls.some((call) => (call[1] as RequestInit | undefined)?.method === "HEAD")).toBe(true);
+    expect(usageRequests(fetchMock)).toEqual([]);
+    ext.dispose();
+  });
+
+  it("does ask for usage once a key is in effect (the control for the two cases above)", async () => {
+    const fetchMock = serverThatAnswersEverything();
+    setMockConfig({ baseUrl: "https://a.example" });
+    const ext = activated({ [SECRET_API_KEY]: "sk-1", [SECRET_API_KEY_ORIGINS]: JSON.stringify(["https://a.example"]) });
+
+    await vi.advanceTimersByTimeAsync(500);
+
+    expect(usageRequests(fetchMock).length).toBeGreaterThan(0);
     ext.dispose();
   });
 });
