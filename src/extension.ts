@@ -146,7 +146,11 @@ export function activate(context: vscode.ExtensionContext): void {
     vscode.workspace.onDidChangeConfiguration((e) => {
       if (!e.affectsConfiguration("omnicopilot")) return;
       log.info("Configuration changed — refreshing models and status");
-      statusBar?.restart();
+      // Only the server and what the status bar shows make its usage number worthless.
+      const usageAffected = ["baseUrl", "statusBar", "statusBarUsage"].some((key) =>
+        e.affectsConfiguration(`omnicopilot.${key}`)
+      );
+      statusBar?.restart({ keepUsage: !usageAffected });
       background("Model refresh", provider?.refresh());
       background("Panel refresh", panel?.refreshStatus());
       withheldKeyWatcher.schedule();

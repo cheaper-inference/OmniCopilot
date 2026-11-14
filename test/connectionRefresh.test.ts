@@ -147,7 +147,10 @@ function harness(opts: { secrets?: Record<string, string>; switchOn?: boolean })
     const update = configuration.update;
     configuration.update = async (...args: [string, unknown, unknown?]) => {
       await update(...args);
-      for (const handler of configHandlers) handler({ affectsConfiguration: () => true });
+      const changed = `omnicopilot.${args[0]}`;
+      for (const handler of configHandlers) {
+        handler({ affectsConfiguration: (section: string) => section === "omnicopilot" || section === changed });
+      }
     };
     return configuration;
   }) as never);
@@ -178,6 +181,8 @@ function harness(opts: { secrets?: Record<string, string>; switchOn?: boolean })
       fire(key);
     },
     openPanel: () => panelProvider?.resolveWebviewView(view),
+    /** The user changes a setting (as the Settings editor commits it). */
+    setSetting: (key: string, value: unknown) => mockWorkspace.getConfiguration("omnicopilot").update(key, value),
     send: (message: unknown) => onMessage(message),
     settle: (ms: number) => vi.advanceTimersByTimeAsync(ms),
     /** The requests since the last call, counted by kind, and the keys they carried. */
@@ -308,6 +313,62 @@ describe("what a change of the connection costs on the wire", () => {
     // One status-bar restart and one picker listing, all without a key; no usage read.
     expect(h.take()).toEqual({ counts: { probe: 1, models: 1, combos: 1 }, keys: ["-"] });
     expect(h.changeEvents()).toBe(events + 1);
+    h.dispose();
+  });
+});
+
+describe("the status bar's usage reads after a settings change", () => {
+  afterEach(() => {
+    vi.useRealTimers();
+    vi.unstubAllGlobals();
+    vi.restoreAllMocks();
+    setMockWorkspace();
+  });
+
+  it("keeps the reading and the 5-minute floor through a change of a setting it does not show (modelFilter)", async () => {
+    vi.useFakeTimers();
+    const h = harness({ secrets: GLOBAL });
+    await h.settle(50);
+    h.take();
+
+    for (const value of ["g", "gl", "glm"]) {
+      await h.setSetting("modelFilter", value);
+      await h.settle(1000);
+      // The probe of the restarted poll and the picker's listing; no usage read.
+      expect(h.take(), value).toEqual({ counts: { probe: 1, models: 1, combos: 1 }, keys: ["sk-global"] });
+    }
+    h.dispose();
+  });
+
+  it.each(["baseUrl", "statusBarUsage"])("reads the usage again at once after a change of %s", async (key) => {
+    vi.useFakeTimers();
+    const h = harness({ secrets: GLOBAL });
+    await h.settle(50);
+    h.take();
+
+    // Written with the value it already has, so the connection itself stays the same.
+    await h.setSetting(key, key === "baseUrl" ? A : true);
+    await h.settle(1000);
+
+    expect(h.take().counts).toMatchObject({ "om-usage": 1, "me/status": 1 });
+    h.dispose();
+  });
+
+  it("reads no usage for a hidden status bar, and reads at once when it is shown again", async () => {
+    vi.useFakeTimers();
+    const h = harness({ secrets: GLOBAL });
+    await h.settle(50);
+    h.take();
+
+    await h.setSetting("statusBar", false);
+    await h.settle(11 * 60_000);
+    const hidden = h.take().counts;
+    expect(hidden["om-usage"] ?? 0).toBe(0);
+    expect(hidden["me/status"] ?? 0).toBe(0);
+
+    await h.setSetting("statusBar", true);
+    await h.settle(50);
+    expect(h.take().counts).toMatchObject({ "om-usage": 1, "me/status": 1 });
     h.dispose();
   });
 });
