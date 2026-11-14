@@ -362,6 +362,35 @@ function toolResultPart(...content: unknown[]): vscode.LanguageModelToolResultPa
   return new vscode.LanguageModelToolResultPart("call_1", content);
 }
 
+describe("thinking parts in the history", () => {
+  const assistant = vscode.LanguageModelChatMessageRole.Assistant;
+  const thinking = () =>
+    new (
+      vscode as unknown as { LanguageModelThinkingPart: new (value: string) => unknown }
+    ).LanguageModelThinkingPart("secret reasoning that must stay local");
+
+  it("never sends a thinking part to the server", () => {
+    const out = toOpenAiMessages([
+      msg(assistant, [thinking(), new vscode.LanguageModelTextPart("the answer")]),
+      msg(assistant, [
+        thinking(),
+        new vscode.LanguageModelTextPart("calling"),
+        new vscode.LanguageModelToolCallPart("call_1", "read_file", { path: "a.ts" }),
+      ]),
+      msg(assistant, [thinking()]),
+    ]);
+    expect(out.map((m) => m.content)).toEqual(["the answer", "calling"]);
+    expect(JSON.stringify(out)).not.toContain("secret reasoning");
+  });
+
+  it("costs zero tokens in the estimate", () => {
+    expect(estimateTokens(msg(assistant, [thinking()]))).toBe(0);
+    expect(
+      estimateTokens(msg(assistant, [thinking(), new vscode.LanguageModelTextPart("abcdefgh")]))
+    ).toBe(2);
+  });
+});
+
 describe("tool-name aliasing in conversion", () => {
   it("aliases tool names in tools[] and in historical tool_calls[]", () => {
     const toWire = (n: string) => "x_" + n;

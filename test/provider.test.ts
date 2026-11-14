@@ -1,6 +1,6 @@
 import { afterEach, beforeEach, describe, expect, it, vi } from "vitest";
 import * as vscode from "vscode";
-import { setMockConfig } from "./vscode.mock";
+import { setMockConfig, setThinkingPartAvailable } from "./vscode.mock";
 import { OmniRouteChatProvider } from "../src/provider";
 import { aliasToolName } from "../src/toolNames";
 
@@ -73,6 +73,16 @@ function makeProvider(overrides: { config?: Record<string, unknown> } = {}) {
   };
   return { provider, context, reported, activity, log, progress, token, cancel };
 }
+
+/** `LanguageModelThinkingPart` is proposed API, so the typings do not know it. */
+const ThinkingPart = () =>
+  (vscode as unknown as { LanguageModelThinkingPart?: new (value: string) => { value: unknown } })
+    .LanguageModelThinkingPart;
+const thinkingParts = (reported: Reported[]) =>
+  reported.filter((part) => {
+    const cls = ThinkingPart();
+    return cls !== undefined && part instanceof cls;
+  });
 
 function modelInfo(imageInput: boolean) {
   return {
@@ -218,6 +228,73 @@ describe("provider chat path", () => {
     );
     expect(reported[0]).toBeInstanceOf(vscode.LanguageModelTextPart);
     expect(reported[reported.length - 1]).toBeInstanceOf(vscode.LanguageModelDataPart);
+  });
+});
+
+describe("provider reasoning", () => {
+  let fetchMock: ReturnType<typeof vi.fn>;
+
+  beforeEach(() => {
+    fetchMock = vi.fn();
+    vi.stubGlobal("fetch", fetchMock);
+  });
+  afterEach(() => {
+    setThinkingPartAvailable(true);
+    vi.unstubAllGlobals();
+  });
+
+  async function ask(ctx: ReturnType<typeof makeProvider>) {
+    await ctx.provider.provideLanguageModelChatResponse(
+      modelInfo(false),
+      [
+        {
+          role: vscode.LanguageModelChatMessageRole.User,
+          content: [new vscode.LanguageModelTextPart("go")],
+        } as never,
+      ],
+      { tools: [], toolMode: 1 } as never,
+      ctx.progress,
+      ctx.token
+    );
+  }
+
+  const reasoningStream = () =>
+    sseResponse([
+      { choices: [{ delta: { reasoning_content: "Let me " } }] },
+      { choices: [{ delta: { reasoning_content: "think." } }] },
+      { choices: [{ delta: { content: "Done." } }] },
+    ]);
+
+  it("reports one thinking part per delta, in order, before the answer", async () => {
+    fetchMock.mockResolvedValue(reasoningStream());
+    const ctx = makeProvider();
+    await ask(ctx);
+
+    expect(ctx.reported.slice(0, 3).map((p) => p.constructor)).toEqual([
+      ThinkingPart(),
+      ThinkingPart(),
+      vscode.LanguageModelTextPart,
+    ]);
+    const parts = thinkingParts(ctx.reported) as unknown as Array<{ value: unknown; id?: string }>;
+    expect(parts.map((p) => p.value)).toEqual(["Let me ", "think."]);
+    expect(parts.every((p) => p.id === undefined)).toBe(true);
+    expect(ctx.reported[ctx.reported.length - 1]).toBeInstanceOf(vscode.LanguageModelDataPart);
+  });
+
+  it("reports thinking parts when the host has the class, and drops them when it does not", async () => {
+    fetchMock.mockImplementation(async () => reasoningStream());
+
+    const withClass = makeProvider();
+    await ask(withClass);
+    expect(thinkingParts(withClass.reported)).toHaveLength(2);
+
+    setThinkingPartAvailable(false);
+    const withoutClass = makeProvider();
+    await ask(withoutClass);
+    expect(withoutClass.reported.map((p) => p.constructor)).toEqual([
+      vscode.LanguageModelTextPart,
+      vscode.LanguageModelDataPart,
+    ]);
   });
 });
 
@@ -521,6 +598,47 @@ describe("provider request retries", () => {
     expect(vi.getTimerCount()).toBe(0);
     expect(ctx.reported).toHaveLength(1);
     expect(ctx.activity).toEqual([true]);
+  });
+
+  it("does not retry after thinking has been shown", async () => {
+    fetchMock.mockResolvedValue(
+      sseResponse([
+        { choices: [{ delta: { reasoning_content: "pondering" } }] },
+        { error: { message: "[503]: busy (reset after 1s)" } },
+      ])
+    );
+    const ctx = makeProvider();
+    const result = (await ask(ctx)) as { ok: boolean; error: Error };
+
+    expect(result.ok).toBe(false);
+    expect(result.error.message).toBe("[503]: busy (reset after 1s)");
+    expect(fetchMock).toHaveBeenCalledTimes(1);
+    expect(vi.getTimerCount()).toBe(0);
+    expect(thinkingParts(ctx.reported)).toHaveLength(1);
+  });
+
+  it("still retries when the reasoning was dropped because the host cannot show it", async () => {
+    setThinkingPartAvailable(false);
+    try {
+      fetchMock
+        .mockResolvedValueOnce(
+          sseResponse([
+            { choices: [{ delta: { reasoning_content: "pondering" } }] },
+            { error: { message: "[503]: busy (reset after 1s)" } },
+          ])
+        )
+        .mockResolvedValueOnce(sseResponse([text("hello")]));
+      const ctx = makeProvider();
+      const result = ask(ctx);
+
+      await vi.advanceTimersByTimeAsync(1000);
+
+      expect(await result).toEqual({ ok: true });
+      expect(fetchMock).toHaveBeenCalledTimes(2);
+      expect(ctx.reported.filter((p) => p instanceof vscode.LanguageModelTextPart)).toHaveLength(1);
+    } finally {
+      setThinkingPartAvailable(true);
+    }
   });
 
   it("does not retry once a tool call has been reported", async () => {

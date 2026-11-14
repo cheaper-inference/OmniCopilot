@@ -37,6 +37,17 @@ interface ConfiguredChatOptions {
   modelConfiguration?: Record<string, unknown>;
 }
 
+/** `vscode.LanguageModelThinkingPart` is proposed API: hosts expose the class
+ * at runtime, the typings do not declare it, and an older host may lack it. */
+type ThinkingPartClass = new (value: string) => vscode.LanguageModelResponsePart;
+
+/** The host's thinking-part class, or undefined when it has none. Read at call
+ * time, never cached at load. */
+function thinkingPartClass(): ThinkingPartClass | undefined {
+  const candidate = (vscode as { LanguageModelThinkingPart?: unknown }).LanguageModelThinkingPart;
+  return typeof candidate === "function" ? (candidate as ThinkingPartClass) : undefined;
+}
+
 /** Picker label for a reasoning tier; an unknown tier shows its identifier. */
 function effortLabel(tier: string): string {
   switch (tier) {
@@ -311,8 +322,9 @@ export class OmniRouteChatProvider
 
     try {
       for (;;) {
-        // Once text or a tool call has reached the editor the answer cannot be
-        // started over; the usage part is bookkeeping and does not count.
+        // Once text, reasoning or a tool call has reached the editor the answer
+        // cannot be started over; the usage part is bookkeeping and does not
+        // count, and neither does reasoning a host without thinking parts dropped.
         let streamedOutput = false;
         let serverUsage: StreamUsage | null = null;
         let completionChars = 0;
@@ -322,6 +334,14 @@ export class OmniRouteChatProvider
             if (token.isCancellationRequested) break;
             if (event.kind === "usage") {
               serverUsage = event.usage;
+            } else if (event.kind === "thinking") {
+              // Proposed API: the class may be missing, so it is looked up for
+              // every part. Without it the reasoning is dropped, not delivered.
+              const ThinkingPart = thinkingPartClass();
+              if (ThinkingPart) {
+                streamedOutput = true;
+                progress.report(new ThinkingPart(event.text));
+              }
             } else if (event.kind === "text") {
               streamedOutput = true;
               completionChars += event.text.length;

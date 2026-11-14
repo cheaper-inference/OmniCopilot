@@ -42,12 +42,21 @@ export enum LanguageModelChatToolMode {
   Required = 2,
 }
 
-export class LanguageModelThinkingPart {
+class ThinkingPart {
   constructor(
     public value: string | string[],
     public id?: string,
     public metadata?: Record<string, unknown>
   ) {}
+}
+
+/** Proposed API: a host may not expose the class. It is a live binding the
+ * provider reads at call time, so `setThinkingPartAvailable(false)` makes it
+ * absent for one test and `(true)` restores it. */
+export let LanguageModelThinkingPart: typeof ThinkingPart | undefined = ThinkingPart;
+
+export function setThinkingPartAvailable(available: boolean): void {
+  LanguageModelThinkingPart = available ? ThinkingPart : undefined;
 }
 
 export class ThemeIcon {
