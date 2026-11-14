@@ -371,6 +371,7 @@ export class OmniRouteClient {
     }
     if (choice.finish_reason) {
       yield* assembler.flush();
+      yield { kind: "finish", reason: choice.finish_reason };
     }
   }
 }

@@ -84,6 +84,7 @@ describe("OmniRouteClient.streamChat", () => {
     const events = await collect(new OmniRouteClient({ baseUrl: "http://x/v1" }));
     expect(events).toEqual([
       { kind: "usage", usage: { prompt_tokens: 407, completion_tokens: 169, total_tokens: 576 } },
+      { kind: "finish", reason: "stop" },
     ]);
   });
 
@@ -102,6 +103,7 @@ describe("OmniRouteClient.streamChat", () => {
     const events = await collect(new OmniRouteClient({ baseUrl: "http://x/v1" }));
     expect(events).toEqual([
       { kind: "toolCall", id: "c1", name: "read_file", args: '{"path":"a"}' },
+      { kind: "finish", reason: "tool_calls" },
     ]);
   });
 
@@ -464,7 +466,8 @@ describe("OmniRouteClient.streamChat errors", () => {
       )
     );
     const events = await collect(client());
-    expect(events).toHaveLength(1);
+    expect(events).toHaveLength(2);
+    expect(events[1]).toEqual({ kind: "finish", reason: "tool_calls" });
     expect(events[0]).toMatchObject({ kind: "toolCall", name: "run", args: "{}" });
     expect((events[0] as { id: string }).id).toMatch(/^call_[0-9a-f]{8}$/);
   });
@@ -571,6 +574,37 @@ describe("OmniRouteClient.streamChat tool-call assembly", () => {
       toolDelta({ index: 0, id: "late", function: { arguments: ":1}" } }),
     ]);
     expect(calls).toEqual([{ kind: "toolCall", id: "late", name: "run", args: '{"x":1}' }]);
+  });
+});
+
+describe("OmniRouteClient.streamChat finish reason", () => {
+  afterEach(() => vi.unstubAllGlobals());
+
+  it("reports the finish_reason after the tool calls it flushed", async () => {
+    vi.stubGlobal(
+      "fetch",
+      vi.fn().mockResolvedValue(
+        sseResponse([
+          'data: {"choices":[{"delta":{"tool_calls":[{"index":0,"id":"c1","function":{"name":"run","arguments":"{}"}}]}}]}',
+          'data: {"choices":[{"delta":{},"finish_reason":"length"}]}',
+          "data: [DONE]",
+        ])
+      )
+    );
+    const events = await collect(new OmniRouteClient({ baseUrl: "http://x/v1" }));
+    expect(events).toEqual([
+      { kind: "toolCall", id: "c1", name: "run", args: "{}" },
+      { kind: "finish", reason: "length" },
+    ]);
+  });
+
+  it("reports no finish event for a stream that ended without a finish_reason", async () => {
+    vi.stubGlobal(
+      "fetch",
+      vi.fn().mockResolvedValue(sseResponse(['data: {"choices":[{"delta":{"content":"hi"}}]}']))
+    );
+    const events = await collect(new OmniRouteClient({ baseUrl: "http://x/v1" }));
+    expect(events).toEqual([{ kind: "text", text: "hi" }]);
   });
 });
 

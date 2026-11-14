@@ -298,6 +298,120 @@ describe("provider reasoning", () => {
   });
 });
 
+describe("provider cut-off answers", () => {
+  let fetchMock: ReturnType<typeof vi.fn>;
+
+  beforeEach(() => {
+    fetchMock = vi.fn();
+    vi.stubGlobal("fetch", fetchMock);
+  });
+  afterEach(() => vi.unstubAllGlobals());
+
+  const CUT_OFF =
+    "The model's answer was cut off before the tool call was complete. Raise omnicopilot.maxOutputTokens or ask for smaller steps.";
+  const INVALID = "The model sent a tool call with invalid arguments.";
+
+  const toolCallChunk = (args: string) => ({
+    choices: [
+      {
+        delta: { tool_calls: [{ index: 0, id: "call_1", function: { name: "read_file", arguments: args } }] },
+      },
+    ],
+  });
+  const finishChunk = (reason: string) => ({ choices: [{ delta: {}, finish_reason: reason }] });
+
+  function ask(ctx: ReturnType<typeof makeProvider>) {
+    return ctx.provider.provideLanguageModelChatResponse(
+      modelInfo(false),
+      [
+        {
+          role: vscode.LanguageModelChatMessageRole.User,
+          content: [new vscode.LanguageModelTextPart("go")],
+        } as never,
+      ],
+      { tools: [], toolMode: 1 } as never,
+      ctx.progress,
+      ctx.token
+    );
+  }
+  const toolCallParts = (reported: Reported[]) =>
+    reported.filter((part) => part instanceof vscode.LanguageModelToolCallPart);
+
+  it("fails, and reports no tool call, when the arguments were cut off by the output limit", async () => {
+    fetchMock.mockResolvedValue(sseResponse([toolCallChunk('{"path":"src/a'), finishChunk("length")]));
+    const ctx = makeProvider();
+    await expect(ask(ctx)).rejects.toThrow(CUT_OFF);
+    expect(toolCallParts(ctx.reported)).toHaveLength(0);
+    expect(fetchMock).toHaveBeenCalledTimes(1);
+  });
+
+  it("fails with the invalid-arguments message for garbage arguments and a normal stop", async () => {
+    fetchMock.mockResolvedValue(sseResponse([toolCallChunk("not json at all"), finishChunk("stop")]));
+    const ctx = makeProvider();
+    await expect(ask(ctx)).rejects.toThrow(INVALID);
+    expect(toolCallParts(ctx.reported)).toHaveLength(0);
+    expect(fetchMock).toHaveBeenCalledTimes(1);
+  });
+
+  it("fails with the invalid-arguments message when the stream ends with no finish reason", async () => {
+    const lines = `data: ${JSON.stringify(toolCallChunk('{"path":'))}\n`;
+    fetchMock.mockResolvedValue(
+      new Response(new TextEncoder().encode(lines), { status: 200 })
+    );
+    const ctx = makeProvider();
+    await expect(ask(ctx)).rejects.toThrow(INVALID);
+    expect(toolCallParts(ctx.reported)).toHaveLength(0);
+  });
+
+  it("treats empty arguments as a call without parameters", async () => {
+    fetchMock.mockResolvedValue(sseResponse([toolCallChunk(""), finishChunk("tool_calls")]));
+    const ctx = makeProvider();
+    await ask(ctx);
+    const calls = toolCallParts(ctx.reported) as vscode.LanguageModelToolCallPart[];
+    expect(calls).toHaveLength(1);
+    expect(calls[0].input).toEqual({});
+  });
+
+  it("reports a call whose arguments were complete even though the answer stopped at the limit", async () => {
+    fetchMock.mockResolvedValue(sseResponse([toolCallChunk('{"path":"a"}'), finishChunk("length")]));
+    const ctx = makeProvider();
+    await ask(ctx);
+    const calls = toolCallParts(ctx.reported) as vscode.LanguageModelToolCallPart[];
+    expect(calls).toHaveLength(1);
+    expect(calls[0].input).toEqual({ path: "a" });
+  });
+
+  it("delivers text cut by the limit as it is and only writes the fact to the log", async () => {
+    fetchMock.mockResolvedValue(
+      sseResponse([{ choices: [{ delta: { content: "half an ans" } }] }, finishChunk("length")])
+    );
+    const ctx = makeProvider();
+    await ask(ctx);
+    expect((ctx.reported[0] as vscode.LanguageModelTextPart).value).toBe("half an ans");
+    expect(ctx.log.warn).toHaveBeenCalledTimes(1);
+    expect(String(ctx.log.warn.mock.calls[0][0])).toContain("length");
+  });
+
+  it("writes a content filter stop to the log as well", async () => {
+    fetchMock.mockResolvedValue(
+      sseResponse([{ choices: [{ delta: { content: "partial" } }] }, finishChunk("content_filter")])
+    );
+    const ctx = makeProvider();
+    await ask(ctx);
+    expect((ctx.reported[0] as vscode.LanguageModelTextPart).value).toBe("partial");
+    expect(String(ctx.log.warn.mock.calls[0][0])).toContain("content_filter");
+  });
+
+  it("stays quiet for an ordinary stop", async () => {
+    fetchMock.mockResolvedValue(
+      sseResponse([{ choices: [{ delta: { content: "done" } }] }, finishChunk("stop")])
+    );
+    const ctx = makeProvider();
+    await ask(ctx);
+    expect(ctx.log.warn).not.toHaveBeenCalled();
+  });
+});
+
 describe("provider catalog", () => {
   let fetchMock: ReturnType<typeof vi.fn>;
 
