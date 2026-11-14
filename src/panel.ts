@@ -176,8 +176,11 @@ export class OmniPanelProvider implements vscode.WebviewViewProvider {
         break;
 
       case "save": {
+        // The webview leaves out a field the user has not seen filled yet (Save pressed
+        // before the first status): an absent URL keeps the configured address, an
+        // absent box keeps the switch. An empty URL the user left there is the default.
         // Store the server root; `/v1` is appended per request by the client.
-        const url = serverRootUrl(String(msg.url ?? ""));
+        const url = msg.url === undefined ? undefined : serverRootUrl(String(msg.url ?? ""));
 
         // Empty key field = keep the stored key; the explicit Clear button removes it.
         // Saving is the user confirming this URL in our own UI, so it is also
@@ -186,13 +189,13 @@ export class OmniPanelProvider implements vscode.WebviewViewProvider {
         // key approved instead of reporting it withheld.
         const stored = await saveKeyFromPanel(this.context, {
           key: String(msg.apiKey ?? "").trim(),
-          useWorkspaceKey: msg.useWorkspaceKey === true,
+          useWorkspaceKey: msg.useWorkspaceKey === undefined ? undefined : msg.useWorkspaceKey === true,
           url,
         });
         if (stored) this.log.info("API key stored via panel");
 
         // An unchanged URL is not written again (Save with only a new key).
-        if (url !== serverRootUrl((await resolveConnection(this.context)).baseUrl)) {
+        if (url !== undefined && url !== serverRootUrl((await resolveConnection(this.context)).baseUrl)) {
           await vscode.workspace
             .getConfiguration("omnicopilot")
             .update("baseUrl", url, vscode.ConfigurationTarget.Global);
@@ -445,18 +448,25 @@ export class OmniPanelProvider implements vscode.WebviewViewProvider {
     let lastReportedUrl;
     // Same for the "only in this workspace" box.
     let lastReportedUseWorkspaceKey;
+    // Whether the URL field and the box hold something the user could see: a status
+    // filled them, or the user typed / clicked before one arrived. Until then Save
+    // leaves them out, so the host keeps the configured address and the key scope.
+    let urlKnown = false;
+    let boxKnown = false;
+    $("url").addEventListener("input", () => { urlKnown = true; });
+    $("useWs").addEventListener("change", () => { boxKnown = true; });
     $("useWsText").textContent = S.useWorkspaceKey;
 
     $("save").addEventListener("click", () => {
       // What is saved becomes the host's value: let the next status replace it
       // with the normalised URL the host stored.
-      lastReportedUrl = $("url").value;
-      lastReportedUseWorkspaceKey = $("useWs").checked;
+      if (urlKnown) lastReportedUrl = $("url").value;
+      if (boxKnown) lastReportedUseWorkspaceKey = $("useWs").checked;
       vscodeApi.postMessage({
         type: "save",
-        url: $("url").value,
+        ...(urlKnown ? { url: $("url").value } : {}),
         apiKey: $("key").value,
-        useWorkspaceKey: $("useWs").checked,
+        ...(boxKnown ? { useWorkspaceKey: $("useWs").checked } : {}),
       });
       $("key").value = "";
       $("statusText").textContent = S.testing;
@@ -510,6 +520,8 @@ export class OmniPanelProvider implements vscode.WebviewViewProvider {
         reported: msg.useWorkspaceKey === true,
       });
       lastReportedUseWorkspaceKey = msg.useWorkspaceKey === true;
+      urlKnown = true;
+      boxKnown = true;
       $("keyScope").textContent =
         msg.keyScope === "workspace" ? S.usingWorkspaceKey : msg.keyScope === "global" ? S.usingGlobalKey : "";
       const st = $("statusText");

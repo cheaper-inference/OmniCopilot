@@ -492,23 +492,31 @@ export async function clearApiKey(
  * the URL being saved. Ticked with a key typed stores a workspace key; unticked
  * with a key typed stores the global one and turns the switch off; with no key
  * typed only the switch changes, and the URL is approved for the key then in
- * effect. Without an open workspace the box means nothing. Returns whether a key
- * was stored.
+ * effect. Without an open workspace the box means nothing.
+ *
+ * A field the panel had not shown the user yet (its first status had not arrived)
+ * comes as undefined and keeps what is configured: an undefined box keeps the switch,
+ * and a typed key goes to the scope the switch selects; an undefined URL approves
+ * nothing new (a typed key is approved for the configured address only). Returns
+ * whether a key was stored.
  */
 export async function saveKeyFromPanel(
   context: vscode.ExtensionContext,
-  args: { key: string; useWorkspaceKey: boolean; url: string }
+  args: { key: string; useWorkspaceKey: boolean | undefined; url: string | undefined }
 ): Promise<boolean> {
   const hasWorkspace = currentWorkspaceIdentity() !== undefined;
-  const useWorkspace = hasWorkspace && args.useWorkspaceKey;
-  if (hasWorkspace && !useWorkspace) await setUseWorkspaceKey(context, false);
+  const keepSwitch = args.useWorkspaceKey === undefined;
+  const useWorkspace = keepSwitch
+    ? chosenKeyScope(context) === "workspace"
+    : hasWorkspace && args.useWorkspaceKey === true;
+  if (!keepSwitch && hasWorkspace && !useWorkspace) await setUseWorkspaceKey(context, false);
 
   if (args.key) {
     await storeApiKey(context, args.key, args.url, useWorkspace ? "workspace" : "global");
     return true;
   }
-  if (useWorkspace) await setUseWorkspaceKey(context, true);
-  await rebindApiKey(context, args.url, await keyScopeInEffect(context));
+  if (!keepSwitch && useWorkspace) await setUseWorkspaceKey(context, true);
+  if (args.url !== undefined) await rebindApiKey(context, args.url, await keyScopeInEffect(context));
   return false;
 }
 

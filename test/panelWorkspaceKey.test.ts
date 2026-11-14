@@ -1,8 +1,9 @@
 import { runInNewContext } from "node:vm";
 import { afterEach, describe, expect, it, vi } from "vitest";
 import * as vscode from "vscode";
-import { setMockConfig, setMockWorkspace } from "./vscode.mock";
+import { ConfigurationTarget, configUpdates, setMockConfig, setMockWorkspace } from "./vscode.mock";
 import { OmniRouteClient } from "../src/client";
+import { workspaceOriginsSecretName, workspaceSecretName } from "../src/connection";
 import type { ProbeResult } from "../src/diagnostics";
 import { OmniPanelProvider, embeddedNextCheckboxValue, nextCheckboxValue } from "../src/panel";
 import { listedModels } from "./panelHelpers";
@@ -180,5 +181,231 @@ describe("panel document, workspace key", () => {
     const { panel } = openPanel();
     const html = (panel as unknown as { html(): string }).html();
     expect(html).toContain('useWorkspaceKey: $("useWs").checked');
+  });
+});
+
+describe("a Save pressed before the panel's first status", () => {
+  const TEAM = "https://team.example";
+  const GLOBAL_KEY = "omnicopilot.apiKey";
+  const GLOBAL_LIST = "omnicopilot.apiKeyOrigins";
+
+  afterEach(() => {
+    vi.restoreAllMocks();
+    setMockWorkspace();
+  });
+
+  type FakeElement = {
+    id: string;
+    value: string;
+    checked: boolean;
+    textContent: string;
+    style: Record<string, string>;
+    className: string;
+    dataset: Record<string, string>;
+    listeners: Record<string, () => void>;
+    addEventListener(type: string, listener: () => void): void;
+    append(...nodes: unknown[]): void;
+    setAttribute(): void;
+  };
+
+  /** Runs the panel's real webview script against a minimal DOM. Nothing is delivered
+   * to it until the test calls `deliver`; what it posts lands in `messages`. */
+  function runScript(panel: OmniPanelProvider) {
+    const html = (panel as unknown as { html(): string }).html();
+    const script = /<script nonce="[^"]+">([\s\S]*?)<\/script>/.exec(html)![1];
+    const elements = new Map<string, FakeElement>();
+    let created = 0;
+    const el = (id: string): FakeElement => {
+      let found = elements.get(id);
+      if (!found) {
+        found = {
+          id,
+          value: "",
+          checked: false,
+          textContent: "",
+          style: {},
+          className: "",
+          dataset: {},
+          listeners: {},
+          addEventListener(type, listener) {
+            this.listeners[type] = listener;
+          },
+          append() {},
+          setAttribute() {},
+        };
+        elements.set(id, found);
+      }
+      return found;
+    };
+    const messages: Array<Record<string, unknown>> = [];
+    let onMessage: ((event: { data: unknown }) => void) | undefined;
+    runInNewContext(script, {
+      document: {
+        getElementById: el,
+        querySelectorAll: () => [],
+        createElement: () => el(`created-${++created}`),
+      },
+      acquireVsCodeApi: () => ({ postMessage: (message: Record<string, unknown>) => void messages.push(message) }),
+      window: {
+        addEventListener: (type: string, listener: (event: { data: unknown }) => void) => {
+          if (type === "message") onMessage = listener;
+        },
+      },
+    });
+    return {
+      el,
+      messages,
+      deliver: (data: Record<string, unknown>) => onMessage?.({ data }),
+      /** The user types into the URL field. */
+      typeUrl: (value: string) => {
+        el("url").value = value;
+        el("url").listeners.input?.();
+      },
+      /** The user clicks the "only in this workspace" box. */
+      clickBox: () => {
+        el("useWs").checked = !el("useWs").checked;
+        el("useWs").listeners.change?.();
+      },
+      /** The user pastes a key and presses Save & Test; returns the message posted. */
+      save: (key: string) => {
+        el("key").value = key;
+        el("save").listeners.click();
+        return messages.filter((message) => message.type === "save").at(-1)!;
+      },
+    };
+  }
+
+  /** A panel on TEAM with a global key, and, in a workspace, its own key in use. */
+  function setUp(opts: { workspace: boolean }) {
+    const ctx = openPanel();
+    setMockConfig({ baseUrl: TEAM });
+    ctx.secrets.set(GLOBAL_KEY, "sk-global-own");
+    ctx.secrets.set(GLOBAL_LIST, JSON.stringify([TEAM]));
+    if (opts.workspace) {
+      setMockWorkspace({ folders: [WS] });
+      ctx.secrets.set(workspaceSecretName(WS), "sk-ws-old");
+      ctx.secrets.set(workspaceOriginsSecretName(WS), JSON.stringify([TEAM]));
+      ctx.state.set("omnicopilot.useWorkspaceKey", true);
+    }
+    return { ...ctx, script: runScript(ctx.panel) };
+  }
+
+  const firstStatus = (fields: Record<string, unknown> = {}) => ({
+    type: "status",
+    online: false,
+    url: TEAM,
+    modelCount: null,
+    hasKey: true,
+    keyScope: "workspace",
+    workspaceKeyAvailable: true,
+    useWorkspaceKey: true,
+    ...fields,
+  });
+
+  it("stores the key in the workspace that uses its own, and touches neither the global key, the switch nor the address", async () => {
+    const { script, send, secrets, state } = setUp({ workspace: true });
+
+    const message = script.save("sk-ws-new");
+    expect(message).toEqual({ type: "save", apiKey: "sk-ws-new" });
+    await send(message);
+
+    expect(secrets.get(workspaceSecretName(WS))).toBe("sk-ws-new");
+    expect(secrets.get(workspaceOriginsSecretName(WS))).toBe(JSON.stringify([TEAM]));
+    expect(secrets.get(GLOBAL_KEY)).toBe("sk-global-own");
+    expect(secrets.get(GLOBAL_LIST)).toBe(JSON.stringify([TEAM]));
+    expect(state.get("omnicopilot.useWorkspaceKey")).toBe(true);
+    expect(configUpdates).toEqual([]);
+  });
+
+  it("replaces the global key without a workspace, and leaves the address alone", async () => {
+    const { script, send, secrets } = setUp({ workspace: false });
+
+    const message = script.save("sk-global-new");
+    expect(message).toEqual({ type: "save", apiKey: "sk-global-new" });
+    await send(message);
+
+    expect(secrets.get(GLOBAL_KEY)).toBe("sk-global-new");
+    expect(secrets.get(GLOBAL_LIST)).toBe(JSON.stringify([TEAM]));
+    expect(configUpdates).toEqual([]);
+  });
+
+  it("sends what the first status filled in, and the host acts on it as before", async () => {
+    const { script, send, secrets, state } = setUp({ workspace: true });
+    script.deliver(firstStatus());
+    expect(script.el("url").value).toBe(TEAM);
+    expect(script.el("useWs").checked).toBe(true);
+
+    // The user unticks the box and saves a key: it becomes the global key, the switch goes off.
+    script.clickBox();
+    const message = script.save("sk-global-new");
+    expect(message).toEqual({ type: "save", url: TEAM, apiKey: "sk-global-new", useWorkspaceKey: false });
+    await send(message);
+
+    expect(secrets.get(GLOBAL_KEY)).toBe("sk-global-new");
+    expect(secrets.get(workspaceSecretName(WS))).toBe("sk-ws-old");
+    expect(state.get("omnicopilot.useWorkspaceKey")).toBe(false);
+    expect(configUpdates).toEqual([]);
+  });
+
+  it("still saves the default address when the user cleared the field after the first status", async () => {
+    const { script, send } = setUp({ workspace: false });
+    script.deliver(firstStatus({ workspaceKeyAvailable: false, useWorkspaceKey: false, keyScope: "global" }));
+
+    script.typeUrl("");
+    const message = script.save("");
+    expect(message).toMatchObject({ url: "" });
+    await send(message);
+
+    expect(configUpdates).toEqual([
+      { key: "baseUrl", value: "http://localhost:20128", target: ConfigurationTarget.Global },
+    ]);
+  });
+
+  it("saves a URL the user typed before the first status, and keeps the key scope", async () => {
+    const { script, send, secrets, state } = setUp({ workspace: true });
+
+    script.typeUrl("https://new.example");
+    const message = script.save("sk-ws-new");
+    expect(message).toEqual({ type: "save", url: "https://new.example", apiKey: "sk-ws-new" });
+    await send(message);
+
+    expect(configUpdates).toEqual([
+      { key: "baseUrl", value: "https://new.example", target: ConfigurationTarget.Global },
+    ]);
+    expect(secrets.get(workspaceSecretName(WS))).toBe("sk-ws-new");
+    expect(secrets.get(workspaceOriginsSecretName(WS))).toBe(JSON.stringify(["https://new.example"]));
+    expect(secrets.get(GLOBAL_KEY)).toBe("sk-global-own");
+    expect(state.get("omnicopilot.useWorkspaceKey")).toBe(true);
+  });
+
+  it("keeps the configured address and the switch for a save message without url and useWorkspaceKey (host side)", async () => {
+    const { send, secrets, state } = setUp({ workspace: true });
+
+    await send({ type: "save", apiKey: "sk-ws-new" });
+
+    expect(secrets.get(workspaceSecretName(WS))).toBe("sk-ws-new");
+    expect(secrets.get(GLOBAL_KEY)).toBe("sk-global-own");
+    expect(secrets.get(GLOBAL_LIST)).toBe(JSON.stringify([TEAM]));
+    expect(state.get("omnicopilot.useWorkspaceKey")).toBe(true);
+    expect(configUpdates).toEqual([]);
+  });
+
+  it("approves nothing new for a save message without url and without a key (host side)", async () => {
+    const { send, secrets, state } = setUp({ workspace: true });
+
+    await send({ type: "save", apiKey: "" });
+
+    expect(secrets.get(workspaceOriginsSecretName(WS))).toBe(JSON.stringify([TEAM]));
+    expect(secrets.get(GLOBAL_LIST)).toBe(JSON.stringify([TEAM]));
+    expect(state.get("omnicopilot.useWorkspaceKey")).toBe(true);
+    expect(configUpdates).toEqual([]);
+  });
+
+  it("sends the box once the user clicked it, even before the first status", () => {
+    const { script } = setUp({ workspace: true });
+
+    script.clickBox();
+
+    expect(script.save("sk-x")).toEqual({ type: "save", apiKey: "sk-x", useWorkspaceKey: true });
   });
 });
