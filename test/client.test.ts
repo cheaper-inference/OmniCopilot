@@ -607,15 +607,43 @@ describe("OmniRouteClient.streamChat tool-call assembly", () => {
     ]);
   });
 
-  it("finds a call again by its id when a later fragment carries no index", async () => {
+  it("never lets an id reach across indexes: one id on two indexes is two calls", async () => {
     const calls = await toolCalls([
-      toolDelta({ index: 0, id: "a", function: { name: "run", arguments: '{"x"' } }),
-      toolDelta({ index: 1, id: "b", function: { name: "other", arguments: "{}" } }),
-      toolDelta({ id: "a", function: { arguments: ":1}" } }),
+      toolDelta({ index: 0, id: "same", function: { name: "read_file", arguments: '{"p"' } }),
+      toolDelta({ index: 1, id: "same", function: { name: "list_dir", arguments: '{"d"' } }),
+      toolDelta({ index: 0, id: "same", function: { arguments: ":1}" } }),
+      toolDelta({ index: 1, id: "same", function: { arguments: ":2}" } }),
     ]);
     expect(calls).toEqual([
-      { kind: "toolCall", id: "a", name: "run", args: '{"x":1}' },
-      { kind: "toolCall", id: "b", name: "other", args: "{}" },
+      { kind: "toolCall", id: "same", name: "read_file", args: '{"p":1}' },
+      { kind: "toolCall", id: "same", name: "list_dir", args: '{"d":2}' },
+    ]);
+  });
+
+  it("keeps an indexed call apart from an indexless one that carries the same id", async () => {
+    const calls = await toolCalls([
+      toolDelta({ index: 0, id: "same", function: { name: "indexed", arguments: "{}" } }),
+      toolDelta({ id: "same", function: { name: "plain", arguments: "{}" } }),
+    ]);
+    expect(calls.map((c) => (c as { name: string }).name)).toEqual(["indexed", "plain"]);
+  });
+
+  it("routes by id among the calls of one index and among the indexless ones", async () => {
+    const calls = await toolCalls([
+      toolDelta({ index: 0, id: "a", function: { name: "x", arguments: '{"p"' } }),
+      toolDelta({ index: 0, id: "b", function: { name: "y", arguments: '{"q"' } }),
+      toolDelta({ id: "c", function: { name: "u", arguments: '{"r"' } }),
+      toolDelta({ id: "d", function: { name: "v", arguments: '{"s"' } }),
+      toolDelta({ index: 0, id: "a", function: { arguments: ":1}" } }),
+      toolDelta({ id: "c", function: { arguments: ":3}" } }),
+      toolDelta({ index: 0, id: "b", function: { arguments: ":2}" } }),
+      toolDelta({ id: "d", function: { arguments: ":4}" } }),
+    ]);
+    expect(calls).toEqual([
+      { kind: "toolCall", id: "a", name: "x", args: '{"p":1}' },
+      { kind: "toolCall", id: "b", name: "y", args: '{"q":2}' },
+      { kind: "toolCall", id: "c", name: "u", args: '{"r":3}' },
+      { kind: "toolCall", id: "d", name: "v", args: '{"s":4}' },
     ]);
   });
 

@@ -413,43 +413,45 @@ function deltaIndex(index: unknown): number | undefined {
 /** Reassembles incremental tool_calls deltas into complete calls, emitted once
  * their JSON arguments are whole.
  *
- * A fragment belongs to the slot of its `id` when that id was seen before, else
- * to the slot of its `index`, else to the most recent slot. Servers do not agree
- * on this: some leave `index` out, some reuse one index for several calls (told
- * apart by `id`), some stamp a new id on every fragment of one call and some
- * repeat the whole name in every delta. A different id starts another call only
- * when the delta names a function, as a new call must; otherwise it continues
- * the call it lands on, which keeps its first id. */
+ * The index is primary and an id never crosses indexes. A delta is routed among
+ * the slots opened under its own index (the slots opened without one, when it
+ * has none): to the one that has its id; to a new slot when its id is new there
+ * and it names a function, as a new call must; otherwise to the slot opened last
+ * (a continuation, which keeps its first id), or to a new one when there is none.
+ * Servers do not agree on any of this: some leave `index` out, some reuse one
+ * index for several calls (told apart by `id`), some stamp a new id on every
+ * fragment of one call, some label calls on different indexes with one id, and
+ * some repeat the whole name in every delta. */
 class ToolCallAssembler {
-  /** Slots in the order they were opened. */
+  /** Every slot, in the order it was opened. */
   private slots: ToolCallSlot[] = [];
-  private byIndex = new Map<number, ToolCallSlot>();
-  private byId = new Map<string, ToolCallSlot>();
+  /** The slots of each scope (an index, or "none"), in the order they were opened. */
+  private scopes = new Map<number | "none", ToolCallSlot[]>();
 
   accept(deltas: StreamToolCallDelta[]): void {
     for (const d of deltas) {
       const id = typeof d.id === "string" ? d.id : "";
-      const index = deltaIndex(d.index);
       const name = typeof d.function?.name === "string" ? d.function.name : "";
+      const scope = deltaIndex(d.index) ?? "none";
+      let inScope = this.scopes.get(scope);
+      if (!inScope) {
+        inScope = [];
+        this.scopes.set(scope, inScope);
+      }
 
-      let slot: ToolCallSlot | undefined = id ? this.byId.get(id) : undefined;
+      let slot = id ? inScope.find((candidate) => candidate.id === id) : undefined;
       if (!slot) {
-        const current = index === undefined ? this.slots[this.slots.length - 1] : this.byIndex.get(index);
-        // Another id on a call that is already named is a new call only if this
-        // delta names one too.
-        slot = current && id && current.id && current.id !== id && name ? undefined : current;
+        const last = inScope[inScope.length - 1];
+        // A new id on a call that already has another id starts a call only if
+        // the delta names a function too.
+        slot = last && id && last.id && name ? undefined : last;
       }
       if (!slot) {
         slot = { id: "", name: "", args: "" };
         this.slots.push(slot);
-        if (index !== undefined) this.byIndex.set(index, slot);
-      } else if (index !== undefined && !this.byIndex.has(index)) {
-        this.byIndex.set(index, slot);
+        inScope.push(slot);
       }
-      if (id && !slot.id) {
-        slot.id = id;
-        this.byId.set(id, slot);
-      }
+      if (id && !slot.id) slot.id = id;
 
       if (name) {
         // Same rule as the server's own bookkeeping: a name that repeats or
@@ -472,8 +474,7 @@ class ToolCallAssembler {
       yield { kind: "toolCall", id, name: call.name, args: call.args || "{}" };
     }
     this.slots = [];
-    this.byIndex.clear();
-    this.byId.clear();
+    this.scopes.clear();
   }
 }
 
