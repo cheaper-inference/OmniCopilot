@@ -297,6 +297,20 @@ describe("OmniRoute: Refresh models", () => {
     ext.dispose();
   });
 
+  it("says the server needs a key when none is stored", async () => {
+    stubServer({ listingStatus: 401 });
+    setMockConfig({ baseUrl: "http://localhost:20128" });
+    const info = vi.spyOn(vscode.window, "showInformationMessage");
+    const warn = vi.spyOn(vscode.window, "showWarningMessage");
+    const ext = activated();
+
+    await ext.run("omnicopilot.refreshModels");
+
+    expect(texts(warn)).toEqual(["OmniRoute at http://localhost:20128 needs an API key (HTTP 401)."]);
+    expect(info).not.toHaveBeenCalled();
+    ext.dispose();
+  });
+
   it("explains a withheld key instead of claiming the key was rejected", async () => {
     stubServer({ listingStatus: 401 });
     setMockConfig({ baseUrl: "http://localhost:20128" });
@@ -362,6 +376,20 @@ describe("OmniRoute: Check connection after a real listing", () => {
     await ext.run("omnicopilot.checkConnection");
 
     expect(texts(warn)).toEqual(["OmniRoute at http://localhost:20128 rejected the API key (HTTP 403)."]);
+    expect(texts(info).filter((text) => text.startsWith("Connected"))).toEqual([]);
+    ext.dispose();
+  });
+
+  it("says the server needs a key when it rejects the listing and none is stored", async () => {
+    stubServer({ listingStatus: 401 });
+    setMockConfig({ baseUrl: "http://localhost:20128" });
+    const info = vi.spyOn(vscode.window, "showInformationMessage");
+    const warn = vi.spyOn(vscode.window, "showWarningMessage");
+    const ext = activated();
+
+    await ext.run("omnicopilot.checkConnection");
+
+    expect(texts(warn)).toEqual(["OmniRoute at http://localhost:20128 needs an API key (HTTP 401)."]);
     expect(texts(info).filter((text) => text.startsWith("Connected"))).toEqual([]);
     ext.dispose();
   });

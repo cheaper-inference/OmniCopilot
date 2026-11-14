@@ -239,7 +239,7 @@ export class OmniRouteChatProvider
         if (!isKeyRejection(status)) {
           void this.offerConnectionHelp(serverUrl);
         } else if (!connection.keyWithheld) {
-          void this.offerKeyHelp(serverUrl, status);
+          void this.offerKeyHelp(serverUrl, status, connection.hasStoredKey);
         }
         // With the key withheld a 401/403 is the expected answer: the
         // withheld-key warning and the panel already say why.
@@ -362,11 +362,15 @@ export class OmniRouteChatProvider
     }
   }
 
-  /** `serverUrl` is the root of the resolved connection the listing went to. */
-  private async offerKeyHelp(serverUrl: string, status: number): Promise<void> {
+  /** `serverUrl` is the root of the resolved connection the listing went to.
+   * Without a stored key the server is not rejecting one: it needs one. */
+  private async offerKeyHelp(serverUrl: string, status: number, hasKey: boolean): Promise<void> {
     const setKeyLabel = vscode.l10n.t("Set API key");
+    const address = displayUrl(serverUrl);
     const pick = await vscode.window.showWarningMessage(
-      vscode.l10n.t("OmniRoute at {0} rejected the API key (HTTP {1}).", displayUrl(serverUrl), status),
+      hasKey
+        ? vscode.l10n.t("OmniRoute at {0} rejected the API key (HTTP {1}).", address, status)
+        : vscode.l10n.t("OmniRoute at {0} needs an API key (HTTP {1}).", address, status),
       setKeyLabel
     );
     if (pick === setKeyLabel) {
