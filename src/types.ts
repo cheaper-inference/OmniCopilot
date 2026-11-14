@@ -207,7 +207,10 @@ export interface StreamErrorBody {
 export type StreamEvent =
   | { kind: "text"; text: string }
   | { kind: "thinking"; text: string }
-  | { kind: "toolCall"; id: string; name: string; args: string }
+  /** `cutOff`: the output limit (`finish_reason: "length"`) came before any argument
+   * text (or only whitespace) arrived, so the call is incomplete; `args` is then the
+   * raw text. Without the flag, a call that got no argument text has `args: "{}"`. */
+  | { kind: "toolCall"; id: string; name: string; args: string; cutOff?: true }
   | { kind: "usage"; usage: StreamUsage }
   /** Why the server ended the answer (`stop`, `length`, `tool_calls`…); sent after
    * the tool calls it flushed. A stream that ends without one sends no event. */
