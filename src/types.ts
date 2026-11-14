@@ -131,7 +131,8 @@ export interface ChatRequest {
 
 /** Incremental tool-call fragment inside a stream delta. */
 export interface StreamToolCallDelta {
-  index: number;
+  /** Missing on some servers; a non-integer is treated as missing. */
+  index?: number;
   id?: string;
   type?: string;
   function?: { name?: string; arguments?: string };

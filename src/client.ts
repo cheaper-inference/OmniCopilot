@@ -395,30 +395,68 @@ function reasoningText(delta: StreamDelta): string {
   return text;
 }
 
-/** Reassembles incremental tool_calls deltas (indexed fragments) into
- * complete calls, emitted once their JSON arguments are whole. */
+interface ToolCallSlot {
+  id: string;
+  name: string;
+  args: string;
+}
+
+/** Reassembles incremental tool_calls deltas into complete calls, emitted once
+ * their JSON arguments are whole.
+ *
+ * A fragment belongs to the slot of its `index` when that is an integer, else
+ * to the slot of its `id`, else to the most recent slot. Servers do not agree
+ * on this: some leave `index` out, some reuse one index for several calls
+ * (told apart by `id`) and some repeat the whole name in every delta. */
 class ToolCallAssembler {
-  private pending = new Map<number, { id: string; name: string; args: string }>();
+  /** Slots in the order they were opened. */
+  private slots: ToolCallSlot[] = [];
+  private byKey = new Map<string, ToolCallSlot>();
 
   accept(deltas: StreamToolCallDelta[]): void {
     for (const d of deltas) {
-      const slot = this.pending.get(d.index) ?? { id: "", name: "", args: "" };
-      if (d.id) slot.id = d.id;
-      if (d.function?.name) slot.name += d.function.name;
+      const id = typeof d.id === "string" ? d.id : "";
+      const key = Number.isInteger(d.index) ? `i:${d.index}` : id ? `d:${id}` : undefined;
+
+      let slot = key === undefined ? this.slots[this.slots.length - 1] : this.byKey.get(key);
+      // A different id under a key already in use is another call.
+      if (slot && id && slot.id && slot.id !== id) slot = undefined;
+      if (!slot) {
+        slot = { id: "", name: "", args: "" };
+        this.slots.push(slot);
+      }
+      if (key !== undefined) this.byKey.set(key, slot);
+      if (id) {
+        slot.id = id;
+        this.byKey.set(`d:${id}`, slot);
+      }
+
+      const name = d.function?.name;
+      if (name) {
+        // Same rule as the server's own bookkeeping: a repeated or growing name
+        // replaces what was collected, a fragment of it is appended.
+        if (name === slot.name) {
+          // already whole
+        } else if (slot.name && name.startsWith(slot.name)) {
+          slot.name = name;
+        } else {
+          slot.name += name;
+        }
+      }
       if (d.function?.arguments) slot.args += d.function.arguments;
-      this.pending.set(d.index, slot);
     }
   }
 
   *flush(): Generator<StreamEvent> {
-    for (const [, call] of [...this.pending.entries()].sort(([a], [b]) => a - b)) {
+    for (const call of this.slots) {
       if (!call.name) continue;
       // Some servers never send an id; the editor needs one to pair the call
       // with its result, so make one up rather than dropping the call.
       const id = call.id || `call_${randomBytes(4).toString("hex")}`;
       yield { kind: "toolCall", id, name: call.name, args: call.args || "{}" };
     }
-    this.pending.clear();
+    this.slots = [];
+    this.byKey.clear();
   }
 }
 
