@@ -315,7 +315,7 @@ describe("provider catalog", () => {
   }
 
   it("lists models with the name and limits OmniRoute really sends", async () => {
-    fetchMock.mockResolvedValue(
+    fetchMock.mockImplementation(async () =>
       catalog([
         { id: "x/y", name: "Y Pro", context_length: 200_000, max_output_tokens: 8_192, max_input_tokens: 150_000 },
       ])
@@ -328,7 +328,7 @@ describe("provider catalog", () => {
   });
 
   it("keeps half of a small context window for the prompt", async () => {
-    fetchMock.mockResolvedValue(catalog([{ id: "tiny", context_length: 8_192 }]));
+    fetchMock.mockImplementation(async () => catalog([{ id: "tiny", context_length: 8_192 }]));
     const { provider, token } = makeProvider();
     const [info] = await provider.provideLanguageModelChatInformation({ silent: true }, token);
     expect(info.maxOutputTokens).toBe(4_096);
@@ -377,13 +377,9 @@ describe("provider picker metadata", () => {
     new Response(JSON.stringify(body), { status, headers: { "content-type": "application/json" } });
 
   /** Answer /models and /combos separately, as the server does. */
-  function serve(models: unknown[], combos: Response | (() => Response) = () => json({ object: "list", data: [] })) {
+  function serve(models: unknown[], combos: () => Response = () => json({ object: "list", data: [] })) {
     fetchMock.mockImplementation(async (url: string) =>
-      String(url).includes("/combos")
-        ? typeof combos === "function"
-          ? combos()
-          : combos
-        : json({ object: "list", data: models })
+      String(url).includes("/combos") ? combos() : json({ object: "list", data: models })
     );
   }
 
@@ -433,17 +429,18 @@ describe("provider picker metadata", () => {
   it("describes a combo in the detail, the tooltip and the info banner", async () => {
     serve(
       [{ id: "smart", owned_by: "combo" }, { id: "x/y", owned_by: "x" }],
-      json({
-        object: "list",
-        data: [
-          {
-            name: "smart",
-            strategy: "round_robin",
-            models: [{ kind: "model", model: "cx/gpt_test" }, { kind: "combo-ref", comboName: "inner" }],
-          },
-          { name: "unrelated", strategy: "priority", models: [] },
-        ],
-      })
+      () =>
+        json({
+          object: "list",
+          data: [
+            {
+              name: "smart",
+              strategy: "round_robin",
+              models: [{ kind: "model", model: "cx/gpt_test" }, { kind: "combo-ref", comboName: "inner" }],
+            },
+            { name: "unrelated", strategy: "priority", models: [] },
+          ],
+        })
     );
     const byId = await list();
     const smart = byId.get("smart");
@@ -501,21 +498,64 @@ describe("provider picker metadata", () => {
     await pending;
   });
 
-  it("gives the Agents-window clones the same price and context window", async () => {
-    serve([{ id: "paid", context_length: 100_000, pricing: { input: 1, output: 2 } }]);
+  it("gives the Agents-window clones the same price, context window and combo details", async () => {
+    serve(
+      [{ id: "smart", owned_by: "combo", context_length: 100_000, pricing: { input: 1, output: 2 } }],
+      () =>
+        json({
+          object: "list",
+          data: [{ name: "smart", strategy: "priority", models: [{ kind: "model", model: "a/b" }] }],
+        })
+    );
     const { provider, token } = makeProvider({ config: { exposeToAgentsWindow: true } });
     const infos = (await provider.provideLanguageModelChatInformation(
       { silent: true },
       token
     )) as unknown as Picked[];
-    expect(infos).toHaveLength(2);
+    expect(infos.map((i) => i.id)).toEqual(["smart", "smart::agents"]);
     for (const info of infos) {
       expect(info.pricing).toBe("$1 in · $2 out per 1M");
       expect(info.maxContextWindowTokens).toBe(100_000);
+      expect(info.infoText).toEqual({ combo: "priority · `a/b`" });
+      expect(info.detail).toBe("combo · priority");
     }
   });
 
-  it("does not request combos nor list models when the model call fails", async () => {
+  it("lists the models after 3 s when /v1/combos never answers, without combo detail", async () => {
+    vi.useFakeTimers();
+    try {
+      let combosSignal: AbortSignal | undefined;
+      fetchMock.mockImplementation((url: string, init?: RequestInit) => {
+        if (!String(url).includes("/combos")) {
+          return Promise.resolve(json({ object: "list", data: [{ id: "smart", owned_by: "combo" }, { id: "x/y" }] }));
+        }
+        combosSignal = init?.signal ?? undefined;
+        return new Promise<Response>((_resolve, reject) => {
+          init?.signal?.addEventListener("abort", () =>
+            reject(new DOMException("This operation was aborted", "AbortError"))
+          );
+        });
+      });
+      const { provider, token } = makeProvider();
+      let settled = false;
+      const pending = provider.provideLanguageModelChatInformation({ silent: true }, token).then((infos) => {
+        settled = true;
+        return infos as unknown as Picked[];
+      });
+      await vi.advanceTimersByTimeAsync(2_999);
+      expect(settled).toBe(false);
+      await vi.advanceTimersByTimeAsync(1);
+      const infos = await pending;
+      expect(infos.map((i) => i.id)).toEqual(["smart", "x/y"]);
+      expect(infos[0].detail).toBe("combo");
+      expect(infos[0]).not.toHaveProperty("infoText");
+      expect(combosSignal?.aborted).toBe(true);
+    } finally {
+      vi.useRealTimers();
+    }
+  });
+
+  it("returns no models when the model call fails even if combos answer", async () => {
     fetchMock.mockImplementation(async (url: string) =>
       String(url).includes("/combos") ? json({ object: "list", data: [] }) : new Response("no", { status: 500 })
     );
@@ -546,18 +586,19 @@ describe("provider effort picker", () => {
   };
 
   async function list(config: Record<string, unknown> = {}) {
-    fetchMock.mockResolvedValue(
-      new Response(
-        JSON.stringify({
-          object: "list",
-          data: [
-            { id: "plain" },
-            { id: "thinker", capabilities: { reasoning: true } },
-            { id: "tiered", capabilities: { thinking: true, effort_tiers: ["low", "high", "max"] } },
-          ],
-        }),
-        { status: 200, headers: { "content-type": "application/json" } }
-      )
+    fetchMock.mockImplementation(
+      async () =>
+        new Response(
+          JSON.stringify({
+            object: "list",
+            data: [
+              { id: "plain" },
+              { id: "thinker", capabilities: { reasoning: true } },
+              { id: "tiered", capabilities: { thinking: true, effort_tiers: ["low", "high", "max"] } },
+            ],
+          }),
+          { status: 200, headers: { "content-type": "application/json" } }
+        )
     );
     const { provider, progress, token } = makeProvider({ config });
     const infos = await provider.provideLanguageModelChatInformation({ silent: true }, token);
