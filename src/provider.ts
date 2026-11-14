@@ -154,11 +154,11 @@ export class OmniRouteChatProvider
 
   private async makeClient(): Promise<OmniRouteClient> {
     const { baseUrl, apiKey } = await resolveConnection(this.deps.context);
-    // The client puts the project on chat requests only; this is a read of a privacy
-    // opt-in (off by default), which the extension never writes.
-    const project = getConfig().get<boolean>("sendProjectName", false)
-      ? projectHeaderValue(vscode.workspace.name)
-      : undefined;
+    // The client puts the project on chat requests only. The opt-in is a privacy
+    // choice that belongs to the user: only the user-level value counts, never a
+    // workspace or folder one, whatever scope the platform enforces.
+    const optIn = getConfig().inspect<boolean>("sendProjectName")?.globalValue === true;
+    const project = optIn ? projectHeaderValue(vscode.workspace.name) : undefined;
     return new OmniRouteClient({ baseUrl, apiKey, project });
   }
 
