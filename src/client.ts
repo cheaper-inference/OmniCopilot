@@ -413,43 +413,67 @@ function deltaIndex(index: unknown): number | undefined {
 /** Reassembles incremental tool_calls deltas into complete calls, emitted once
  * their JSON arguments are whole.
  *
- * The index is primary and an id never crosses indexes. A delta is routed among
- * the slots opened under its own index (the slots opened without one, when it
- * has none): to the one that has its id; to a new slot when its id is new there
- * and it names a function, as a new call must; otherwise to the slot opened last
- * (a continuation, which keeps its first id), or to a new one when there is none.
- * Servers do not agree on any of this: some leave `index` out, some reuse one
- * index for several calls (told apart by `id`), some stamp a new id on every
- * fragment of one call, some label calls on different indexes with one id, and
- * some repeat the whole name in every delta. */
+ * A delta with an index is routed among the slots opened under that index and
+ * never leaves it, so an id cannot reach across indexes. Inside a scope: to the
+ * slot that has the delta's id; to a new slot when its id is new there and it
+ * names a function, as a new call must; otherwise to the slot opened last (a
+ * continuation, which keeps its first id), or a new one when there is none.
+ *
+ * A delta without an index is routed the same way among the slots opened
+ * without one. When there are none (the server sent the index only on the first
+ * fragment), it continues the single slot that has its id, else a new indexless
+ * slot is opened for a new id that names a function, else it continues the slot
+ * opened last. Servers do not agree on any of this: some leave `index` out, some
+ * reuse one index for several calls, some stamp a new id on every fragment of one
+ * call, some label calls on different indexes with one id, and some repeat the
+ * whole name in every delta. */
 class ToolCallAssembler {
   /** Every slot, in the order it was opened. */
   private slots: ToolCallSlot[] = [];
   /** The slots of each scope (an index, or "none"), in the order they were opened. */
   private scopes = new Map<number | "none", ToolCallSlot[]>();
 
+  /** The slot a delta belongs to, or undefined when it opens a new one. */
+  private route(scope: number | "none", id: string, name: string): ToolCallSlot | undefined {
+    const inScope = this.scopes.get(scope) ?? [];
+    if (scope === "none" && inScope.length === 0) return this.routeWithoutIndex(id, name);
+
+    const known = id ? inScope.find((candidate) => candidate.id === id) : undefined;
+    if (known) return known;
+    const last = inScope[inScope.length - 1];
+    // A new id on a call that already has another id starts a call only if the
+    // delta names a function too.
+    return last && id && last.id && name ? undefined : last;
+  }
+
+  /** An indexless delta when no slot was opened without an index. */
+  private routeWithoutIndex(id: string, name: string): ToolCallSlot | undefined {
+    const last = this.slots[this.slots.length - 1];
+    if (!id) return last;
+    const owners = this.slots.filter((candidate) => candidate.id === id);
+    if (owners.length === 1) {
+      // Naming a function that does not continue this call's name is a new call
+      // that happens to repeat the id.
+      const [owner] = owners;
+      return name && owner.name && !name.startsWith(owner.name) ? undefined : owner;
+    }
+    if (owners.length === 0 && name) return undefined;
+    return last;
+  }
+
   accept(deltas: StreamToolCallDelta[]): void {
     for (const d of deltas) {
       const id = typeof d.id === "string" ? d.id : "";
       const name = typeof d.function?.name === "string" ? d.function.name : "";
       const scope = deltaIndex(d.index) ?? "none";
-      let inScope = this.scopes.get(scope);
-      if (!inScope) {
-        inScope = [];
-        this.scopes.set(scope, inScope);
-      }
 
-      let slot = id ? inScope.find((candidate) => candidate.id === id) : undefined;
-      if (!slot) {
-        const last = inScope[inScope.length - 1];
-        // A new id on a call that already has another id starts a call only if
-        // the delta names a function too.
-        slot = last && id && last.id && name ? undefined : last;
-      }
+      let slot = this.route(scope, id, name);
       if (!slot) {
         slot = { id: "", name: "", args: "" };
         this.slots.push(slot);
-        inScope.push(slot);
+        const inScope = this.scopes.get(scope);
+        if (inScope) inScope.push(slot);
+        else this.scopes.set(scope, [slot]);
       }
       if (id && !slot.id) slot.id = id;
 
