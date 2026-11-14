@@ -850,6 +850,28 @@ describe("provider picker metadata", () => {
     expect(byId.get("x/y")).not.toHaveProperty("infoText");
   });
 
+  it("keeps server text in the tooltip and the detail to one plain line without links", async () => {
+    serve([{ id: "smart", owned_by: "combo" }], () =>
+      json({
+        object: "list",
+        data: [
+          {
+            name: "smart",
+            strategy: "[x](command:y)\n\n# heading",
+            models: [{ kind: "model", model: `[x](command:y)\u0000${"m".repeat(90)}` }],
+          },
+        ],
+      })
+    );
+    const smart = (await list()).get("smart");
+    for (const field of [smart?.detail, smart?.tooltip]) {
+      expect(field).not.toContain("](");
+      expect(field).not.toMatch(/[\u0000-\u001f\u007f-\u009f]/);
+    }
+    expect(smart?.detail).toBe("combo · [x] (command:y) # heading");
+    expect(smart?.tooltip).toBe(`OmniRoute · smart · [x] (command:y) # heading · [x] (command:y)${"m".repeat(66)}…`);
+  });
+
   it("keeps a plain combo row when /v1/combos has no entry for it", async () => {
     serve([{ id: "smart", owned_by: "combo" }]);
     const smart = (await list()).get("smart");

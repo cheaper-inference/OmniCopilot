@@ -101,9 +101,9 @@ export function priceLabel(model: OmniRouteModel, t: Localize = substitute): str
 }
 
 const MAX_COMBO_STEPS = 6;
-/** Caps for the hover banner, where the text comes from the server. */
-const MAX_MARKDOWN_STEP_CHARS = 80;
-const MAX_MARKDOWN_STRATEGY_CHARS = 40;
+/** Caps for server text shown in the picker (banner, tooltip and detail). */
+const MAX_STEP_CHARS = 80;
+const MAX_STRATEGY_CHARS = 40;
 
 /** One line: every run of whitespace (line breaks, tabs, U+2028/U+2029) becomes one space. */
 function oneLine(text: string): string {
@@ -113,6 +113,17 @@ function oneLine(text: string): string {
 function capped(text: string, max: number): string {
   const chars = Array.from(text);
   return chars.length > max ? `${chars.slice(0, max).join("")}…` : text;
+}
+
+/** C0/C1 control characters and DEL. */
+const CONTROL_CHARACTERS = /[\u0000-\u001f\u007f-\u009f]/g;
+
+/** Server text for a plain field the picker shows (tooltip, detail): one line, no
+ * control characters, at most `max` characters, and no `](` left to form a link,
+ * as notifications require. */
+function plainServerText(text: string, max: number): string {
+  const tidy = oneLine(oneLine(text).replace(CONTROL_CHARACTERS, ""));
+  return capped(tidy, max).split("](").join("] (");
 }
 
 /** Names of the usable steps of a combo; a step without any name is skipped. */
@@ -138,10 +149,23 @@ function joinSummary(strategy: string, steps: string[], truncated: boolean): str
   return `${strategy} · ${steps.join(" → ")}${truncated ? " → …" : ""}`;
 }
 
-/** Plain text: "priority · cx/gpt-test → free/tiny". At most six steps. */
+/** Plain text for the tooltip: "priority · cx/gpt-test → free/tiny". At most six
+ * steps; each name and the strategy go through `plainServerText` (one line, no control
+ * characters, capped, no link syntax). */
 export function comboSummary(combo: OmniRouteCombo): string {
-  const names = comboStepNames(combo);
-  return joinSummary(comboStrategy(combo), names.slice(0, MAX_COMBO_STEPS), names.length > MAX_COMBO_STEPS);
+  const names = comboStepNames(combo, (name) => plainServerText(name, MAX_STEP_CHARS));
+  return joinSummary(
+    plainServerText(comboStrategy(combo), MAX_STRATEGY_CHARS) || "combo",
+    names.slice(0, MAX_COMBO_STEPS),
+    names.length > MAX_COMBO_STEPS
+  );
+}
+
+/** The detail line of a combo in the picker: "combo · priority", or "combo" when the
+ * server gave no strategy that is left after `plainServerText`. */
+export function comboDetail(combo: OmniRouteCombo | undefined): string {
+  const strategy = typeof combo?.strategy === "string" ? plainServerText(combo.strategy, MAX_STRATEGY_CHARS) : "";
+  return strategy ? `combo · ${strategy}` : "combo";
 }
 
 /** The same summary as markdown, for the host's info banner. The names come
@@ -153,8 +177,8 @@ export function comboSummaryMarkdown(combo: OmniRouteCombo): string {
   const names = comboStepNames(combo, (name) => oneLine(name.replace(/`/g, "")));
   const code = names
     .slice(0, MAX_COMBO_STEPS)
-    .map((name) => `\`${capped(name, MAX_MARKDOWN_STEP_CHARS)}\``);
-  const strategy = capped(comboStrategy(combo), MAX_MARKDOWN_STRATEGY_CHARS).replace(
+    .map((name) => `\`${capped(name, MAX_STEP_CHARS)}\``);
+  const strategy = capped(comboStrategy(combo), MAX_STRATEGY_CHARS).replace(
     /[\\`*_{}[\]()<>#+\-.!|~&=]/g,
     "\\$&"
   );
