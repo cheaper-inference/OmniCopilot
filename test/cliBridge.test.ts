@@ -2,7 +2,14 @@ import { afterEach, describe, expect, it, vi } from "vitest";
 import * as vscode from "vscode";
 import { createdTerminals, setMockConfig, setMockWorkspace } from "./vscode.mock";
 import { storeApiKey } from "../src/connection";
-import { CLI_TOOLS, configureCliTool, isSafeRemoteUrl, remoteUrlArgument, resolveCliCommand } from "../src/cliBridge";
+import {
+  CLI_TOOLS,
+  cliRemoteDecision,
+  configureCliTool,
+  isSafeRemoteUrl,
+  remoteUrlArgument,
+  resolveCliCommand,
+} from "../src/cliBridge";
 
 const linux = { platform: "linux" as const };
 const cmdExe = { platform: "win32" as const, shellPath: "C:\\Windows\\System32\\cmd.exe" };
@@ -236,5 +243,55 @@ describe("Configure Coding CLI and the workspace key", () => {
 
     expect(warn).not.toHaveBeenCalled();
     expect(createdTerminals[0].env).toBeUndefined();
+  });
+});
+
+describe("the server address handed to the CLI", () => {
+  it("is left out only when the root is exactly the default", () => {
+    expect(cliRemoteDecision("http://localhost:20128")).toEqual({ kind: "default" });
+  });
+
+  it.each([
+    ["http://localhost:3000", "http://localhost:3000"],
+    ["https://localhost:20128", "https://localhost:20128"],
+    ["http://127.0.0.1:20128", "http://127.0.0.1:20128"],
+    ["https://omni.example", "https://omni.example"],
+    ["http://192.168.0.17:20128", "http://192.168.0.17:20128"],
+  ])("is passed as --remote for %s", (root, remote) => {
+    expect(cliRemoteDecision(root)).toEqual({ kind: "remote", remote });
+  });
+
+  it("is refused for a root that cannot be typed into a terminal safely", () => {
+    expect(cliRemoteDecision("https://omni.example/$(calc)")).toEqual({ kind: "refused" });
+    expect(cliRemoteDecision("ftp://omni.example")).toEqual({ kind: "refused" });
+  });
+});
+
+describe("Configure Coding CLI and a local server that is not the default", () => {
+  afterEach(() => {
+    vi.restoreAllMocks();
+    createdTerminals.length = 0;
+  });
+
+  const context = {
+    secrets: { get: async () => undefined, store: async () => undefined, delete: async () => undefined },
+    globalState: { get: (_key: string, fallback?: unknown) => fallback, update: async () => undefined },
+    workspaceState: { get: (_key: string, fallback?: unknown) => fallback, update: async () => undefined },
+  } as unknown as vscode.ExtensionContext;
+  const log = () =>
+    ({ info: vi.fn(), warn: vi.fn(), error: vi.fn(), debug: vi.fn() }) as unknown as vscode.LogOutputChannel;
+
+  it.each([
+    ["http://localhost:3000", "omniroute setup-codex --remote 'http://localhost:3000'"],
+    ["https://localhost:20128", "omniroute setup-codex --remote 'https://localhost:20128'"],
+    ["http://127.0.0.1:20128", "omniroute setup-codex --remote 'http://127.0.0.1:20128'"],
+    ["http://localhost:20128", "omniroute setup-codex"],
+    ["localhost:20128/v1/", "omniroute setup-codex"],
+  ])("runs the CLI for %s as %s", async (baseUrl, command) => {
+    setMockConfig({ baseUrl });
+
+    await configureCliTool(context, log(), "codex");
+
+    expect(createdTerminals[0]?.sent).toEqual([command]);
   });
 });

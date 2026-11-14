@@ -1,6 +1,6 @@
 import * as vscode from "vscode";
-import { serverRootUrl } from "./client";
-import { isLoopbackOrigin, resolveConnection } from "./connection";
+import { DEFAULT_BASE_URL, serverRootUrl } from "./client";
+import { resolveConnection } from "./connection";
 
 interface CliTool {
   id: string;
@@ -101,6 +101,26 @@ export function remoteUrlArgument(root: string): string | undefined {
   return hasShellSyntax(serialised) ? undefined : serialised;
 }
 
+/** What the CLI is told about the server: nothing (it assumes `http://localhost:20128`
+ * itself), the root to pass as `--remote`, or that the root cannot be passed. */
+export type CliRemoteDecision =
+  | { kind: "default" }
+  | { kind: "remote"; remote: string }
+  | { kind: "refused" };
+
+/**
+ * `--remote` is left out only for exactly the default root, the one address the
+ * CLI resolves on its own. Any other root, local or not (`http://localhost:3000`,
+ * `https://localhost:20128`, `http://127.0.0.1:20128`), is passed through the same
+ * safety check as every `--remote` argument, so the tool is configured for the
+ * server the extension uses and not for the CLI's own guess.
+ */
+export function cliRemoteDecision(root: string): CliRemoteDecision {
+  if (root === DEFAULT_BASE_URL) return { kind: "default" };
+  const remote = remoteUrlArgument(root);
+  return remote === undefined ? { kind: "refused" } : { kind: "remote", remote };
+}
+
 export function isSafeRemoteUrl(root: string): boolean {
   return remoteUrlArgument(root) !== undefined;
 }
@@ -143,19 +163,17 @@ export async function configureCliTool(
   const apiKey = connection.apiKey;
 
   const args = [tool.subcommand];
-  if (!isLoopbackOrigin(connection.origin)) {
-    const remote = remoteUrlArgument(root);
-    if (remote === undefined) {
-      log.warn("omnicopilot.baseUrl rejected for the CLI: it contains characters that are not allowed");
-      void vscode.window.showErrorMessage(
-        vscode.l10n.t(
-          "The server URL contains characters that cannot be passed to the OmniRoute CLI. Check omnicopilot.baseUrl."
-        )
-      );
-      return;
-    }
-    args.push("--remote", shellQuote(remote));
+  const decision = cliRemoteDecision(root);
+  if (decision.kind === "refused") {
+    log.warn("omnicopilot.baseUrl rejected for the CLI: it contains characters that are not allowed");
+    void vscode.window.showErrorMessage(
+      vscode.l10n.t(
+        "The server URL contains characters that cannot be passed to the OmniRoute CLI. Check omnicopilot.baseUrl."
+      )
+    );
+    return;
   }
+  if (decision.kind === "remote") args.push("--remote", shellQuote(decision.remote));
 
   // `omniroute setup-<tool>` writes the key into the tool's own user-level
   // configuration, which every project on this machine uses: a key the user kept
