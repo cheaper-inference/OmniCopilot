@@ -608,6 +608,55 @@ export function createWithheldKeyWatcher(
   };
 }
 
+/** How long the secrets must stay quiet before a changed key is acted on. Storing a
+ * key writes three times (an emptied list, the key, its list), so one change of a
+ * key arrives as a burst. */
+export const SECRET_CHANGE_SETTLE_MS = 150;
+
+/** Whether a SecretStorage entry is one of the two pairs that decide which key is
+ * sent: the global key and its list, and those of the open workspace. */
+function isKeySecretName(name: string): boolean {
+  if (name === SECRET_API_KEY || name === SECRET_API_KEY_ORIGINS) return true;
+  const workspaceId = currentWorkspaceIdentity();
+  return (
+    workspaceId !== undefined &&
+    (name === workspaceSecretName(workspaceId) || name === workspaceOriginsSecretName(workspaceId))
+  );
+}
+
+/**
+ * Calls `onChange` once the key, or the list of origins approved for it, has stopped
+ * changing for `SECRET_CHANGE_SETTLE_MS`. SecretStorage is shared by every window, so
+ * this is how a window learns that another one stored or cleared the key. Changes to
+ * any other secret are ignored. The workspace pair is the open workspace's own, read
+ * when each change arrives. Dispose it with the extension.
+ */
+export function watchKeySecrets(
+  context: vscode.ExtensionContext,
+  onChange: () => Promise<void>,
+  onError: (err: unknown) => void
+): { dispose(): void } {
+  let timer: ReturnType<typeof setTimeout> | undefined;
+  const cancel = () => {
+    if (timer) clearTimeout(timer);
+    timer = undefined;
+  };
+  const subscription = context.secrets.onDidChange((event) => {
+    if (!isKeySecretName(event.key)) return;
+    cancel();
+    timer = setTimeout(() => {
+      timer = undefined;
+      onChange().catch(onError);
+    }, SECRET_CHANGE_SETTLE_MS);
+  });
+  return {
+    dispose() {
+      cancel();
+      subscription.dispose();
+    },
+  };
+}
+
 /** Explain a failed probe for the server at `baseUrl`, using what this VS Code window knows about itself. */
 export function describeProbeFailure(
   baseUrl: string,

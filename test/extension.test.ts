@@ -21,6 +21,7 @@ function activated(initialSecrets: Record<string, string> = {}) {
     get: <T>(key: string, fallback?: T) => (store.has(key) ? (store.get(key) as T) : fallback),
     update: async (key: string, value: unknown) => void store.set(key, value),
   });
+  const secretListeners = new Set<(event: { key: string }) => void>();
   const context = {
     subscriptions: [] as Array<{ dispose(): void }>,
     extension: { packageJSON: { version: "test" } },
@@ -28,6 +29,10 @@ function activated(initialSecrets: Record<string, string> = {}) {
       get: async (key: string) => secrets.get(key),
       store: async (key: string, value: string) => void secrets.set(key, value),
       delete: async (key: string) => void secrets.delete(key),
+      onDidChange: (listener: (event: { key: string }) => void) => {
+        secretListeners.add(listener);
+        return { dispose: () => void secretListeners.delete(listener) };
+      },
     },
     globalState: memento(state),
     workspaceState: memento(local),
@@ -37,6 +42,13 @@ function activated(initialSecrets: Record<string, string> = {}) {
     secrets,
     local,
     run: (id: string) => registeredCommands.get(id)?.(),
+    /** SecretStorage as another window leaves it: the value is set and every window is told. */
+    changedElsewhere: (key: string, value: string | undefined) => {
+      if (value === undefined) secrets.delete(key);
+      else secrets.set(key, value);
+      for (const listener of [...secretListeners]) listener({ key });
+    },
+    secretListenerCount: () => secretListeners.size,
     dispose: () => {
       for (const item of context.subscriptions) item.dispose();
       deactivate();
@@ -454,5 +466,135 @@ describe("OmniRoute: Check connection after a real listing", () => {
     expect(String(warn.mock.calls[0][0])).not.toContain("rejected the API key");
     expect(info).not.toHaveBeenCalled();
     ext.dispose();
+  });
+});
+
+describe("a key changed in another window", () => {
+  const WS = "file:///work/acme";
+  const settle = () => new Promise<void>((resolve) => setTimeout(resolve, 450));
+
+  afterEach(() => {
+    vi.unstubAllGlobals();
+    vi.restoreAllMocks();
+    setMockWorkspace();
+  });
+
+  /** An activated extension with a global key for A, its panel open, and a server that records every request. */
+  function open() {
+    const requests: Array<{ url: string; auth: string }> = [];
+    vi.stubGlobal(
+      "fetch",
+      vi.fn(async (url: string, init?: RequestInit) => {
+        const auth = String((init?.headers as Record<string, string> | undefined)?.Authorization);
+        requests.push({ url: `${init?.method ?? "GET"} ${String(url)}`, auth });
+        if (init?.method === "HEAD") return new Response(null, { status: 200 });
+        if (String(url).includes("/api/usage/om-usage")) {
+          return new Response(JSON.stringify({ allowed: true, personal: null, provider: null }), {
+            headers: { "content-type": "application/json" },
+          });
+        }
+        if (String(url).includes("/combos")) return new Response("{}", { status: 404 });
+        return new Response(JSON.stringify({ object: "list", data: [chat("a/one")] }), { status: 200 });
+      })
+    );
+    setMockConfig({ baseUrl: "https://a.example" });
+    setMockWorkspace({ folders: [WS] });
+    let panelProvider: { resolveWebviewView(view: unknown): void } | undefined;
+    vi.spyOn(vscode.window, "registerWebviewViewProvider").mockImplementation(((_id: string, p: unknown) => {
+      panelProvider = p as typeof panelProvider;
+      return { dispose() {} };
+    }) as never);
+    let pickerRefreshes = 0;
+    vi.spyOn(vscode.lm, "registerLanguageModelChatProvider").mockImplementation(((_vendor: string, p: unknown) => {
+      (p as { onDidChangeLanguageModelChatInformation(listener: () => void): void }).onDidChangeLanguageModelChatInformation(
+        () => void (pickerRefreshes += 1)
+      );
+      return { dispose() {} };
+    }) as never);
+    const ext = activated({
+      [SECRET_API_KEY]: "sk-old",
+      [SECRET_API_KEY_ORIGINS]: JSON.stringify(["https://a.example"]),
+    });
+    const statuses: Array<Record<string, unknown>> = [];
+    panelProvider?.resolveWebviewView({
+      visible: true,
+      webview: {
+        options: {},
+        html: "",
+        onDidReceiveMessage: () => ({ dispose() {} }),
+        postMessage: async (message: Record<string, unknown>) => void statuses.push(message),
+      },
+      onDidChangeVisibility: () => ({ dispose() {} }),
+    });
+    /** How many times the model picker was told to list again. */
+    const listings = () => pickerRefreshes;
+    return { ext, requests, statuses, listings };
+  }
+
+  it("refreshes the model list, the status bar's usage and the panel", async () => {
+    const { ext, requests, statuses, listings } = open();
+    await vi.waitFor(() => expect(requests.some((r) => r.url.includes("/api/usage/om-usage"))).toBe(true));
+    await settle();
+    const listingsBefore = listings();
+    const statusesBefore = statuses.length;
+
+    ext.changedElsewhere(SECRET_API_KEY, "sk-new");
+    await settle();
+
+    expect(listings()).toBeGreaterThan(listingsBefore);
+    expect(requests.some((r) => r.url.includes("/api/usage/om-usage") && r.auth === "Bearer sk-new")).toBe(true);
+    expect(statuses.length).toBeGreaterThan(statusesBefore);
+    ext.dispose();
+  });
+
+  it("refreshes once for the three writes of one stored key", async () => {
+    const { ext, listings, statuses } = open();
+    await settle();
+    ext.changedElsewhere(SECRET_API_KEY, "sk-single");
+    await settle();
+    const oneChange = { listings: listings(), statuses: statuses.length };
+    const base = { listings: oneChange.listings, statuses: oneChange.statuses };
+
+    ext.changedElsewhere(SECRET_API_KEY_ORIGINS, JSON.stringify([]));
+    ext.changedElsewhere(SECRET_API_KEY, "sk-burst");
+    ext.changedElsewhere(SECRET_API_KEY_ORIGINS, JSON.stringify(["https://a.example"]));
+    await settle();
+
+    // One more refresh, the same size as the one a single change caused.
+    const afterBurst = { listings: listings(), statuses: statuses.length };
+    expect(afterBurst.listings - base.listings).toBe(1);
+    expect(afterBurst.statuses - base.statuses).toBe(1);
+    ext.dispose();
+  });
+
+  it("follows the key of this workspace, and ignores a secret that is not a key", async () => {
+    const { ext, listings } = open();
+    await settle();
+    const before = listings();
+
+    ext.changedElsewhere("some.other.extension.token", "x");
+    ext.changedElsewhere(workspaceSecretName("file:///work/another"), "sk-elsewhere");
+    await settle();
+    expect(listings()).toBe(before);
+
+    ext.changedElsewhere(workspaceSecretName(WS), "sk-ws");
+    await settle();
+    expect(listings()).toBeGreaterThan(before);
+    ext.changedElsewhere(workspaceOriginsSecretName(WS), JSON.stringify(["https://a.example"]));
+    ext.dispose();
+  });
+
+  it("stops listening when the extension is disposed", async () => {
+    const { ext, listings } = open();
+    await settle();
+    expect(ext.secretListenerCount()).toBe(1);
+    const before = listings();
+
+    ext.changedElsewhere(SECRET_API_KEY, "sk-late");
+    ext.dispose();
+    await settle();
+
+    expect(ext.secretListenerCount()).toBe(0);
+    expect(listings()).toBe(before);
   });
 });
