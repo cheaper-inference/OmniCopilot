@@ -130,8 +130,8 @@ export function resetLabel(resetAtIso: string | null | undefined, now = Date.now
 
 /** Percent of the limit still available, for the personal USD rows. */
 export function percentLeft(spent: number, limit: number | null): number | null {
-  if (typeof limit !== "number" || !Number.isFinite(limit) || limit <= 0) return null;
-  return Math.max(0, Math.min(100, Math.round((1 - spent / limit) * 100)));
+  const exact = exactPercentLeft(spent, limit);
+  return exact === null ? null : Math.round(exact);
 }
 
 /** The share of the limit still available, unrounded and clamped to 0-100, for
@@ -389,7 +389,9 @@ function readWindow(body: Record<string, unknown>, window: "daily" | "weekly"): 
   const entries = Array.isArray(body.limits) ? body.limits : [];
   const entry = entries.find(
     (candidate): candidate is Record<string, unknown> =>
-      isRecord(candidate) && candidate.id === `usage_limit:${window}` && amount(candidate.limit) !== null
+      isRecord(candidate) &&
+      candidate.id === `usage_limit:${window}` &&
+      (amount(candidate.limit) ?? 0) > 0 // the server never emits a limit of zero: that is no limit
   );
   const totals = isRecord(body.usage) && isRecord(body.usage[window]) ? body.usage[window] : {};
   const spent = amount(entry?.used) ?? amount(totals.costUsd);

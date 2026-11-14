@@ -588,6 +588,15 @@ describe("personalFromSelfStatus", () => {
     expect(personal?.weeklyResetAtIso).toBeNull();
   });
 
+  it("treats a limit entry whose limit is zero as no limit", () => {
+    const personal = personalFromSelfStatus(
+      selfStatus({ limits: [{ ...dailyEntry, limit: 0, used: 0, remaining: 0, utilization: 0, exceeded: false }] })
+    );
+    expect(personal?.dailyLimitUsd).toBeNull();
+    expect(personal?.enabled).toBe(false);
+    expect(personal?.dailySpentUsd).toBe(1.2);
+  });
+
   it("is null when the body has neither limits nor usage, or is not an object", () => {
     expect(personalFromSelfStatus({})).toBeNull();
     expect(personalFromSelfStatus({ limits: [], usage: {} })).toBeNull();

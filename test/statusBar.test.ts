@@ -544,6 +544,22 @@ describe("ConnectionStatusBar daily quota", () => {
       statusBar.dispose();
     });
 
+    it("hides the number as soon as the key becomes withheld while a sample exists", async () => {
+      const { statusBar, fetchPersonal, item, connection } = bar({});
+      await statusBar.checkNow();
+      await vi.waitFor(() => expect(item().text).toBe("$(circle-filled) OmniRoute · 76%"));
+
+      connection.apiKey = undefined; // saved for another origin: not sent
+      connection.keyWithheld = true;
+      await statusBar.checkNow();
+
+      expect(item().text).toBe("$(warning) OmniRoute");
+      expect(item().tooltip).not.toContain("Daily");
+      await flush();
+      expect(fetchPersonal).toHaveBeenCalledTimes(1);
+      statusBar.dispose();
+    });
+
     it("clears the number on restart() before any probe answers", async () => {
       const { statusBar, item } = bar({});
       await statusBar.checkNow();
