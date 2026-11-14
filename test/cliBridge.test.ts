@@ -1,5 +1,8 @@
-import { describe, expect, it } from "vitest";
-import { CLI_TOOLS, isSafeRemoteUrl, remoteUrlArgument, resolveCliCommand } from "../src/cliBridge";
+import { afterEach, describe, expect, it, vi } from "vitest";
+import * as vscode from "vscode";
+import { createdTerminals, setMockConfig, setMockWorkspace } from "./vscode.mock";
+import { storeApiKey } from "../src/connection";
+import { CLI_TOOLS, configureCliTool, isSafeRemoteUrl, remoteUrlArgument, resolveCliCommand } from "../src/cliBridge";
 
 const linux = { platform: "linux" as const };
 const cmdExe = { platform: "win32" as const, shellPath: "C:\\Windows\\System32\\cmd.exe" };
@@ -148,5 +151,90 @@ describe("remoteUrlArgument", () => {
 
   it("gives nothing for a URL that is refused", () => {
     expect(remoteUrlArgument("https://omni.example/$(calc)")).toBeUndefined();
+  });
+});
+
+describe("Configure Coding CLI and the workspace key", () => {
+  const WS = "file:///work/acme";
+  const QUESTION =
+    "This workspace's API key will be written to the configuration of Codex CLI, which all your projects share.";
+
+  afterEach(() => {
+    vi.restoreAllMocks();
+    setMockWorkspace();
+    createdTerminals.length = 0;
+  });
+
+  function fakeContext() {
+    const secrets = new Map<string, string>();
+    const local = new Map<string, unknown>();
+    return {
+      secrets: {
+        get: async (key: string) => secrets.get(key),
+        store: async (key: string, value: string) => void secrets.set(key, value),
+        delete: async (key: string) => void secrets.delete(key),
+      },
+      globalState: { get: (_key: string, fallback?: unknown) => fallback, update: async () => undefined },
+      workspaceState: {
+        get: <T>(key: string, fallback?: T) => (local.has(key) ? (local.get(key) as T) : fallback),
+        update: async (key: string, value: unknown) => void local.set(key, value),
+      },
+    } as unknown as vscode.ExtensionContext;
+  }
+
+  const log = () =>
+    ({ info: vi.fn(), warn: vi.fn(), error: vi.fn(), debug: vi.fn() }) as unknown as vscode.LogOutputChannel;
+
+  async function withKeys(opts: { workspaceKey: boolean }) {
+    setMockConfig({ baseUrl: "http://localhost:20128" });
+    setMockWorkspace({ folders: [WS] });
+    const context = fakeContext();
+    await storeApiKey(context, "sk-global");
+    if (opts.workspaceKey) await storeApiKey(context, "sk-ws", undefined, "workspace");
+    return context;
+  }
+
+  it("asks first, as a modal with the single action Continue, and proceeds on Continue", async () => {
+    const context = await withKeys({ workspaceKey: true });
+    const warn = vi.spyOn(vscode.window, "showWarningMessage").mockResolvedValue("Continue" as never);
+
+    await configureCliTool(context, log(), "codex");
+
+    expect(warn).toHaveBeenCalledTimes(1);
+    expect(warn.mock.calls[0]).toEqual([QUESTION, { modal: true }, "Continue"]);
+    expect(createdTerminals).toHaveLength(1);
+    expect(createdTerminals[0].env).toEqual({ OMNIROUTE_API_KEY: "sk-ws" });
+    expect(createdTerminals[0].sent).toEqual(["omniroute setup-codex"]);
+  });
+
+  it.each([[undefined], ["Cancel"]])("sends nothing to a terminal when the question is answered %j", async (answer) => {
+    const context = await withKeys({ workspaceKey: true });
+    vi.spyOn(vscode.window, "showWarningMessage").mockResolvedValue(answer as never);
+
+    await configureCliTool(context, log(), "codex");
+
+    expect(createdTerminals).toHaveLength(0);
+  });
+
+  it("does not ask when the global key is in effect", async () => {
+    const context = await withKeys({ workspaceKey: false });
+    const warn = vi.spyOn(vscode.window, "showWarningMessage");
+
+    await configureCliTool(context, log(), "codex");
+
+    expect(warn).not.toHaveBeenCalled();
+    expect(createdTerminals).toHaveLength(1);
+    expect(createdTerminals[0].env).toEqual({ OMNIROUTE_API_KEY: "sk-global" });
+  });
+
+  it("does not ask when no key is stored", async () => {
+    setMockConfig({ baseUrl: "http://localhost:20128" });
+    setMockWorkspace({ folders: [WS] });
+    const warn = vi.spyOn(vscode.window, "showWarningMessage");
+
+    await configureCliTool(fakeContext(), log(), "codex");
+
+    expect(warn).not.toHaveBeenCalled();
+    expect(createdTerminals[0].env).toBeUndefined();
   });
 });

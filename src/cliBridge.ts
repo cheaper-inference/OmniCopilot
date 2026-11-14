@@ -157,6 +157,25 @@ export async function configureCliTool(
     args.push("--remote", shellQuote(remote));
   }
 
+  // `omniroute setup-<tool>` writes the key into the tool's own user-level
+  // configuration, which every project on this machine uses: a key the user kept
+  // to this workspace leaves that scope, so say so first. Cancel or Escape stops.
+  if (apiKey && connection.keyScope === "workspace") {
+    const proceed = vscode.l10n.t("Continue");
+    const answer = await vscode.window.showWarningMessage(
+      vscode.l10n.t(
+        "This workspace's API key will be written to the configuration of {0}, which all your projects share.",
+        tool.label
+      ),
+      { modal: true },
+      proceed
+    );
+    if (answer !== proceed) {
+      log.info("Configure CLI cancelled: the workspace API key was not shared with the tool");
+      return;
+    }
+  }
+
   const command = `${cli.command} ${args.join(" ")}`;
   log.info(`Running in terminal: ${command}${apiKey ? " (API key via env)" : ""}`);
 
