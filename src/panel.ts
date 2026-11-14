@@ -237,8 +237,10 @@ export class OmniPanelProvider implements vscode.WebviewViewProvider {
         const failure = String(err instanceof Error ? err.message : err);
         detail = detail ? `${detail} ${failure}` : failure;
       }
+      // The usage endpoints answer to a key. With none in effect (none stored, or the
+      // stored one withheld from this server) they are not asked and the section is hidden.
       try {
-        usage = await fetchUsage(url, apiKey, vscode.l10n.t);
+        if (apiKey) usage = await fetchUsage(url, apiKey, vscode.l10n.t);
       } catch {
         // An unreachable/refused usage endpoint must not blank the status —
         // the section simply hides. `unsupported` is the same signal, kept

@@ -322,3 +322,107 @@ describe("panel usage without the usage command", () => {
     });
   });
 });
+
+describe("panel usage section: which state it shows", () => {
+  afterEach(() => {
+    vi.restoreAllMocks();
+    vi.unstubAllGlobals();
+  });
+
+  const json = (body: unknown, status = 200) =>
+    new Response(JSON.stringify(body), { status, headers: { "content-type": "application/json" } });
+
+  /** An online server whose usage endpoints answer with `answers`, in order. */
+  function onlineServer(...answers: Array<() => Response>) {
+    vi.spyOn(OmniRouteClient.prototype, "probe").mockResolvedValue({ ok: true, status: 200 });
+    vi.spyOn(OmniRouteClient.prototype, "listModels").mockResolvedValue([]);
+    const fetchMock = vi.fn();
+    for (const answer of answers) fetchMock.mockImplementationOnce(async () => answer());
+    vi.stubGlobal("fetch", fetchMock);
+    return fetchMock;
+  }
+
+  it("calls no usage endpoint and shows no section when no key is stored", async () => {
+    const fetchMock = onlineServer(() => json({ allowed: false, error: { message: "auth required" } }, 401));
+    setMockConfig({ baseUrl: "http://localhost:20128" });
+    const { panel, posted } = openPanel();
+
+    await panel.refreshStatus();
+
+    expect(fetchMock).not.toHaveBeenCalled();
+    expect(posted[0]).toMatchObject({ type: "status", online: true });
+    expect(posted[0]?.usage).toBeUndefined();
+  });
+
+  it("calls no usage endpoint and shows no section when the stored key is withheld from this server", async () => {
+    const fetchMock = onlineServer(() => json({ allowed: true, personal: null, provider: null }));
+    setMockConfig({ baseUrl: "https://a.example" });
+    const context = fakeContext();
+    await storeApiKey(context, "sk-test", "https://a.example");
+    setMockConfig({ baseUrl: "https://b.example" });
+    const { panel, posted } = openPanel(context);
+
+    await panel.refreshStatus();
+
+    expect(posted[0]).toMatchObject({ type: "status", hasKey: true });
+    expect(fetchMock).not.toHaveBeenCalled();
+    expect(posted[0]?.usage).toBeUndefined();
+  });
+
+  it.each([
+    ["a 500 with an error body", () => json({ error: { message: "boom" } }, 500)],
+    ["a 400 JSON body without allowed", () => json({ error: { message: "bad request" } }, 400)],
+    ["a 404 JSON body without allowed", () => json({ message: "not found" }, 404)],
+    ["a 200 JSON body without allowed", () => json({ hello: "world" })],
+    [
+      "a gateway's HTML error page",
+      () => new Response("<html>502</html>", { status: 502, headers: { "content-type": "text/html" } }),
+    ],
+  ])("hides the section for %s, never 'nothing is cached yet'", async (_name, answer) => {
+    onlineServer(answer);
+    setMockConfig({ baseUrl: "https://gateway.test" });
+    const context = fakeContext();
+    await storeApiKey(context, "sk-test", "https://gateway.test");
+    const { panel, posted } = openPanel(context);
+
+    await panel.refreshStatus();
+
+    expect(posted[0]).toMatchObject({ type: "status", online: true });
+    expect(posted[0]?.usage).toBeUndefined();
+  });
+
+  it("still shows the section for a real refusal (allowed: false) with a key", async () => {
+    onlineServer(
+      () => json({ allowed: false, error: { message: "off" } }, 403),
+      () => json({}, 404)
+    );
+    setMockConfig({ baseUrl: "https://gateway.test" });
+    const context = fakeContext();
+    await storeApiKey(context, "sk-test", "https://gateway.test");
+    const { panel, posted } = openPanel(context);
+
+    await panel.refreshStatus();
+
+    expect(posted[0]?.usage).toMatchObject({ kind: "disabled" });
+  });
+
+  it("calls the usage endpoints on the same server root as the models, for a URL set without a scheme", async () => {
+    const fetchMock = onlineServer(
+      () => json({ allowed: false }, 403),
+      () => json({}, 404)
+    );
+    setMockConfig({ baseUrl: "192.168.0.17:20128" });
+    const context = fakeContext();
+    await context.secrets.store("omnicopilot.apiKey", "sk-test");
+    await context.secrets.store("omnicopilot.apiKeyOrigins", JSON.stringify(["http://192.168.0.17:20128"]));
+    const { panel, posted } = openPanel(context);
+
+    await panel.refreshStatus();
+
+    expect(fetchMock.mock.calls.map((call) => String(call[0]))).toEqual([
+      "http://192.168.0.17:20128/api/usage/om-usage?format=json",
+      "http://192.168.0.17:20128/v1/me/status",
+    ]);
+    expect(posted[0]?.usage).toMatchObject({ kind: "disabled" });
+  });
+});
