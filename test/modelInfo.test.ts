@@ -1,5 +1,5 @@
 import { describe, expect, it } from "vitest";
-import { comboSummary, comboSummaryMarkdown, describeModel, priceLabel } from "../src/modelInfo";
+import { comboDetail, comboSummary, comboSummaryMarkdown, describeModel, priceLabel } from "../src/modelInfo";
 import type { OmniRouteCombo, OmniRouteModel } from "../src/types";
 
 const cfg = { maxOutputTokens: 16_384, defaultContextLength: 128_000 };
@@ -279,5 +279,39 @@ describe("combo summaries with server-supplied text", () => {
     expect(comboSummaryMarkdown(withStep("m".repeat(80), "s".repeat(40)))).toBe(
       `${"s".repeat(40)} · \`${"m".repeat(80)}\``
     );
+  });
+});
+
+describe("combo text in the plain fields (tooltip and detail)", () => {
+  const hostile = (model: string, strategy: string): OmniRouteCombo => ({
+    name: "c",
+    strategy,
+    models: [{ kind: "model", model }],
+  });
+
+  it("breaks every link in a step name and in the strategy", () => {
+    const summary = comboSummary(hostile("a/b[x](command:y)", "[x](command:y)"));
+    expect(summary).not.toContain("](");
+    expect(summary).toBe("[x] (command:y) · a/b[x] (command:y)");
+    expect(comboDetail(hostile("a/b", "[x](command:y)"))).toBe("combo · [x] (command:y)");
+  });
+
+  it("keeps one line and removes control characters", () => {
+    const summary = comboSummary(hostile("a\u0000b\u0085c\u001b[2Jd\ne", "pri\u0007or\u009bity\r\nx"));
+    expect(summary).toBe("priority x · abc[2Jd e");
+    expect(comboDetail(hostile("a/b", "round\u0000\n\nrobin"))).toBe("combo · round robin");
+  });
+
+  it("cuts a step name at 80 characters and the strategy at 40, with an ellipsis", () => {
+    expect(comboSummary(hostile("m".repeat(81), "s".repeat(41)))).toBe(`${"s".repeat(40)}… · ${"m".repeat(80)}…`);
+    expect(comboSummary(hostile("m".repeat(80), "s".repeat(40)))).toBe(`${"s".repeat(40)} · ${"m".repeat(80)}`);
+    expect(comboDetail(hostile("a/b", "s".repeat(41)))).toBe(`combo · ${"s".repeat(40)}…`);
+  });
+
+  it("says only combo when there is no strategy left to show", () => {
+    expect(comboDetail(undefined)).toBe("combo");
+    expect(comboDetail(hostile("a/b", ""))).toBe("combo");
+    expect(comboDetail(hostile("a/b", " \n\u0000 "))).toBe("combo");
+    expect(comboDetail({ name: "c", strategy: 3 as never, models: [] })).toBe("combo");
   });
 });
