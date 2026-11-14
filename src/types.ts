@@ -199,4 +199,7 @@ export type StreamEvent =
   | { kind: "text"; text: string }
   | { kind: "thinking"; text: string }
   | { kind: "toolCall"; id: string; name: string; args: string }
-  | { kind: "usage"; usage: StreamUsage };
+  | { kind: "usage"; usage: StreamUsage }
+  /** Why the server ended the answer (`stop`, `length`, `tool_calls`…); sent after
+   * the tool calls it flushed. A stream that ends without one sends no event. */
+  | { kind: "finish"; reason: string };

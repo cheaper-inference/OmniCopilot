@@ -102,6 +102,20 @@ function isNetworkError(err: unknown): boolean {
   return err instanceof OmniRouteRequestError && err.info.network === true;
 }
 
+/** The arguments of a streamed tool call as an object. An empty string is a call
+ * without parameters; text that is not a JSON object gives undefined. */
+function parseToolInput(args: string): Record<string, unknown> | undefined {
+  if (args.trim() === "") return {};
+  try {
+    const parsed: unknown = JSON.parse(args);
+    return typeof parsed === "object" && parsed !== null && !Array.isArray(parsed)
+      ? (parsed as Record<string, unknown>)
+      : undefined;
+  } catch {
+    return undefined;
+  }
+}
+
 /** Sleep for `ms`; resolves true if the request was cancelled meanwhile. */
 function waitUnlessCancelled(ms: number, token: vscode.CancellationToken): Promise<boolean> {
   return new Promise<boolean>((resolve) => {
@@ -361,6 +375,8 @@ export class OmniRouteChatProvider
         let streamedOutput = false;
         let serverUsage: StreamUsage | null = null;
         let completionChars = 0;
+        let finishReason: string | undefined;
+        let invalidToolCall = false;
 
         try {
           for await (const event of client.streamChat(request, abort.signal)) {
@@ -379,17 +395,34 @@ export class OmniRouteChatProvider
               streamedOutput = true;
               completionChars += event.text.length;
               progress.report(new vscode.LanguageModelTextPart(event.text));
-            } else {
+            } else if (event.kind === "finish") {
+              finishReason = event.reason;
+            } else if (event.kind === "toolCall") {
               streamedOutput = true;
-              let input: Record<string, unknown>;
-              try {
-                input = JSON.parse(event.args) as Record<string, unknown>;
-              } catch {
-                log.warn(`Tool call ${event.name} had invalid JSON args; sending {}`);
-                input = {};
+              const input = parseToolInput(event.args);
+              if (input === undefined) {
+                // Never run a tool on arguments that were not understood; the
+                // request fails once the stream is over and the reason is known.
+                log.warn(`Tool call ${event.name} had invalid JSON args; not reporting it`);
+                invalidToolCall = true;
+              } else {
+                progress.report(
+                  new vscode.LanguageModelToolCallPart(event.id, aliases.fromWire(event.name), input)
+                );
               }
-              progress.report(
-                new vscode.LanguageModelToolCallPart(event.id, aliases.fromWire(event.name), input)
+            }
+          }
+          if (!token.isCancellationRequested) {
+            if (finishReason === "length" || finishReason === "content_filter") {
+              log.warn(`Answer from ${model.omniModelId} ended early (finish_reason: ${finishReason})`);
+            }
+            if (invalidToolCall) {
+              throw new Error(
+                finishReason === "length"
+                  ? vscode.l10n.t(
+                      "The model's answer was cut off before the tool call was complete. Raise omnicopilot.maxOutputTokens or ask for smaller steps."
+                    )
+                  : vscode.l10n.t("The model sent a tool call with invalid arguments.")
               );
             }
           }
