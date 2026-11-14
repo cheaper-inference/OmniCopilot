@@ -124,7 +124,8 @@ function registerCommands(context: vscode.ExtensionContext, log: vscode.LogOutpu
     void provider.refresh();
     if (listing.ok) {
       void vscode.window.showInformationMessage(
-        vscode.l10n.t("{0} models listed from {1}.", listing.count, displayUrl(listing.serverUrl))
+        // The count comes last so the sentence needs no plural form in any language.
+        vscode.l10n.t("Models listed from {1}: {0}.", listing.count, displayUrl(listing.serverUrl))
       );
     } else {
       await explainWithheldKey(context, listing);

@@ -264,7 +264,7 @@ describe("OmniRoute: Refresh models", () => {
 
     await ext.run("omnicopilot.refreshModels");
 
-    expect(texts(info)).toEqual(["2 models listed from http://localhost:20128."]);
+    expect(texts(info)).toEqual(["Models listed from http://localhost:20128: 2."]);
     expect(warn).not.toHaveBeenCalled();
     ext.dispose();
   });
@@ -277,7 +277,7 @@ describe("OmniRoute: Refresh models", () => {
 
     await ext.run("omnicopilot.refreshModels");
 
-    const listed = texts(info).find((text) => text.includes("models listed"));
+    const listed = texts(info).find((text) => text.startsWith("Models listed from"));
     expect(listed).toBeDefined();
     expect(listed).not.toContain("](");
     ext.dispose();
