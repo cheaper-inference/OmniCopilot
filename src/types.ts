@@ -99,8 +99,22 @@ export interface StreamToolCallDelta {
   function?: { name?: string; arguments?: string };
 }
 
+/** One piece of a `reasoning_details` array (OpenRouter shape). Encrypted
+ * reasoning carries `data` instead of readable text and is ignored. */
+export interface StreamReasoningDetail {
+  type?: string;
+  text?: string | null;
+  summary?: string | null;
+}
+
 export interface StreamDelta {
   content?: string | null;
+  /** The model's reasoning, under the name DeepSeek-style servers use. */
+  reasoning_content?: string | null;
+  /** The same, under the name OpenRouter-style servers use. */
+  reasoning?: string | null;
+  /** Structured reasoning; read only when neither plain field has text. */
+  reasoning_details?: StreamReasoningDetail[];
   tool_calls?: StreamToolCallDelta[];
 }
 
@@ -144,5 +158,6 @@ export interface StreamErrorBody {
 /** Normalized streaming events yielded by the client. */
 export type StreamEvent =
   | { kind: "text"; text: string }
+  | { kind: "thinking"; text: string }
   | { kind: "toolCall"; id: string; name: string; args: string }
   | { kind: "usage"; usage: StreamUsage };

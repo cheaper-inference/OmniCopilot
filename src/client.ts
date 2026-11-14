@@ -7,8 +7,10 @@ import type {
   ModelsResponse,
   OmniRouteModel,
   StreamChunk,
+  StreamDelta,
   StreamErrorBody,
   StreamEvent,
+  StreamReasoningDetail,
   StreamToolCallDelta,
 } from "./types";
 
@@ -283,6 +285,10 @@ export class OmniRouteClient {
     if (!choice) return;
 
     const delta = choice.delta;
+    const reasoning = delta ? reasoningText(delta) : "";
+    if (reasoning) {
+      yield { kind: "thinking", text: reasoning };
+    }
     if (delta?.content) {
       yield { kind: "text", text: delta.content };
     }
@@ -293,6 +299,26 @@ export class OmniRouteClient {
       yield* assembler.flush();
     }
   }
+}
+
+/** The reasoning a delta carries: the first non-empty of `reasoning_content`,
+ * `reasoning` and the readable text of `reasoning_details`. Servers that send
+ * the same thought under several names would otherwise show it twice, so the
+ * fields are never added together. Whitespace counts as text; a field that is
+ * not a string is ignored. */
+function reasoningText(delta: StreamDelta): string {
+  for (const field of [delta.reasoning_content, delta.reasoning]) {
+    if (typeof field === "string" && field.length > 0) return field;
+  }
+  const details: unknown = delta.reasoning_details;
+  if (!Array.isArray(details)) return "";
+  let text = "";
+  for (const entry of details as Array<StreamReasoningDetail | null>) {
+    if (typeof entry !== "object" || entry === null) continue;
+    if (typeof entry.text === "string" && entry.text.length > 0) text += entry.text;
+    else if (typeof entry.summary === "string" && entry.summary.length > 0) text += entry.summary;
+  }
+  return text;
 }
 
 /** Reassembles incremental tool_calls deltas (indexed fragments) into

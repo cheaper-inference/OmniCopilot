@@ -192,6 +192,119 @@ describe("OmniRouteClient.streamChat", () => {
   });
 });
 
+describe("OmniRouteClient.streamChat reasoning", () => {
+  afterEach(() => vi.unstubAllGlobals());
+
+  /** Streams the given deltas, one chunk each, and returns the events. */
+  async function streamDeltas(...deltas: unknown[]): Promise<StreamEvent[]> {
+    vi.stubGlobal(
+      "fetch",
+      vi
+        .fn()
+        .mockResolvedValue(
+          sseResponse([
+            ...deltas.map((delta) => `data: ${JSON.stringify({ choices: [{ delta }] })}`),
+            "data: [DONE]",
+          ])
+        )
+    );
+    return collect(new OmniRouteClient({ baseUrl: "http://x/v1" }));
+  }
+
+  it("yields reasoning_content as thinking", async () => {
+    const events = await streamDeltas(
+      { reasoning_content: "Let me " },
+      { reasoning_content: "think." },
+      { content: "Done." }
+    );
+    expect(events).toEqual([
+      { kind: "thinking", text: "Let me " },
+      { kind: "thinking", text: "think." },
+      { kind: "text", text: "Done." },
+    ]);
+  });
+
+  it("yields reasoning when reasoning_content is absent", async () => {
+    expect(await streamDeltas({ reasoning: "step one" })).toEqual([
+      { kind: "thinking", text: "step one" },
+    ]);
+    expect(await streamDeltas({ reasoning_content: "", reasoning: "step two" })).toEqual([
+      { kind: "thinking", text: "step two" },
+    ]);
+    expect(await streamDeltas({ reasoning_content: null, reasoning: "step three" })).toEqual([
+      { kind: "thinking", text: "step three" },
+    ]);
+  });
+
+  it("falls back to reasoning_details text", async () => {
+    const events = await streamDeltas({
+      reasoning_details: [
+        { type: "reasoning.text", text: "first " },
+        { type: "reasoning.encrypted", data: "opaque" },
+        { type: "reasoning.text", text: "second" },
+      ],
+    });
+    expect(events).toEqual([{ kind: "thinking", text: "first second" }]);
+  });
+
+  it("falls back to the summary of a reasoning_details entry that has no text", async () => {
+    const events = await streamDeltas({
+      reasoning_details: [
+        { type: "reasoning.summary", summary: "In short, " },
+        { type: "reasoning.text", text: "", summary: "it works." },
+        { type: "reasoning.text", text: "text wins", summary: "ignored" },
+      ],
+    });
+    expect(events).toEqual([{ kind: "thinking", text: "In short, it works.text wins" }]);
+  });
+
+  it("yields nothing for encrypted-only reasoning_details", async () => {
+    const events = await streamDeltas({
+      reasoning_details: [{ type: "reasoning.encrypted", data: "opaque" }, {}],
+    });
+    expect(events).toEqual([]);
+  });
+
+  it("does not duplicate reasoning that arrives in two fields of the same delta", async () => {
+    const events = await streamDeltas({
+      reasoning_content: "same thought",
+      reasoning: "same thought",
+      reasoning_details: [{ type: "reasoning.text", text: "same thought" }],
+    });
+    expect(events).toEqual([{ kind: "thinking", text: "same thought" }]);
+
+    const second = await streamDeltas({
+      reasoning: "from reasoning",
+      reasoning_details: [{ type: "reasoning.text", text: "from details" }],
+    });
+    expect(second).toEqual([{ kind: "thinking", text: "from reasoning" }]);
+  });
+
+  it("keeps whitespace-only reasoning, which is real text", async () => {
+    expect(await streamDeltas({ reasoning_content: "\n" })).toEqual([
+      { kind: "thinking", text: "\n" },
+    ]);
+  });
+
+  it("ignores reasoning fields that are not strings or not arrays", async () => {
+    const events = await streamDeltas(
+      { reasoning_content: 42, reasoning: { text: "x" }, reasoning_details: "nope" },
+      { reasoning_details: { text: "x" } },
+      { reasoning_details: [null, 7, "x", { text: 3, summary: {} }] },
+      { content: "still fine" }
+    );
+    expect(events).toEqual([{ kind: "text", text: "still fine" }]);
+  });
+
+  it("yields the thinking event before the text of the same delta", async () => {
+    const events = await streamDeltas({ reasoning_content: "hm", content: "Answer" });
+    expect(events).toEqual([
+      { kind: "thinking", text: "hm" },
+      { kind: "text", text: "Answer" },
+    ]);
+  });
+});
+
 describe("OmniRouteClient.streamChat errors", () => {
   afterEach(() => {
     vi.unstubAllGlobals();
