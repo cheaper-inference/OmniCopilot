@@ -568,6 +568,129 @@ describe("OmniRouteClient.streamChat tool-call assembly", () => {
     expect(calls.map((c) => (c as { name: string }).name)).toEqual(["second", "first"]);
   });
 
+  it("keeps the first id when a server stamps a fresh id on every fragment of one call", async () => {
+    const calls = await toolCalls([
+      toolDelta({ index: 0, id: "t1", function: { name: "run", arguments: '{"x"' } }),
+      toolDelta({ index: 0, id: "t2", function: { arguments: ":1," } }),
+      toolDelta({ index: 0, id: "t3", function: { arguments: '"y":2}' } }),
+    ]);
+    expect(calls).toEqual([{ kind: "toolCall", id: "t1", name: "run", args: '{"x":1,"y":2}' }]);
+  });
+
+  it("does the same without an index", async () => {
+    const calls = await toolCalls([
+      toolDelta({ id: "t1", function: { name: "run", arguments: '{"x"' } }),
+      toolDelta({ id: "t2", function: { arguments: ":1}" } }),
+    ]);
+    expect(calls).toEqual([{ kind: "toolCall", id: "t1", name: "run", args: '{"x":1}' }]);
+  });
+
+  it("opens a new call for a different id only when the delta names a function", async () => {
+    const calls = await toolCalls([
+      toolDelta({ index: 0, id: "a", function: { name: "first", arguments: "{}" } }),
+      toolDelta({ index: 0, id: "b", function: { name: "", arguments: "" } }),
+      toolDelta({ index: 0, id: "c", function: { name: "second", arguments: "{}" } }),
+    ]);
+    expect(calls.map((c) => (c as { id: string }).id)).toEqual(["a", "c"]);
+  });
+
+  it("sends a fragment to the call of the id it carries, whatever index it has", async () => {
+    const calls = await toolCalls([
+      toolDelta({ index: 0, id: "a", function: { name: "read_file", arguments: '{"p"' } }),
+      toolDelta({ index: 0, id: "b", function: { name: "list_dir", arguments: '{"d"' } }),
+      toolDelta({ index: 0, id: "a", function: { arguments: ":1}" } }),
+      toolDelta({ index: 0, id: "b", function: { arguments: ":2}" } }),
+    ]);
+    expect(calls).toEqual([
+      { kind: "toolCall", id: "a", name: "read_file", args: '{"p":1}' },
+      { kind: "toolCall", id: "b", name: "list_dir", args: '{"d":2}' },
+    ]);
+  });
+
+  it("finds a call again by its id when a later fragment carries no index", async () => {
+    const calls = await toolCalls([
+      toolDelta({ index: 0, id: "a", function: { name: "run", arguments: '{"x"' } }),
+      toolDelta({ index: 1, id: "b", function: { name: "other", arguments: "{}" } }),
+      toolDelta({ id: "a", function: { arguments: ":1}" } }),
+    ]);
+    expect(calls).toEqual([
+      { kind: "toolCall", id: "a", name: "run", args: '{"x":1}' },
+      { kind: "toolCall", id: "b", name: "other", args: "{}" },
+    ]);
+  });
+
+  it("reads an index sent as a string of digits as that integer", async () => {
+    const calls = await toolCalls([
+      toolDelta({ index: "0", id: "a", function: { name: "read_file", arguments: '{"p"' } }),
+      toolDelta({ index: "1", id: "b", function: { name: "list_dir", arguments: '{"d"' } }),
+      toolDelta({ index: "0", function: { arguments: ":1}" } }),
+      toolDelta({ index: "1", function: { arguments: ":2}" } }),
+    ]);
+    expect(calls).toEqual([
+      { kind: "toolCall", id: "a", name: "read_file", args: '{"p":1}' },
+      { kind: "toolCall", id: "b", name: "list_dir", args: '{"d":2}' },
+    ]);
+  });
+
+  it("mixes a string index with an integer one for the same call", async () => {
+    const calls = await toolCalls([
+      toolDelta({ index: 3, id: "a", function: { name: "run", arguments: '{"x"' } }),
+      toolDelta({ index: "3", function: { arguments: ":1}" } }),
+    ]);
+    expect(calls).toEqual([{ kind: "toolCall", id: "a", name: "run", args: '{"x":1}' }]);
+  });
+
+  it.each([["x1"], [""], ["-1"], ["1.5"]])("treats the index %j as missing", async (index) => {
+    const calls = await toolCalls([
+      toolDelta({ index, id: "a", function: { name: "run", arguments: '{"x"' } }),
+      toolDelta({ function: { arguments: ":1}" } }),
+    ]);
+    expect(calls).toEqual([{ kind: "toolCall", id: "a", name: "run", args: '{"x":1}' }]);
+  });
+
+  it("still assembles every input the first version of the rule was written for", async () => {
+    const scenarios: Array<[string[], unknown[]]> = [
+      [
+        [
+          toolDelta({ id: "a", function: { name: "read_file", arguments: '{"p":1}' } }),
+          toolDelta({ id: "b", function: { name: "list_dir", arguments: '{"d":2}' } }),
+        ],
+        [
+          { kind: "toolCall", id: "a", name: "read_file", args: '{"p":1}' },
+          { kind: "toolCall", id: "b", name: "list_dir", args: '{"d":2}' },
+        ],
+      ],
+      [
+        [
+          toolDelta({ index: 0, id: "a", function: { name: "read_file", arguments: '{"p":1}' } }),
+          toolDelta({ index: 0, id: "b", function: { name: "list_dir", arguments: '{"d"' } }),
+          toolDelta({ index: 0, function: { arguments: ":2}" } }),
+        ],
+        [
+          { kind: "toolCall", id: "a", name: "read_file", args: '{"p":1}' },
+          { kind: "toolCall", id: "b", name: "list_dir", args: '{"d":2}' },
+        ],
+      ],
+      [
+        [
+          toolDelta({ index: 0, id: "a", function: { name: "read_file", arguments: '{"p"' } }),
+          toolDelta({ index: 0, function: { name: "read_file", arguments: ":1}" } }),
+        ],
+        [{ kind: "toolCall", id: "a", name: "read_file", args: '{"p":1}' }],
+      ],
+      [
+        [
+          toolDelta({ index: 0, function: { name: "run", arguments: '{"x"' } }),
+          toolDelta({ index: 0, id: "late", function: { arguments: ":1}" } }),
+        ],
+        [{ kind: "toolCall", id: "late", name: "run", args: '{"x":1}' }],
+      ],
+    ];
+    for (const [lines, expected] of scenarios) {
+      expect(await toolCalls(lines)).toEqual(expected);
+    }
+  });
+
   it("is one call when the id only shows up in a later delta", async () => {
     const calls = await toolCalls([
       toolDelta({ index: 0, function: { name: "run", arguments: '{"x"' } }),
