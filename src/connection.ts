@@ -374,6 +374,17 @@ export async function resolveConnection(context: vscode.ExtensionContext): Promi
 }
 
 /**
+ * The scope the "Set API Key" command writes: the one the user chose. The
+ * workspace's when a workspace is open and its switch is on (even before it has
+ * a key, so the typed key becomes the workspace key), the global one otherwise.
+ */
+export function chosenKeyScope(context: vscode.ExtensionContext): KeyScope {
+  return currentWorkspaceIdentity() !== undefined && useWorkspaceKeySwitch(context)
+    ? "workspace"
+    : "global";
+}
+
+/**
  * The scope a write that "acts on the key in effect" targets: the workspace's when
  * that key is in effect, the global one otherwise. A plain read, with none of the
  * bookkeeping `resolveConnection` does.

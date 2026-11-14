@@ -3,7 +3,7 @@ import { OmniRouteClient, serverRootUrl } from "./client";
 import { configureCliTool } from "./cliBridge";
 import {
   clearApiKey,
-  keyScopeInEffect,
+  chosenKeyScope,
   readStoredKey,
   resolveConnection,
   showIgnoredWorkspaceUrlNotice,
@@ -261,11 +261,15 @@ async function setApiKey(
   log: vscode.LogOutputChannel,
   optionalFlow = false
 ): Promise<void> {
-  // The command works on the key in effect: this workspace's own, or the global one.
-  const scope = await keyScopeInEffect(context);
+  // The command works on the key the user chose: this workspace's own when the
+  // workspace is set to use one, the global key otherwise.
+  const scope = chosenKeyScope(context);
   const existing = await readStoredKey(context, scope);
   const key = await vscode.window.showInputBox({
-    title: vscode.l10n.t("OmniRoute API key"),
+    title:
+      scope === "workspace"
+        ? vscode.l10n.t("API key for this workspace")
+        : vscode.l10n.t("OmniRoute API key"),
     prompt: optionalFlow
       ? vscode.l10n.t(
           "Optional — leave empty if your OmniRoute does not require an API key. Stored in the OS keychain."
