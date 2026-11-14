@@ -85,6 +85,9 @@ export interface ModelListing {
   ok: boolean;
   /** Root of the server the listing went to. */
   serverUrl: string;
+  /** How many models the picker lists: the entries above, counted once per model
+   * (the Agents-window clones share their model's id). */
+  count: number;
   /** Why it failed: an HTTP status the server answered with, or no status at all. */
   failure?: { status?: number };
   /** The stored key was not sent to this server (see `Connection.keyWithheld`). */
@@ -92,7 +95,7 @@ export interface ModelListing {
 }
 
 /** The server turned the request down because of the key it saw (or did not see). */
-function isKeyRejection(status: number | undefined): status is 401 | 403 {
+export function isKeyRejection(status: number | undefined): status is 401 | 403 {
   return status === 401 || status === 403;
 }
 
@@ -216,7 +219,7 @@ export class OmniRouteChatProvider
    * `silent: true` never prompts: an unreachable server simply contributes no
    * models until the user fixes the connection.
    */
-  async listModels(options: { silent: boolean }, token: vscode.CancellationToken): Promise<ModelListing> {
+  async listModels(options: { silent: boolean }, token?: vscode.CancellationToken): Promise<ModelListing> {
     const { client, connection } = await this.connect();
     const serverUrl = serverRootUrl(client.baseUrl);
 
@@ -241,12 +244,25 @@ export class OmniRouteChatProvider
         // With the key withheld a 401/403 is the expected answer: the
         // withheld-key warning and the panel already say why.
       }
-      return { infos: [], ok: false, serverUrl, failure: { status }, keyWithheld: connection.keyWithheld };
+      return {
+        infos: [],
+        ok: false,
+        count: 0,
+        serverUrl,
+        failure: { status },
+        keyWithheld: connection.keyWithheld,
+      };
     }
 
     const infos = this.toModelInfos(this.cachedModels, this.cachedCombos);
     this.deps.log.info(`Listed ${infos.length} models from ${client.baseUrl}`);
-    return { infos, ok: true, serverUrl, keyWithheld: connection.keyWithheld };
+    return {
+      infos,
+      ok: true,
+      count: new Set(infos.map((info) => info.omniModelId)).size,
+      serverUrl,
+      keyWithheld: connection.keyWithheld,
+    };
   }
 
   private toModelInfos(models: OmniRouteModel[], combos: OmniRouteCombo[] = []): OmniModelInfo[] {
