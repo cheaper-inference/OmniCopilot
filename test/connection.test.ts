@@ -1,6 +1,6 @@
 import { afterEach, beforeEach, describe, expect, it, vi } from "vitest";
 import * as vscode from "vscode";
-import { setMockConfig, setMockInspect } from "./vscode.mock";
+import { configUpdates, setMockConfig, setMockInspect, setMockWorkspace } from "./vscode.mock";
 import {
   SECRET_API_KEY,
   SECRET_API_KEY_ORIGINS,
@@ -21,6 +21,14 @@ import {
   displayUrl,
   plainNotificationText,
   isHttpUrl,
+  SECRET_API_KEY_WORKSPACE_PREFIX,
+  SECRET_API_KEY_ORIGINS_WORKSPACE_PREFIX,
+  STATE_USE_WORKSPACE_KEY,
+  chooseKeyScope,
+  saveKeyFromPanel,
+  workspaceIdentity,
+  workspaceOriginsSecretName,
+  workspaceSecretName,
 } from "../src/connection";
 
 /** A settings value that VS Code would render as a clickable command link in a notification. */
@@ -59,6 +67,7 @@ function fakeContext(state: Record<string, unknown> = {}) {
   return Object.assign(context as unknown as vscode.ExtensionContext, {
     secretMap: secrets,
     stateMap: global,
+    workspaceMap: local,
   });
 }
 
@@ -749,5 +758,385 @@ describe("notifications built from settings carry no link", () => {
 
     expect(warn).toHaveBeenCalledTimes(1);
     expect(texts(warn)[0]).not.toContain("](");
+  });
+});
+
+
+describe("workspaceSecretName / workspaceOriginsSecretName", () => {
+  const id = "file:///home/dev/projects/acme/acme.code-workspace";
+
+  it("names the secrets from 16 hex characters of a hash of the identity", () => {
+    expect(workspaceSecretName(id)).toMatch(/^omnicopilot\.apiKey\.ws\.[0-9a-f]{16}$/);
+    expect(workspaceOriginsSecretName(id)).toMatch(/^omnicopilot\.apiKeyOrigins\.ws\.[0-9a-f]{16}$/);
+    expect(workspaceSecretName(id).startsWith(SECRET_API_KEY_WORKSPACE_PREFIX)).toBe(true);
+    expect(workspaceOriginsSecretName(id).startsWith(SECRET_API_KEY_ORIGINS_WORKSPACE_PREFIX)).toBe(true);
+  });
+
+  it("is stable, and the key and its list share the suffix", () => {
+    expect(workspaceSecretName(id)).toBe(workspaceSecretName(id));
+    expect(workspaceSecretName(id).split(".").pop()).toBe(workspaceOriginsSecretName(id).split(".").pop());
+  });
+
+  it("never carries the identity, and two identities give two names", () => {
+    const other = "file:///home/dev/projects/beta";
+    for (const name of [workspaceSecretName(id), workspaceOriginsSecretName(id)]) {
+      expect(name).not.toContain("acme");
+      expect(name).not.toContain("home");
+    }
+    expect(workspaceSecretName(id)).not.toBe(workspaceSecretName(other));
+    expect(workspaceOriginsSecretName(id)).not.toBe(workspaceOriginsSecretName(other));
+  });
+});
+
+describe("workspaceIdentity", () => {
+  it("prefers the saved workspace file, then the first folder", () => {
+    expect(workspaceIdentity({ workspaceFile: "file:///w/a.code-workspace", firstFolder: "file:///w/a" })).toBe(
+      "file:///w/a.code-workspace"
+    );
+    expect(workspaceIdentity({ firstFolder: "file:///w/a" })).toBe("file:///w/a");
+  });
+
+  it("does not use an untitled workspace file, which has no stable name", () => {
+    expect(workspaceIdentity({ workspaceFile: "untitled:1700000000000", firstFolder: "file:///w/a" })).toBe(
+      "file:///w/a"
+    );
+    expect(workspaceIdentity({ workspaceFile: "untitled:1700000000000" })).toBeUndefined();
+  });
+
+  it("is undefined when nothing is open", () => {
+    expect(workspaceIdentity({})).toBeUndefined();
+    expect(workspaceIdentity({ workspaceFile: "", firstFolder: "  " })).toBeUndefined();
+  });
+});
+
+describe("chooseKeyScope", () => {
+  const base = { workspaceId: "file:///w/a", useWorkspaceKey: true, workspaceKey: "sk-ws", globalKey: "sk-g" };
+
+  it("uses the workspace key when a workspace is open, the switch is on and the key is stored", () => {
+    expect(chooseKeyScope(base)).toEqual({ scope: "workspace", key: "sk-ws" });
+  });
+
+  it("uses the global key when the switch is off", () => {
+    expect(chooseKeyScope({ ...base, useWorkspaceKey: false })).toEqual({ scope: "global", key: "sk-g" });
+  });
+
+  it("uses the global key when no workspace is open, whatever the switch says", () => {
+    expect(chooseKeyScope({ ...base, workspaceId: undefined })).toEqual({ scope: "global", key: "sk-g" });
+  });
+
+  it("uses the global key when the switch is on but no workspace key is stored", () => {
+    expect(chooseKeyScope({ ...base, workspaceKey: undefined })).toEqual({ scope: "global", key: "sk-g" });
+    expect(chooseKeyScope({ ...base, workspaceKey: "" })).toEqual({ scope: "global", key: "sk-g" });
+  });
+
+  it("has no key when neither is stored", () => {
+    expect(chooseKeyScope({ ...base, workspaceKey: undefined, globalKey: undefined })).toEqual({
+      scope: "none",
+    });
+    expect(chooseKeyScope({ useWorkspaceKey: false })).toEqual({ scope: "none" });
+  });
+
+  it("falls back to the workspace key only through the switch, never when it is off", () => {
+    expect(chooseKeyScope({ ...base, useWorkspaceKey: false, globalKey: undefined })).toEqual({ scope: "none" });
+  });
+});
+
+describe("one API key per workspace", () => {
+  const A = "https://a.example";
+  const B = "https://b.example";
+  const WS = "file:///work/acme";
+  afterEach(() => {
+    vi.restoreAllMocks();
+    setMockWorkspace();
+  });
+
+  const originsOf = (context: ReturnType<typeof fakeContext>, name: string): unknown => {
+    const raw = context.secretMap.get(name);
+    return raw === undefined ? undefined : JSON.parse(raw);
+  };
+
+  /** A global key and a workspace key, both approved for A, the switch on. */
+  async function bothKeys() {
+    setMockConfig({ baseUrl: A });
+    setMockWorkspace({ name: "acme", folders: [WS] });
+    const context = fakeContext();
+    await storeApiKey(context, "sk-global");
+    await storeApiKey(context, "sk-ws", undefined, "workspace");
+    return context;
+  }
+
+  it("lets the workspace key win over the global one", async () => {
+    const context = await bothKeys();
+    expect(await resolveConnection(context)).toMatchObject({
+      apiKey: "sk-ws",
+      keyScope: "workspace",
+      hasStoredKey: true,
+      workspaceKeyAvailable: true,
+      useWorkspaceKey: true,
+    });
+  });
+
+  it("stores the workspace key under its own secrets and turns the switch on", async () => {
+    const context = await bothKeys();
+    expect(context.secretMap.get(workspaceSecretName(WS))).toBe("sk-ws");
+    expect(originsOf(context, workspaceOriginsSecretName(WS))).toEqual([A]);
+    expect(context.secretMap.get(SECRET_API_KEY)).toBe("sk-global");
+    expect(context.workspaceMap.get(STATE_USE_WORKSPACE_KEY)).toBe(true);
+  });
+
+  it("serves the global key when the switch is off, and the workspace key again when it is back on", async () => {
+    const context = await bothKeys();
+    context.workspaceMap.set(STATE_USE_WORKSPACE_KEY, false);
+    expect(await resolveConnection(context)).toMatchObject({ apiKey: "sk-global", keyScope: "global" });
+    expect(context.secretMap.get(workspaceSecretName(WS))).toBe("sk-ws");
+    context.workspaceMap.set(STATE_USE_WORKSPACE_KEY, true);
+    expect(await resolveConnection(context)).toMatchObject({ apiKey: "sk-ws", keyScope: "workspace" });
+  });
+
+  it("serves the global key when the switch is on but no workspace key is stored", async () => {
+    setMockConfig({ baseUrl: A });
+    setMockWorkspace({ folders: [WS] });
+    const context = fakeContext();
+    await storeApiKey(context, "sk-global");
+    context.workspaceMap.set(STATE_USE_WORKSPACE_KEY, true);
+    expect(await resolveConnection(context)).toMatchObject({ apiKey: "sk-global", keyScope: "global" });
+  });
+
+  it("has no workspace key without an open workspace, even with the switch on", async () => {
+    const context = await bothKeys();
+    setMockWorkspace();
+    expect(await resolveConnection(context)).toMatchObject({
+      apiKey: "sk-global",
+      keyScope: "global",
+      workspaceKeyAvailable: false,
+    });
+  });
+
+  it("keeps two workspaces' keys apart", async () => {
+    const context = await bothKeys();
+    setMockWorkspace({ folders: ["file:///work/other"] });
+    // The switch is still on, but the other workspace has no key of its own.
+    expect(await resolveConnection(context)).toMatchObject({ apiKey: "sk-global", keyScope: "global" });
+  });
+
+  it("reports the scope as none when nothing is stored", async () => {
+    setMockConfig({ baseUrl: A });
+    setMockWorkspace({ folders: [WS] });
+    expect(await resolveConnection(fakeContext())).toMatchObject({
+      keyScope: "none",
+      hasStoredKey: false,
+      workspaceKeyAvailable: true,
+    });
+  });
+
+  it("approves servers per key: approving B for the workspace key does not approve it for the global one", async () => {
+    const context = await bothKeys();
+    setMockConfig({ baseUrl: B });
+    expect(await resolveConnection(context)).toMatchObject({
+      apiKey: undefined,
+      keyWithheld: true,
+      keyScope: "workspace",
+    });
+
+    await rebindApiKey(context, undefined, "workspace");
+
+    expect(originsOf(context, workspaceOriginsSecretName(WS))).toEqual([A, B]);
+    expect(originsOf(context, SECRET_API_KEY_ORIGINS)).toEqual([A]);
+    expect(await resolveConnection(context)).toMatchObject({ apiKey: "sk-ws", keyWithheld: false });
+    context.workspaceMap.set(STATE_USE_WORKSPACE_KEY, false);
+    expect(await resolveConnection(context)).toMatchObject({
+      apiKey: undefined,
+      keyWithheld: true,
+      keyScope: "global",
+    });
+  });
+
+  it("approving a server for the global key does not approve it for the workspace key", async () => {
+    const context = await bothKeys();
+    setMockConfig({ baseUrl: B });
+    await rebindApiKey(context, undefined, "global");
+    expect(originsOf(context, SECRET_API_KEY_ORIGINS)).toEqual([A, B]);
+    expect(originsOf(context, workspaceOriginsSecretName(WS))).toEqual([A]);
+    expect((await resolveConnection(context)).keyWithheld).toBe(true);
+  });
+
+  it("withholds a workspace key whose list is missing: it is never adopted by whichever origin asks", async () => {
+    const context = await bothKeys();
+    context.secretMap.delete(workspaceOriginsSecretName(WS));
+    expect(await resolveConnection(context)).toMatchObject({
+      apiKey: undefined,
+      keyWithheld: true,
+      keyScope: "workspace",
+    });
+    expect(context.secretMap.has(workspaceOriginsSecretName(WS))).toBe(false);
+  });
+
+  it("withholds a workspace key whose list is damaged", async () => {
+    const context = await bothKeys();
+    context.secretMap.set(workspaceOriginsSecretName(WS), "{oops");
+    expect(await resolveConnection(context)).toMatchObject({ apiKey: undefined, keyWithheld: true });
+  });
+
+  it("clears one scope and leaves the other", async () => {
+    const context = await bothKeys();
+
+    await clearApiKey(context, "workspace");
+
+    expect(context.secretMap.has(workspaceSecretName(WS))).toBe(false);
+    expect(context.secretMap.has(workspaceOriginsSecretName(WS))).toBe(false);
+    expect(context.workspaceMap.get(STATE_USE_WORKSPACE_KEY)).toBe(false);
+    expect(context.secretMap.get(SECRET_API_KEY)).toBe("sk-global");
+    expect(await resolveConnection(context)).toMatchObject({ apiKey: "sk-global", keyScope: "global" });
+
+    const again = await bothKeys();
+    await clearApiKey(again, "global");
+    expect(again.secretMap.has(SECRET_API_KEY)).toBe(false);
+    expect(again.secretMap.has(SECRET_API_KEY_ORIGINS)).toBe(false);
+    expect(again.secretMap.get(workspaceSecretName(WS))).toBe("sk-ws");
+    expect(again.workspaceMap.get(STATE_USE_WORKSPACE_KEY)).toBe(true);
+  });
+
+  it("writes a workspace key in the fail-closed order, never leaving it without a list", async () => {
+    setMockConfig({ baseUrl: B });
+    setMockWorkspace({ folders: [WS] });
+    const context = fakeContext();
+    const keyName = workspaceSecretName(WS);
+    const listName = workspaceOriginsSecretName(WS);
+    context.secretMap.set(keyName, "sk-old");
+    context.secretMap.set(listName, JSON.stringify([A]));
+
+    const snapshots: Array<{ key?: string; origins?: string[] }> = [];
+    const store = context.secrets.store.bind(context.secrets);
+    context.secrets.store = async (name: string, value: string) => {
+      await store(name, value);
+      snapshots.push({
+        key: context.secretMap.get(keyName),
+        origins: parseApprovedOrigins(context.secretMap.get(listName)),
+      });
+    };
+
+    await storeApiKey(context, "sk-new", undefined, "workspace");
+
+    expect(snapshots.length).toBeGreaterThan(0);
+    for (const { key, origins } of snapshots) {
+      expect(key === "sk-old" && origins?.includes(B), JSON.stringify({ key, origins })).toBe(false);
+      expect(key === "sk-new" && origins?.includes(A), JSON.stringify({ key, origins })).toBe(false);
+      expect(key !== undefined && origins === undefined).toBe(false);
+    }
+    expect(snapshots.at(-1)).toEqual({ key: "sk-new", origins: [B] });
+  });
+
+  it("refuses to store a workspace key when no workspace is open, and writes nothing", async () => {
+    setMockConfig({ baseUrl: A });
+    const context = fakeContext();
+    await expect(storeApiKey(context, "sk-ws", undefined, "workspace")).rejects.toThrow();
+    expect(context.secretMap.size).toBe(0);
+    expect(context.workspaceMap.size).toBe(0);
+  });
+
+  it("writes nothing about any key to settings or globalState", async () => {
+    const context = await bothKeys();
+    await rebindApiKey(context, "https://c.example", "workspace");
+    await clearApiKey(context, "workspace");
+    expect(configUpdates).toEqual([]);
+    expect([...context.stateMap.keys()]).toEqual([]);
+    expect([...context.workspaceMap.keys()]).toEqual([STATE_USE_WORKSPACE_KEY]);
+    expect(JSON.stringify([...context.workspaceMap.values()])).not.toContain("sk-");
+  });
+
+  it("warns about plain HTTP for a workspace key without letting the address become a link", async () => {
+    setMockConfig({ baseUrl: LINK_PAYLOAD });
+    setMockWorkspace({ folders: [WS] });
+    const warn = vi.spyOn(vscode.window, "showWarningMessage");
+    await storeApiKey(fakeContext(), "sk-ws", undefined, "workspace");
+    expect(warn).toHaveBeenCalledTimes(1);
+    expect(String(warn.mock.calls[0][0])).not.toContain("](");
+  });
+
+  it("releases only the key in effect from the withheld-key warning", async () => {
+    const context = await bothKeys();
+    vi.spyOn(vscode.window, "showWarningMessage").mockResolvedValue("Use the key here" as never);
+    setMockConfig({ baseUrl: B });
+
+    await warnIfKeyWithheld(context, new Set(), async () => undefined);
+
+    expect(originsOf(context, workspaceOriginsSecretName(WS))).toEqual([A, B]);
+    expect(originsOf(context, SECRET_API_KEY_ORIGINS)).toEqual([A]);
+  });
+});
+
+describe("saveKeyFromPanel", () => {
+  const A = "https://a.example";
+  const WS = "file:///work/acme";
+  afterEach(() => {
+    vi.restoreAllMocks();
+    setMockWorkspace();
+  });
+
+  function withWorkspace() {
+    setMockConfig({ baseUrl: A });
+    setMockWorkspace({ folders: [WS] });
+    return fakeContext();
+  }
+
+  it("stores a typed key as the workspace key when the box is ticked", async () => {
+    const context = withWorkspace();
+    const stored = await saveKeyFromPanel(context, { key: "sk-ws", useWorkspaceKey: true, url: A });
+    expect(stored).toBe(true);
+    expect(context.secretMap.get(workspaceSecretName(WS))).toBe("sk-ws");
+    expect(context.secretMap.has(SECRET_API_KEY)).toBe(false);
+    expect(context.workspaceMap.get(STATE_USE_WORKSPACE_KEY)).toBe(true);
+  });
+
+  it("only turns the switch on when the box is ticked and no key is typed, keeping what is stored", async () => {
+    const context = withWorkspace();
+    await storeApiKey(context, "sk-global");
+    const stored = await saveKeyFromPanel(context, { key: "", useWorkspaceKey: true, url: A });
+    expect(stored).toBe(false);
+    expect(context.workspaceMap.get(STATE_USE_WORKSPACE_KEY)).toBe(true);
+    expect(context.secretMap.get(SECRET_API_KEY)).toBe("sk-global");
+    expect([...context.secretMap.keys()].some((name) => name.includes(".ws."))).toBe(false);
+    // No workspace key yet: the global key stays in effect.
+    expect(await resolveConnection(context)).toMatchObject({ apiKey: "sk-global", keyScope: "global" });
+  });
+
+  it("keeps a stored workspace key when the box is ticked and no key is typed", async () => {
+    const context = withWorkspace();
+    await storeApiKey(context, "sk-ws", undefined, "workspace");
+    context.workspaceMap.set(STATE_USE_WORKSPACE_KEY, false);
+    await saveKeyFromPanel(context, { key: "", useWorkspaceKey: true, url: A });
+    expect(await resolveConnection(context)).toMatchObject({ apiKey: "sk-ws", keyScope: "workspace" });
+  });
+
+  it("turns the switch off when the box is unticked, and a typed key becomes the global key", async () => {
+    const context = withWorkspace();
+    await storeApiKey(context, "sk-ws", undefined, "workspace");
+    const stored = await saveKeyFromPanel(context, { key: "sk-new-global", useWorkspaceKey: false, url: A });
+    expect(stored).toBe(true);
+    expect(context.workspaceMap.get(STATE_USE_WORKSPACE_KEY)).toBe(false);
+    expect(context.secretMap.get(SECRET_API_KEY)).toBe("sk-new-global");
+    expect(context.secretMap.get(workspaceSecretName(WS))).toBe("sk-ws");
+    expect(await resolveConnection(context)).toMatchObject({ apiKey: "sk-new-global", keyScope: "global" });
+  });
+
+  it("approves the URL being saved for the key in effect only", async () => {
+    const context = withWorkspace();
+    await storeApiKey(context, "sk-global");
+    await storeApiKey(context, "sk-ws", undefined, "workspace");
+    await saveKeyFromPanel(context, { key: "", useWorkspaceKey: true, url: "https://b.example" });
+    expect(JSON.parse(context.secretMap.get(workspaceOriginsSecretName(WS)) ?? "")).toEqual([
+      A,
+      "https://b.example",
+    ]);
+    expect(JSON.parse(context.secretMap.get(SECRET_API_KEY_ORIGINS) ?? "")).toEqual([A]);
+  });
+
+  it("ignores the box when no workspace is open", async () => {
+    setMockConfig({ baseUrl: A });
+    const context = fakeContext();
+    const stored = await saveKeyFromPanel(context, { key: "sk-1", useWorkspaceKey: true, url: A });
+    expect(stored).toBe(true);
+    expect(context.secretMap.get(SECRET_API_KEY)).toBe("sk-1");
+    expect(context.workspaceMap.size).toBe(0);
   });
 });
