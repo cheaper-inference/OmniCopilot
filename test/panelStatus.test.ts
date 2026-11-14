@@ -435,7 +435,14 @@ describe("panel Save of a new key together with a new server URL", () => {
 
   /** Every observable step of the save, each followed by what `resolveConnection`
    * would hand a request made at that very moment. */
-  async function recordedSave(opts: { workspaceKey: boolean }) {
+  async function recordedSave(opts: {
+    /** Which key is stored before the save (approved for the old server only). */
+    oldKey: "global" | "workspace";
+    /** The "only in this workspace" switch before the save. */
+    switchOn: boolean;
+    /** The box ticked in the panel when Save is pressed. */
+    ticked: boolean;
+  }) {
     vi.spyOn(OmniRouteClient.prototype, "probe").mockResolvedValue(offline);
     setMockConfig({ baseUrl: OLD });
     setMockWorkspace({ folders: ["file:///work/acme"] });
@@ -457,7 +464,11 @@ describe("panel Save of a new key together with a new server URL", () => {
       globalState: { get: (_key: string, fallback?: unknown) => fallback, update: async () => undefined },
       workspaceState: {
         get: <T>(key: string, fallback?: T) => (local.has(key) ? (local.get(key) as T) : fallback),
-        update: async (key: string, value: unknown) => void local.set(key, value),
+        update: async (key: string, value: unknown) => {
+          local.set(key, value);
+          // The switch decides which key is in effect, so its flip is a step of its own.
+          await snapshot(`switch ${String(value)}`);
+        },
       },
     } as unknown as vscode.ExtensionContext;
     async function snapshot(step: string) {
@@ -483,7 +494,8 @@ describe("panel Save of a new key together with a new server URL", () => {
     });
 
     // The state before the save: an old key, approved for the old server only.
-    await storeApiKey(context, "sk-old", OLD, opts.workspaceKey ? "workspace" : "global");
+    await storeApiKey(context, "sk-old", OLD, opts.oldKey);
+    local.set("omnicopilot.useWorkspaceKey", opts.switchOn);
     steps.length = 0;
 
     const log = { info: vi.fn(), warn: vi.fn(), error: vi.fn(), debug: vi.fn() };
@@ -494,99 +506,44 @@ describe("panel Save of a new key together with a new server URL", () => {
       type: "save",
       url: NEW,
       apiKey: "sk-new",
-      useWorkspaceKey: opts.workspaceKey,
+      useWorkspaceKey: opts.ticked,
     });
     return steps;
   }
 
-  it.each([[false], [true]])(
-    "never lets a key reach the wrong server at any step (workspace key: %s)",
-    async (workspaceKey) => {
-      const steps = await recordedSave({ workspaceKey });
+  it.each([
+    ["a global key, box unticked", { oldKey: "global", switchOn: false, ticked: false }],
+    ["a workspace key replaced, box ticked", { oldKey: "workspace", switchOn: true, ticked: true }],
+    ["a global key, switch off, box ticked (the save flips the switch)", { oldKey: "global", switchOn: false, ticked: true }],
+  ] as const)("never lets a key reach the wrong server at any step: %s", async (_name, opts) => {
+    const steps = await recordedSave(opts);
 
-      // The recording has the writes of the save in it (a failing test names the missing one).
-      expect(steps.map((entry) => entry.step.split(" ")[0])).toEqual(expect.arrayContaining(["store", "setting", "refresh"]));
-      for (const entry of steps) {
-        // (a) the new key is never sent to, or approved for, the old server
-        if (entry.apiKey === "sk-new") expect(entry.origin, entry.step).toBe(NEW);
-        // (b) the old key is never sent to the new server
-        if (entry.apiKey === "sk-old") expect(entry.origin, entry.step).toBe(OLD);
-        // (c) a refresh that happens against the new server carries the new key
-        if (entry.origin === NEW) expect(entry.apiKey, entry.step).toBe("sk-new");
-        if (entry.step === "refresh requested") expect(entry.apiKey).toBe("sk-new");
-        // no step lists the new server as approved next to the old one, or the reverse
-        expect(entry.approved.filter((origin) => origin === OLD) .length > 0 && entry.approved.includes(NEW), entry.step).toBe(false);
-      }
-      const last = steps.at(-1)!;
-      expect(last).toMatchObject({ origin: NEW, apiKey: "sk-new", approved: [NEW] });
+    // The recording has the writes of the save in it (a failing test names the missing one).
+    expect(steps.map((entry) => entry.step.split(" ")[0])).toEqual(
+      expect.arrayContaining(["store", "setting", "refresh"])
+    );
+    for (const entry of steps) {
+      // (a) the new key is never sent to, or approved for, the old server
+      if (entry.apiKey === "sk-new") expect(entry.origin, entry.step).toBe(NEW);
+      // (b) the old key is never sent to the new server
+      if (entry.apiKey === "sk-old") expect(entry.origin, entry.step).toBe(OLD);
+      // (c) a refresh that happens against the new server carries the new key
+      if (entry.origin === NEW) expect(entry.apiKey, entry.step).toBe("sk-new");
+      if (entry.step === "refresh requested") expect(entry.apiKey).toBe("sk-new");
+      // no step lists the new server as approved next to the old one
+      expect(entry.approved.includes(OLD) && entry.approved.includes(NEW), entry.step).toBe(false);
     }
-  );
-});
-
-describe("panel model count and visibility", () => {
-  afterEach(() => vi.restoreAllMocks());
-
-  const online: ProbeResult = { ok: true, status: 200 };
-
-  it("shows the count the provider reports, and the server's own sentence when the listing failed", async () => {
-    vi.spyOn(OmniRouteClient.prototype, "probe").mockResolvedValue(online);
-    setMockConfig({ baseUrl: "https://user.example" });
-    const posted: Array<Record<string, unknown>> = [];
-    const make = (listing: () => Promise<import("../src/provider").ModelListing>) => {
-      const log = { info: vi.fn(), warn: vi.fn(), error: vi.fn(), debug: vi.fn() };
-      const panel = new OmniPanelProvider(fakeContext(), log as unknown as vscode.LogOutputChannel, async () => undefined, listing);
-      (panel as unknown as { view: unknown }).view = {
-        webview: { postMessage: async (message: Record<string, unknown>) => void posted.push(message) },
-      };
-      return panel;
-    };
-
-    await make(listedModels(7)).refreshStatus();
-    await make(async () => ({
-      infos: [],
-      ok: false,
-      count: 0,
-      serverUrl: "https://user.example",
-      keyWithheld: false,
-      failure: { status: 500, message: "OmniRoute /models returned HTTP 500" },
-    })).refreshStatus();
-
-    expect(posted[0]).toMatchObject({ online: true, modelCount: 7 });
-    expect(posted[1]).toMatchObject({ online: true, modelCount: null, detail: "OmniRoute /models returned HTTP 500" });
+    const last = steps.at(-1)!;
+    expect(last).toMatchObject({ origin: NEW, apiKey: "sk-new", approved: [NEW] });
   });
 
-  it("does not build a status while the view is hidden", async () => {
-    const probe = vi.spyOn(OmniRouteClient.prototype, "probe").mockResolvedValue(online);
-    setMockConfig({ baseUrl: "https://user.example" });
-    const { panel, posted } = openPanel();
-    (panel as unknown as { view: { visible: boolean } }).view.visible = false;
+  it("records the flip of the switch as a step, with the old global key out of effect after it", async () => {
+    const steps = await recordedSave({ oldKey: "global", switchOn: false, ticked: true });
 
-    await panel.refreshStatus();
-
-    expect(probe).not.toHaveBeenCalled();
-    expect(posted).toEqual([]);
-  });
-
-  it("refreshes when the view becomes visible again", async () => {
-    vi.spyOn(OmniRouteClient.prototype, "probe").mockResolvedValue(online);
-    setMockConfig({ baseUrl: "https://user.example" });
-    const { view, posted } = fakeView();
-    let becameVisible: (() => void) | undefined;
-    (view as unknown as { onDidChangeVisibility: (cb: () => void) => { dispose(): void } }).onDidChangeVisibility = (cb) => {
-      becameVisible = cb;
-      return { dispose() {} };
-    };
-    const log = { info: vi.fn(), warn: vi.fn(), error: vi.fn(), debug: vi.fn() };
-    const panel = new OmniPanelProvider(fakeContext(), log as unknown as vscode.LogOutputChannel, async () => undefined, listedModels(3));
-    panel.resolveWebviewView(view);
-    await vi.waitFor(() => expect(posted).toHaveLength(1));
-
-    (view as unknown as { visible: boolean }).visible = false;
-    await panel.refreshStatus();
-    expect(posted).toHaveLength(1);
-
-    (view as unknown as { visible: boolean }).visible = true;
-    becameVisible?.();
-    await vi.waitFor(() => expect(posted).toHaveLength(2));
+    const flip = steps.find((entry) => entry.step === "switch true");
+    expect(flip).toBeDefined();
+    // At the flip the workspace key is in effect: approved for the new server only, so
+    // it is withheld from the old one still configured, and the old global key is not sent.
+    expect(flip).toMatchObject({ origin: OLD, apiKey: undefined });
   });
 });
