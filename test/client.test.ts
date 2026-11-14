@@ -578,3 +578,76 @@ describe("OmniRouteClient.listModels", () => {
     }
   });
 });
+
+describe("OmniRouteClient.listCombos", () => {
+  afterEach(() => vi.unstubAllGlobals());
+
+  const json = (body: unknown, status = 200) =>
+    new Response(JSON.stringify(body), { status, headers: { "content-type": "application/json" } });
+
+  it("reads /v1/combos and keeps only entries with a name", async () => {
+    const fetchMock = vi.fn().mockResolvedValue(
+      json({
+        object: "list",
+        data: [
+          { name: "fast", strategy: "priority", description: "d", models: [{ kind: "model", model: "a/b" }] },
+          { strategy: "priority", models: [] },
+          "junk",
+          null,
+          { name: "bare" },
+        ],
+      })
+    );
+    vi.stubGlobal("fetch", fetchMock);
+
+    const combos = await new OmniRouteClient({ baseUrl: "http://x", apiKey: "k" }).listCombos();
+
+    expect(fetchMock.mock.calls[0][0]).toBe("http://x/v1/combos");
+    expect((fetchMock.mock.calls[0][1] as RequestInit).headers).toMatchObject({ Authorization: "Bearer k" });
+    expect(combos).toEqual([
+      { name: "fast", strategy: "priority", description: "d", models: [{ kind: "model", model: "a/b" }] },
+      { name: "bare", strategy: "", models: [] },
+    ]);
+  });
+
+  it.each([401, 403, 404, 500])("returns [] on HTTP %i", async (status) => {
+    vi.stubGlobal("fetch", vi.fn().mockResolvedValue(new Response("nope", { status })));
+    expect(await new OmniRouteClient({ baseUrl: "http://x" }).listCombos()).toEqual([]);
+  });
+
+  it("returns [] on a network error", async () => {
+    vi.stubGlobal("fetch", vi.fn().mockRejectedValue(new TypeError("fetch failed")));
+    expect(await new OmniRouteClient({ baseUrl: "http://x" }).listCombos()).toEqual([]);
+  });
+
+  it("returns [] on a malformed body", async () => {
+    for (const body of [null, [], "text", { data: "x" }, { object: "list" }]) {
+      vi.stubGlobal("fetch", vi.fn().mockResolvedValue(json(body)));
+      expect(await new OmniRouteClient({ baseUrl: "http://x" }).listCombos()).toEqual([]);
+    }
+    vi.stubGlobal("fetch", vi.fn().mockResolvedValue(new Response("not json", { status: 200 })));
+    expect(await new OmniRouteClient({ baseUrl: "http://x" }).listCombos()).toEqual([]);
+  });
+
+  it("gives up by itself after 15 seconds and returns []", async () => {
+    vi.useFakeTimers();
+    try {
+      vi.stubGlobal(
+        "fetch",
+        vi.fn(
+          (_url: string, init: RequestInit) =>
+            new Promise((_resolve, reject) => {
+              init.signal?.addEventListener("abort", () =>
+                reject(new DOMException("This operation was aborted", "AbortError"))
+              );
+            })
+        )
+      );
+      const pending = new OmniRouteClient({ baseUrl: "http://x" }).listCombos();
+      await vi.advanceTimersByTimeAsync(15_000);
+      expect(await pending).toEqual([]);
+    } finally {
+      vi.useRealTimers();
+    }
+  });
+});
