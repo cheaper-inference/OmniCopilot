@@ -28,5 +28,15 @@
   "cfg.defaultReasoningEffort.xhigh": "Extra high — downshifted for models without it",
   "cfg.defaultReasoningEffort.max": "Max — the top tier. OmniRoute downshifts it for models that do not offer it.",
   "cfg.cliPath": "Path to the OmniRoute CLI, used by the \"Configure Coding CLI\" command.",
-  "cfg.exposeToAgentsWindow": "Experimental: also list OmniRoute models in the Copilot Agents window model picker. Requires the VS Code setting chat.agentHost.byokModels.enabled and an agent host restart; uses a proposed VS Code API that may change."
+  "cfg.exposeToAgentsWindow": "Experimental: also list OmniRoute models in the Copilot Agents window model picker. Requires the VS Code setting chat.agentHost.byokModels.enabled and an agent host restart; uses a proposed VS Code API that may change.",
+  "walkthrough.title": "Get started with OmniRoute",
+  "walkthrough.description": "Put the models of your OmniRoute gateway in the Copilot Chat model picker.",
+  "walkthrough.run.title": "Run OmniRoute",
+  "walkthrough.run.description": "OmniRoute is the gateway this extension talks to. Install it and leave it running. By default it answers at http://localhost:20128.\n[Install OmniRoute](command:omnicopilot.installOmniRoute)\n[Check the connection](command:omnicopilot.checkConnection)",
+  "walkthrough.connect.title": "Connect",
+  "walkthrough.connect.description": "Open the connection panel. If OmniRoute runs on this machine, there is nothing to fill in. For a server somewhere else, enter its URL and, if it asks for one, an API key.\n[Open the connection panel](command:omnicopilot.manage)",
+  "walkthrough.pickModel.title": "Pick your models",
+  "walkthrough.pickModel.description": "Open Manage Models, choose OmniRoute and tick the models you want in the chat model picker.\n[Manage models](command:workbench.action.chat.manage)",
+  "walkthrough.utility.title": "Use OmniRoute for titles, commit messages and inline chat",
+  "walkthrough.utility.description": "Chat titles, commit messages and inline chat use their own model settings. Point them at an OmniRoute model to run those on your gateway too.\n[Open the settings](command:workbench.action.openSettings?%5B%22chat.utility%22%5D)"
 }

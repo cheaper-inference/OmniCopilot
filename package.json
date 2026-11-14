@@ -148,6 +148,62 @@
         "title": "%cmd.openSettings%"
       }
     ],
+    "walkthroughs": [
+      {
+        "id": "omnicopilot.gettingStarted",
+        "title": "%walkthrough.title%",
+        "description": "%walkthrough.description%",
+        "steps": [
+          {
+            "id": "run",
+            "title": "%walkthrough.run.title%",
+            "description": "%walkthrough.run.description%",
+            "media": {
+              "markdown": "media/walkthrough/run.md"
+            },
+            "completionEvents": [
+              "onCommand:omnicopilot.installOmniRoute",
+              "onCommand:omnicopilot.checkConnection"
+            ]
+          },
+          {
+            "id": "connect",
+            "title": "%walkthrough.connect.title%",
+            "description": "%walkthrough.connect.description%",
+            "media": {
+              "markdown": "media/walkthrough/connect.md"
+            },
+            "completionEvents": [
+              "onCommand:omnicopilot.manage"
+            ]
+          },
+          {
+            "id": "pickModel",
+            "title": "%walkthrough.pickModel.title%",
+            "description": "%walkthrough.pickModel.description%",
+            "media": {
+              "markdown": "media/walkthrough/pick-model.md"
+            },
+            "completionEvents": [
+              "onCommand:workbench.action.chat.manage",
+              "onCommand:workbench.action.chat.openModelPicker"
+            ]
+          },
+          {
+            "id": "utility",
+            "title": "%walkthrough.utility.title%",
+            "description": "%walkthrough.utility.description%",
+            "media": {
+              "markdown": "media/walkthrough/utility.md"
+            },
+            "completionEvents": [
+              "onSettingChanged:chat.utilityModel",
+              "onCommand:workbench.action.openSettings"
+            ]
+          }
+        ]
+      }
+    ],
     "configuration": {
       "title": "OmniRoute for Copilot",
       "properties": {
