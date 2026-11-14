@@ -598,3 +598,150 @@ describe("a key changed in another window", () => {
     expect(listings()).toBe(before);
   });
 });
+
+describe("the panel's model count and its refreshes", () => {
+  afterEach(() => {
+    vi.unstubAllGlobals();
+    vi.restoreAllMocks();
+  });
+
+  type View = {
+    visible: boolean;
+    webview: {
+      options: object;
+      html: string;
+      onDidReceiveMessage(cb: (msg: Record<string, unknown>) => unknown): { dispose(): void };
+      postMessage(message: Record<string, unknown>): Promise<void>;
+    };
+    onDidChangeVisibility(cb: () => void): { dispose(): void };
+  };
+
+  /** An activated extension on a server listing four rows (three chat, one embedding),
+   * with the panel open and its webview recorded, and the model picker reachable. */
+  function open(config: Record<string, unknown> = {}) {
+    const requests: string[] = [];
+    vi.stubGlobal(
+      "fetch",
+      vi.fn(async (url: string, init?: RequestInit) => {
+        requests.push(`${init?.method ?? "GET"} ${String(url)}`);
+        if (init?.method === "HEAD") return new Response(null, { status: 200 });
+        if (String(url).includes("/api/usage/")) return new Response("{}", { status: 404 });
+        if (String(url).includes("/combos")) return new Response("{}", { status: 404 });
+        return new Response(
+          JSON.stringify({
+            object: "list",
+            data: [chat("a/one"), chat("a/two"), chat("b/three"), chat("a/embed", "embedding")],
+          }),
+          { status: 200 }
+        );
+      })
+    );
+    setMockConfig({ baseUrl: "http://localhost:20128", ...config });
+    let panelProvider: { resolveWebviewView(view: unknown): void } | undefined;
+    vi.spyOn(vscode.window, "registerWebviewViewProvider").mockImplementation(((_id: string, p: unknown) => {
+      panelProvider = p as typeof panelProvider;
+      return { dispose() {} };
+    }) as never);
+    let picker:
+      | { provideLanguageModelChatInformation(o: { silent: boolean }, t: unknown): Promise<unknown[]> }
+      | undefined;
+    vi.spyOn(vscode.lm, "registerLanguageModelChatProvider").mockImplementation(((_vendor: string, p: unknown) => {
+      picker = p as typeof picker;
+      // The host lists again whenever the provider says its models changed.
+      (p as { onDidChangeLanguageModelChatInformation(listener: () => void): void }).onDidChangeLanguageModelChatInformation(
+        () => void picker?.provideLanguageModelChatInformation({ silent: true }, { isCancellationRequested: false })
+      );
+      return { dispose() {} };
+    }) as never);
+    let onConfigChange: ((e: { affectsConfiguration(section: string): boolean }) => void) | undefined;
+    vi.spyOn(vscode.workspace, "onDidChangeConfiguration").mockImplementation(((cb: typeof onConfigChange) => {
+      onConfigChange = cb;
+      return { dispose() {} };
+    }) as never);
+    const ext = activated();
+    const statuses: Array<Record<string, unknown>> = [];
+    let onMessage: ((msg: Record<string, unknown>) => unknown) | undefined;
+    let onVisible: (() => void) | undefined;
+    const view: View = {
+      visible: true,
+      webview: {
+        options: {},
+        html: "",
+        onDidReceiveMessage: (cb) => {
+          onMessage = cb;
+          return { dispose() {} };
+        },
+        postMessage: async (message) => void statuses.push(message),
+      },
+      onDidChangeVisibility: (cb) => {
+        onVisible = cb;
+        return { dispose() {} };
+      },
+    };
+    panelProvider?.resolveWebviewView(view);
+    return {
+      ext,
+      view,
+      statuses,
+      catalogDownloads: () => requests.filter((r) => /^GET .*\/v1\/models/.test(r)).length,
+      /** What the webview script sends once it has loaded. */
+      ready: () => onMessage?.({ type: "ready" }),
+      pickerListing: () => picker?.provideLanguageModelChatInformation({ silent: true }, { isCancellationRequested: false }),
+      configurationChanged: () => onConfigChange?.({ affectsConfiguration: () => true }),
+      becameVisible: () => {
+        view.visible = true;
+        onVisible?.();
+      },
+    };
+  }
+
+  const lastStatus = (statuses: Array<Record<string, unknown>>) => statuses.filter((s) => s.type === "status").at(-1);
+
+  it("shows the number of models the picker lists, after the chat-model filter and omnicopilot.modelFilter", async () => {
+    const { ext, statuses } = open({ modelFilter: "^a/" });
+
+    await vi.waitFor(() => expect(lastStatus(statuses)).toBeDefined());
+
+    // Four rows in the catalog; the embedding row and b/three are not in the picker.
+    expect(lastStatus(statuses)).toMatchObject({ online: true, modelCount: 2 });
+    ext.dispose();
+  });
+
+  it("adds no catalog download of its own when the panel opens, sends ready or becomes visible", async () => {
+    const { ext, statuses, catalogDownloads, ready, pickerListing, becameVisible } = open();
+    // Start-up settles: the first poll finds the server and the host lists again.
+    await new Promise((resolve) => setTimeout(resolve, 300));
+    await vi.waitFor(() => expect(lastStatus(statuses)).toBeDefined());
+    const providersOwn = catalogDownloads();
+
+    void ready();
+    becameVisible();
+    await new Promise((resolve) => setTimeout(resolve, 100));
+    expect(catalogDownloads()).toBe(providersOwn);
+
+    // The picker listing again is the provider's own, and the panel then reads its count.
+    await pickerListing();
+    expect(catalogDownloads()).toBe(providersOwn + 1);
+    becameVisible();
+    await new Promise((resolve) => setTimeout(resolve, 100));
+    expect(catalogDownloads()).toBe(providersOwn + 1);
+    expect(lastStatus(statuses)).toMatchObject({ modelCount: 3 });
+    ext.dispose();
+  });
+
+  it("does not refresh while hidden, and does once it is visible again", async () => {
+    const { ext, view, statuses, configurationChanged, becameVisible } = open();
+    await vi.waitFor(() => expect(lastStatus(statuses)).toBeDefined());
+    await new Promise((resolve) => setTimeout(resolve, 50));
+    const before = statuses.length;
+
+    view.visible = false;
+    configurationChanged();
+    await new Promise((resolve) => setTimeout(resolve, 100));
+    expect(statuses.length).toBe(before);
+
+    becameVisible();
+    await vi.waitFor(() => expect(statuses.length).toBe(before + 1));
+    ext.dispose();
+  });
+});

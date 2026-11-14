@@ -12,6 +12,7 @@ import {
   type KeyScope,
 } from "./connection";
 import { formatExplanation } from "./diagnostics";
+import type { ModelListing } from "./provider";
 import { fetchUsage } from "./usage";
 import type { UsageView } from "./usage";
 
@@ -114,7 +115,10 @@ export class OmniPanelProvider implements vscode.WebviewViewProvider {
   constructor(
     private readonly context: vscode.ExtensionContext,
     private readonly log: vscode.LogOutputChannel,
-    private readonly onSettingsSaved: () => Promise<void>
+    private readonly onSettingsSaved: () => Promise<void>,
+    /** What the model picker lists right now (the provider's own listing): the panel
+     * shows that count and never downloads the catalog itself. */
+    private readonly currentListing: () => Promise<ModelListing>
   ) {}
 
   /** Reveal the panel (used by the managementCommand / status bar). */
@@ -122,11 +126,13 @@ export class OmniPanelProvider implements vscode.WebviewViewProvider {
     await vscode.commands.executeCommand(`${OmniPanelProvider.viewId}.focus`);
   }
 
-  /** Push a fresh status snapshot into the webview, if it is open. A refresh that
-   * finishes after a newer one started is dropped: a slow probe of a URL the
-   * user has already moved away from must not overwrite the newer status. */
+  /** Push a fresh status snapshot into the webview, if it is open and showing. A
+   * hidden panel is not refreshed (nobody sees it): it refreshes when it becomes
+   * visible again. A refresh that finishes after a newer one started is dropped: a
+   * slow probe of a URL the user has already moved away from must not overwrite
+   * the newer status. */
   async refreshStatus(): Promise<void> {
-    if (!this.view) return;
+    if (!this.view || this.view.visible === false) return;
     const gen = ++this.statusGen;
     let message: PanelStatus | PanelStatusError;
     try {
@@ -231,11 +237,13 @@ export class OmniPanelProvider implements vscode.WebviewViewProvider {
       detail = detail ? `${detail}\n${why}` : why;
     }
     if (online) {
-      try {
-        modelCount = (await client.listModels()).length;
-      } catch (err) {
-        const failure = String(err instanceof Error ? err.message : err);
-        detail = detail ? `${detail} ${failure}` : failure;
+      // The count is the picker's: what the provider listed, after the chat-model
+      // filter and omnicopilot.modelFilter.
+      const listing = await this.currentListing();
+      if (listing.ok) {
+        modelCount = listing.count;
+      } else if (listing.failure?.message) {
+        detail = detail ? `${detail} ${listing.failure.message}` : listing.failure.message;
       }
       // The usage endpoints answer to a key. With none in effect (none stored, or the
       // stored one withheld from this server) they are not asked and the section is hidden.

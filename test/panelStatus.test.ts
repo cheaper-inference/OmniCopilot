@@ -5,6 +5,7 @@ import { OmniRouteClient } from "../src/client";
 import type { ProbeResult } from "../src/diagnostics";
 import { resolveConnection, storeApiKey } from "../src/connection";
 import { OmniPanelProvider } from "../src/panel";
+import { listedModels } from "./panelHelpers";
 
 function fakeContext() {
   const secrets = new Map<string, string>();
@@ -26,7 +27,8 @@ function openPanel(context: vscode.ExtensionContext = fakeContext()) {
   const panel = new OmniPanelProvider(
     context,
     log as unknown as vscode.LogOutputChannel,
-    async () => undefined
+    async () => undefined,
+    listedModels()
   );
   (panel as unknown as { view: unknown }).view = {
     webview: { postMessage: async (message: Record<string, unknown>) => void posted.push(message) },
@@ -111,7 +113,7 @@ describe("panel Save", () => {
       workspaceState: { get: () => undefined, update: async () => undefined },
     } as unknown as vscode.ExtensionContext;
     const log = { info: vi.fn(), warn: vi.fn(), error: vi.fn(), debug: vi.fn() };
-    const panel = new OmniPanelProvider(context, log as unknown as vscode.LogOutputChannel, async () => undefined);
+    const panel = new OmniPanelProvider(context, log as unknown as vscode.LogOutputChannel, async () => undefined, listedModels());
     const save = (url: string, apiKey: string) =>
       (panel as unknown as { handleMessage(m: Record<string, unknown>): Promise<void> }).handleMessage({
         type: "save",
@@ -207,7 +209,7 @@ describe("panel errors in notifications", () => {
       workspaceState: { get: () => undefined, update: async () => undefined },
     } as unknown as vscode.ExtensionContext;
     const log = { info: vi.fn(), warn: vi.fn(), error: vi.fn(), debug: vi.fn() };
-    const panel = new OmniPanelProvider(context, log as unknown as vscode.LogOutputChannel, async () => undefined);
+    const panel = new OmniPanelProvider(context, log as unknown as vscode.LogOutputChannel, async () => undefined, listedModels());
     const { view, send } = fakeView();
     panel.resolveWebviewView(view);
 
@@ -224,7 +226,7 @@ describe("panel document", () => {
     const { view } = fakeView();
     const log = { info: vi.fn(), warn: vi.fn(), error: vi.fn(), debug: vi.fn() };
     vi.spyOn(OmniRouteClient.prototype, "probe").mockResolvedValue(offline);
-    new OmniPanelProvider(fakeContext(), log as unknown as vscode.LogOutputChannel, async () => undefined)
+    new OmniPanelProvider(fakeContext(), log as unknown as vscode.LogOutputChannel, async () => undefined, listedModels())
       .resolveWebviewView(view);
     const html = (view.webview as unknown as { html: string }).html;
     expect(html.length).toBeGreaterThan(1000);
@@ -253,7 +255,7 @@ describe("panel status refresh that fails", () => {
       workspaceState: { get: () => undefined, update: async () => undefined },
     } as unknown as vscode.ExtensionContext;
     const log = { info: vi.fn(), warn: vi.fn(), error: vi.fn(), debug: vi.fn() };
-    const panel = new OmniPanelProvider(context, log as unknown as vscode.LogOutputChannel, async () => undefined);
+    const panel = new OmniPanelProvider(context, log as unknown as vscode.LogOutputChannel, async () => undefined, listedModels());
     const posted: Array<Record<string, unknown>> = [];
     (panel as unknown as { view: unknown }).view = {
       webview: { postMessage: async (message: Record<string, unknown>) => void posted.push(message) },
@@ -269,7 +271,7 @@ describe("panel status refresh that fails", () => {
     const { view } = fakeView();
     const log = { info: vi.fn(), warn: vi.fn(), error: vi.fn(), debug: vi.fn() };
     vi.spyOn(OmniRouteClient.prototype, "probe").mockResolvedValue(offline);
-    new OmniPanelProvider(fakeContext(), log as unknown as vscode.LogOutputChannel, async () => undefined)
+    new OmniPanelProvider(fakeContext(), log as unknown as vscode.LogOutputChannel, async () => undefined, listedModels())
       .resolveWebviewView(view);
     const html = (view.webview as unknown as { html: string }).html;
     expect(html).toContain('msg.type === "statusError"');
@@ -285,7 +287,6 @@ describe("panel usage without the usage command", () => {
 
   it("posts the key's own usage when om-usage refuses and /v1/me/status answers", async () => {
     vi.spyOn(OmniRouteClient.prototype, "probe").mockResolvedValue({ ok: true, status: 200 });
-    vi.spyOn(OmniRouteClient.prototype, "listModels").mockResolvedValue([]);
     const json = (body: unknown) =>
       new Response(JSON.stringify(body), { headers: { "content-type": "application/json" } });
     vi.stubGlobal(
@@ -335,7 +336,6 @@ describe("panel usage section: which state it shows", () => {
   /** An online server whose usage endpoints answer with `answers`, in order. */
   function onlineServer(...answers: Array<() => Response>) {
     vi.spyOn(OmniRouteClient.prototype, "probe").mockResolvedValue({ ok: true, status: 200 });
-    vi.spyOn(OmniRouteClient.prototype, "listModels").mockResolvedValue([]);
     const fetchMock = vi.fn();
     for (const answer of answers) fetchMock.mockImplementationOnce(async () => answer());
     vi.stubGlobal("fetch", fetchMock);
@@ -521,4 +521,72 @@ describe("panel Save of a new key together with a new server URL", () => {
       expect(last).toMatchObject({ origin: NEW, apiKey: "sk-new", approved: [NEW] });
     }
   );
+});
+
+describe("panel model count and visibility", () => {
+  afterEach(() => vi.restoreAllMocks());
+
+  const online: ProbeResult = { ok: true, status: 200 };
+
+  it("shows the count the provider reports, and the server's own sentence when the listing failed", async () => {
+    vi.spyOn(OmniRouteClient.prototype, "probe").mockResolvedValue(online);
+    setMockConfig({ baseUrl: "https://user.example" });
+    const posted: Array<Record<string, unknown>> = [];
+    const make = (listing: () => Promise<import("../src/provider").ModelListing>) => {
+      const log = { info: vi.fn(), warn: vi.fn(), error: vi.fn(), debug: vi.fn() };
+      const panel = new OmniPanelProvider(fakeContext(), log as unknown as vscode.LogOutputChannel, async () => undefined, listing);
+      (panel as unknown as { view: unknown }).view = {
+        webview: { postMessage: async (message: Record<string, unknown>) => void posted.push(message) },
+      };
+      return panel;
+    };
+
+    await make(listedModels(7)).refreshStatus();
+    await make(async () => ({
+      infos: [],
+      ok: false,
+      count: 0,
+      serverUrl: "https://user.example",
+      keyWithheld: false,
+      failure: { status: 500, message: "OmniRoute /models returned HTTP 500" },
+    })).refreshStatus();
+
+    expect(posted[0]).toMatchObject({ online: true, modelCount: 7 });
+    expect(posted[1]).toMatchObject({ online: true, modelCount: null, detail: "OmniRoute /models returned HTTP 500" });
+  });
+
+  it("does not build a status while the view is hidden", async () => {
+    const probe = vi.spyOn(OmniRouteClient.prototype, "probe").mockResolvedValue(online);
+    setMockConfig({ baseUrl: "https://user.example" });
+    const { panel, posted } = openPanel();
+    (panel as unknown as { view: { visible: boolean } }).view.visible = false;
+
+    await panel.refreshStatus();
+
+    expect(probe).not.toHaveBeenCalled();
+    expect(posted).toEqual([]);
+  });
+
+  it("refreshes when the view becomes visible again", async () => {
+    vi.spyOn(OmniRouteClient.prototype, "probe").mockResolvedValue(online);
+    setMockConfig({ baseUrl: "https://user.example" });
+    const { view, posted } = fakeView();
+    let becameVisible: (() => void) | undefined;
+    (view as unknown as { onDidChangeVisibility: (cb: () => void) => { dispose(): void } }).onDidChangeVisibility = (cb) => {
+      becameVisible = cb;
+      return { dispose() {} };
+    };
+    const log = { info: vi.fn(), warn: vi.fn(), error: vi.fn(), debug: vi.fn() };
+    const panel = new OmniPanelProvider(fakeContext(), log as unknown as vscode.LogOutputChannel, async () => undefined, listedModels(3));
+    panel.resolveWebviewView(view);
+    await vi.waitFor(() => expect(posted).toHaveLength(1));
+
+    (view as unknown as { visible: boolean }).visible = false;
+    await panel.refreshStatus();
+    expect(posted).toHaveLength(1);
+
+    (view as unknown as { visible: boolean }).visible = true;
+    becameVisible?.();
+    await vi.waitFor(() => expect(posted).toHaveLength(2));
+  });
 });

@@ -5,6 +5,7 @@ import { setMockConfig, setMockWorkspace } from "./vscode.mock";
 import { OmniRouteClient } from "../src/client";
 import type { ProbeResult } from "../src/diagnostics";
 import { OmniPanelProvider, embeddedNextCheckboxValue, nextCheckboxValue } from "../src/panel";
+import { listedModels } from "./panelHelpers";
 
 const WS = "file:///work/acme";
 const offline: ProbeResult = { ok: false, failure: "refused" };
@@ -28,7 +29,7 @@ function openPanel() {
     },
   } as unknown as vscode.ExtensionContext;
   const log = { info: vi.fn(), warn: vi.fn(), error: vi.fn(), debug: vi.fn() };
-  const panel = new OmniPanelProvider(context, log as unknown as vscode.LogOutputChannel, async () => undefined);
+  const panel = new OmniPanelProvider(context, log as unknown as vscode.LogOutputChannel, async () => undefined, listedModels());
   const posted: Array<Record<string, unknown>> = [];
   (panel as unknown as { view: unknown }).view = {
     webview: { postMessage: async (message: Record<string, unknown>) => void posted.push(message) },
