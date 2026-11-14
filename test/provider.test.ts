@@ -392,6 +392,39 @@ describe("provider cut-off answers", () => {
     expect(calls[0].input).toEqual({});
   });
 
+  it("fails, and reports no tool call, when the output limit came before the first argument byte", async () => {
+    // Through OmniRoute a Claude tool call opens with `arguments: ""` and its input arrives
+    // one complete key/value at a time, so a call cut off early is a name and nothing else.
+    fetchMock.mockResolvedValue(sseResponse([toolCallChunk(""), finishChunk("length")]));
+    const ctx = makeProvider();
+    await expect(ask(ctx)).rejects.toThrow(CUT_OFF);
+    expect(toolCallParts(ctx.reported)).toHaveLength(0);
+    expect(fetchMock).toHaveBeenCalledTimes(1);
+  });
+
+  it("fails the same way when only whitespace arrived before the output limit", async () => {
+    fetchMock.mockResolvedValue(sseResponse([toolCallChunk("  \n "), finishChunk("length")]));
+    const ctx = makeProvider();
+    await expect(ask(ctx)).rejects.toThrow(CUT_OFF);
+    expect(toolCallParts(ctx.reported)).toHaveLength(0);
+  });
+
+  it("fails when a complete call is followed by one that got no arguments before the limit", async () => {
+    fetchMock.mockResolvedValue(
+      sseResponse([
+        toolCallChunk('{"path":"a"}'),
+        { choices: [{ delta: { tool_calls: [{ index: 1, id: "call_2", function: { name: "write_file", arguments: "" } }] } }] },
+        finishChunk("length"),
+      ])
+    );
+    const ctx = makeProvider();
+    await expect(ask(ctx)).rejects.toThrow(CUT_OFF);
+    // By the time the request fails VS Code has received the complete first call (and only
+    // it); Copilot Chat does not run the tool calls of a response that failed.
+    const calls = toolCallParts(ctx.reported) as vscode.LanguageModelToolCallPart[];
+    expect(calls.map((call) => [call.name, call.input])).toEqual([["read_file", { path: "a" }]]);
+  });
+
   it("reports a call whose arguments were complete even though the answer stopped at the limit", async () => {
     fetchMock.mockResolvedValue(sseResponse([toolCallChunk('{"path":"a"}'), finishChunk("length")]));
     const ctx = makeProvider();

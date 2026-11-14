@@ -520,11 +520,16 @@ export class OmniRouteChatProvider
               finishReason = event.reason;
             } else if (event.kind === "toolCall") {
               streamedOutput = true;
-              const input = parseToolInput(event.args);
+              const input = event.cutOff ? undefined : parseToolInput(event.args);
               if (input === undefined) {
-                // Never run a tool on arguments that were not understood; the
-                // request fails once the stream is over and the reason is known.
-                log.warn(`Tool call ${event.name} had invalid JSON args; not reporting it`);
+                // Never run a tool on arguments that were not understood or never
+                // arrived; the request fails once the stream is over and the reason
+                // is known.
+                log.warn(
+                  event.cutOff
+                    ? `Tool call ${event.name} was cut off before its arguments; not reporting it`
+                    : `Tool call ${event.name} had invalid JSON args; not reporting it`
+                );
                 invalidToolCall = true;
               } else {
                 progress.report(

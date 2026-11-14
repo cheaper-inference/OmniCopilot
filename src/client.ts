@@ -370,7 +370,7 @@ export class OmniRouteClient {
       assembler.accept(delta.tool_calls);
     }
     if (choice.finish_reason) {
-      yield* assembler.flush();
+      yield* assembler.flush(choice.finish_reason);
       yield { kind: "finish", reason: choice.finish_reason };
     }
   }
@@ -489,13 +489,20 @@ class ToolCallAssembler {
     }
   }
 
-  *flush(): Generator<StreamEvent> {
+  /** Emit the assembled calls. `finishReason` is the reason the server gave with the
+   * flush, if any: with `length`, a call that got no argument text was cut off before
+   * its first argument (a tool without parameters is told apart only by the reason). */
+  *flush(finishReason?: string): Generator<StreamEvent> {
     for (const call of this.slots) {
       if (!call.name) continue;
       // Some servers never send an id; the editor needs one to pair the call
       // with its result, so make one up rather than dropping the call.
       const id = call.id || `call_${randomBytes(4).toString("hex")}`;
-      yield { kind: "toolCall", id, name: call.name, args: call.args || "{}" };
+      if (finishReason === "length" && call.args.trim() === "") {
+        yield { kind: "toolCall", id, name: call.name, args: call.args, cutOff: true };
+      } else {
+        yield { kind: "toolCall", id, name: call.name, args: call.args || "{}" };
+      }
     }
     this.slots = [];
     this.scopes.clear();

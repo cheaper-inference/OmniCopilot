@@ -500,6 +500,28 @@ describe("OmniRouteClient.streamChat tool-call assembly", () => {
     return events.filter((e) => e.kind === "toolCall");
   }
 
+  it("marks a call that got no argument text before the output limit as cut off", async () => {
+    const cutAt = (reason: string) => `data: {"choices":[{"delta":{},"finish_reason":"${reason}"}]}`;
+    const run = async (args: string, reason: string) => {
+      vi.stubGlobal(
+        "fetch",
+        vi.fn().mockResolvedValue(
+          sseResponse([toolDelta({ index: 0, id: "a", function: { name: "run", arguments: args } }), cutAt(reason)])
+        )
+      );
+      const events = await collect(new OmniRouteClient({ baseUrl: "http://x/v1" }));
+      return events.filter((e) => e.kind === "toolCall");
+    };
+
+    expect(await run("", "length")).toEqual([{ kind: "toolCall", id: "a", name: "run", args: "", cutOff: true }]);
+    expect(await run(" \n", "length")).toEqual([{ kind: "toolCall", id: "a", name: "run", args: " \n", cutOff: true }]);
+    // Any other reason: a tool without parameters.
+    expect(await run("", "tool_calls")).toEqual([{ kind: "toolCall", id: "a", name: "run", args: "{}" }]);
+    expect(await run("", "stop")).toEqual([{ kind: "toolCall", id: "a", name: "run", args: "{}" }]);
+    // Argument text that arrived is the provider's to judge, whatever the reason.
+    expect(await run('{"x":1}', "length")).toEqual([{ kind: "toolCall", id: "a", name: "run", args: '{"x":1}' }]);
+  });
+
   it("keeps two calls apart when the deltas carry no index", async () => {
     const calls = await toolCalls([
       toolDelta({ id: "a", function: { name: "read_file", arguments: '{"p":1}' } }),
