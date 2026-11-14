@@ -87,7 +87,6 @@
   "unlimited": "nelimitat",
   "Could not read the connection status.": "Starea conexiunii nu a putut fi citită.",
   "Continue": "Continuare",
-  "This workspace's API key will be written to the configuration of {0}, which all your projects share.": "Cheia API a acestui spațiu de lucru va fi scrisă în configurația instrumentului {0}, partajată de toate proiectele dvs.",
   "Models listed from {1}: {0}.": "Modele listate de pe serverul {1}: {0}.",
   "API key for this workspace": "Cheie API pentru acest spațiu de lucru",
   "Free": "Gratuit",
@@ -99,5 +98,7 @@
   "OmniRoute at {0} rejected the API key (HTTP {1}).": "OmniRoute de la {0} a respins cheia API (HTTP {1}).",
   "OmniRoute at {0} needs an API key (HTTP {1}).": "OmniRoute de la {0} necesită o cheie API (HTTP {1}).",
   "The model's answer was cut off before the tool call was complete. Raise omnicopilot.maxOutputTokens or ask for smaller steps.": "Răspunsul modelului a fost întrerupt înainte ca apelul instrumentului să fie complet. Măriți valoarea omnicopilot.maxOutputTokens sau cereți pași mai mici.",
-  "The model sent a tool call with invalid arguments.": "Modelul a trimis un apel de instrument cu argumente nevalide."
+  "The model sent a tool call with invalid arguments.": "Modelul a trimis un apel de instrument cu argumente nevalide.",
+  "The model used its whole output limit before it wrote an answer. Raise omnicopilot.maxOutputTokens or lower the thinking effort.": "Modelul și-a folosit întreaga limită de ieșire înainte de a scrie un răspuns. Măriți valoarea omnicopilot.maxOutputTokens sau reduceți efortul de raționament.",
+  "This workspace's API key will be handed to {0}, whose configuration is shared by all your projects.": "Cheia API a acestui spațiu de lucru va fi transmisă instrumentului {0}, a cărui configurație este partajată de toate proiectele dvs."
 }

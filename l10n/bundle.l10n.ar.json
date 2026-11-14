@@ -87,7 +87,6 @@
   "unlimited": "غير محدود",
   "Could not read the connection status.": "تعذرت قراءة حالة الاتصال.",
   "Continue": "متابعة",
-  "This workspace's API key will be written to the configuration of {0}, which all your projects share.": "سيُكتب مفتاح API الخاص بمساحة العمل هذه في تكوين الأداة {0}، الذي تشترك فيه جميع مشاريعك.",
   "Models listed from {1}: {0}.": "النماذج المعروضة من الخادم {1}: {0}.",
   "API key for this workspace": "مفتاح API لمساحة العمل هذه",
   "Free": "مجاني",
@@ -99,5 +98,7 @@
   "OmniRoute at {0} rejected the API key (HTTP {1}).": "رفض خادم OmniRoute على {0} مفتاح API (HTTP {1}).",
   "OmniRoute at {0} needs an API key (HTTP {1}).": "يتطلب خادم OmniRoute على {0} مفتاح API (HTTP {1}).",
   "The model's answer was cut off before the tool call was complete. Raise omnicopilot.maxOutputTokens or ask for smaller steps.": "انقطعت إجابة النموذج قبل اكتمال استدعاء الأداة. ارفع قيمة الإعداد omnicopilot.maxOutputTokens أو اطلب خطوات أصغر.",
-  "The model sent a tool call with invalid arguments.": "أرسل النموذج استدعاء أداة بوسائط غير صالحة."
+  "The model sent a tool call with invalid arguments.": "أرسل النموذج استدعاء أداة بوسائط غير صالحة.",
+  "The model used its whole output limit before it wrote an answer. Raise omnicopilot.maxOutputTokens or lower the thinking effort.": "استهلك النموذج حد الإخراج بالكامل قبل أن يكتب إجابة. ارفع قيمة الإعداد omnicopilot.maxOutputTokens أو اخفض جهد التفكير.",
+  "This workspace's API key will be handed to {0}, whose configuration is shared by all your projects.": "سيُسلَّم مفتاح API الخاص بمساحة العمل هذه إلى الأداة {0}، التي تشترك جميع مشاريعك في تكوينها."
 }

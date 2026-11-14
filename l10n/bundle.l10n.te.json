@@ -87,7 +87,6 @@
   "unlimited": "అపరిమితం",
   "Could not read the connection status.": "కనెక్షన్ స్థితిని చదవడం సాధ్యం కాలేదు.",
   "Continue": "కొనసాగించండి",
-  "This workspace's API key will be written to the configuration of {0}, which all your projects share.": "ఈ వర్క్‌స్పేస్ యొక్క API కీ {0} సాధనం యొక్క కాన్ఫిగరేషన్‌లో రాయబడుతుంది, దీన్ని మీ అన్ని ప్రాజెక్ట్‌లు షేర్ చేస్తాయి.",
   "Models listed from {1}: {0}.": "{1} సర్వర్ నుండి జాబితా చేసిన మోడల్స్: {0}.",
   "API key for this workspace": "ఈ వర్క్‌స్పేస్ కోసం API కీ",
   "Free": "ఉచితం",
@@ -99,5 +98,7 @@
   "OmniRoute at {0} rejected the API key (HTTP {1}).": "{0} చిరునామా వద్ద ఉన్న OmniRoute సర్వర్ API కీని తిరస్కరించింది (HTTP {1}).",
   "OmniRoute at {0} needs an API key (HTTP {1}).": "{0} చిరునామా వద్ద ఉన్న OmniRoute సర్వర్‌కు API కీ అవసరం (HTTP {1}).",
   "The model's answer was cut off before the tool call was complete. Raise omnicopilot.maxOutputTokens or ask for smaller steps.": "సాధన కాల్ పూర్తికాకముందే మోడల్ సమాధానం తెగిపోయింది. omnicopilot.maxOutputTokens సెట్టింగ్ విలువను పెంచండి లేదా చిన్న దశలను అడగండి.",
-  "The model sent a tool call with invalid arguments.": "మోడల్ చెల్లని ఆర్గ్యుమెంట్‌లతో సాధన కాల్‌ను పంపింది."
+  "The model sent a tool call with invalid arguments.": "మోడల్ చెల్లని ఆర్గ్యుమెంట్‌లతో సాధన కాల్‌ను పంపింది.",
+  "The model used its whole output limit before it wrote an answer. Raise omnicopilot.maxOutputTokens or lower the thinking effort.": "సమాధానం రాయడానికి ముందే మోడల్ తన మొత్తం అవుట్‌పుట్ పరిమితిని వాడేసింది. omnicopilot.maxOutputTokens సెట్టింగ్ విలువను పెంచండి లేదా ఆలోచన ప్రయత్నాన్ని తగ్గించండి.",
+  "This workspace's API key will be handed to {0}, whose configuration is shared by all your projects.": "ఈ వర్క్‌స్పేస్ యొక్క API కీ {0} సాధనానికి ఇవ్వబడుతుంది, దాని కాన్ఫిగరేషన్‌ను మీ అన్ని ప్రాజెక్ట్‌లు షేర్ చేస్తాయి."
 }

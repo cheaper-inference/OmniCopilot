@@ -87,7 +87,6 @@
   "unlimited": "bila kikomo",
   "Could not read the connection status.": "Imeshindwa kusoma hali ya muunganisho.",
   "Continue": "Endelea",
-  "This workspace's API key will be written to the configuration of {0}, which all your projects share.": "Ufunguo wa API wa eneo la kazi hili utaandikwa kwenye usanidi wa {0}, ambao miradi yako yote hushiriki.",
   "Models listed from {1}: {0}.": "Modeli {0} zimeorodheshwa kutoka {1}.",
   "API key for this workspace": "Ufunguo wa API wa eneo la kazi hili",
   "Free": "Bure",
@@ -99,5 +98,7 @@
   "OmniRoute at {0} rejected the API key (HTTP {1}).": "OmniRoute kwenye {0} imekataa ufunguo wa API (HTTP {1}).",
   "OmniRoute at {0} needs an API key (HTTP {1}).": "OmniRoute kwenye {0} inahitaji ufunguo wa API (HTTP {1}).",
   "The model's answer was cut off before the tool call was complete. Raise omnicopilot.maxOutputTokens or ask for smaller steps.": "Jibu la modeli lilikatika kabla ya wito wa zana kukamilika. Ongeza omnicopilot.maxOutputTokens au omba hatua ndogo zaidi.",
-  "The model sent a tool call with invalid arguments.": "Modeli ilituma wito wa zana wenye hoja zisizo sahihi."
+  "The model sent a tool call with invalid arguments.": "Modeli ilituma wito wa zana wenye hoja zisizo sahihi.",
+  "The model used its whole output limit before it wrote an answer. Raise omnicopilot.maxOutputTokens or lower the thinking effort.": "Modeli ilitumia kikomo chake chote cha matokeo kabla ya kuandika jibu. Ongeza omnicopilot.maxOutputTokens au punguza kiwango cha ufikirio.",
+  "This workspace's API key will be handed to {0}, whose configuration is shared by all your projects.": "Ufunguo wa API wa eneo la kazi hili utakabidhiwa kwa {0}, ambayo usanidi wake hushirikiwa na miradi yako yote."
 }

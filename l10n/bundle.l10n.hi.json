@@ -87,7 +87,6 @@
   "unlimited": "असीमित",
   "Could not read the connection status.": "कनेक्शन की स्थिति पढ़ी नहीं जा सकी।",
   "Continue": "जारी रखें",
-  "This workspace's API key will be written to the configuration of {0}, which all your projects share.": "इस वर्कस्पेस की API कुंजी {0} टूल के कॉन्फ़िगरेशन में लिखी जाएगी, जिसे आपके सभी प्रोजेक्ट साझा करते हैं।",
   "Models listed from {1}: {0}.": "सर्वर {1} से सूचीबद्ध मॉडल: {0}।",
   "API key for this workspace": "इस वर्कस्पेस के लिए API कुंजी",
   "Free": "मुफ़्त",
@@ -99,5 +98,7 @@
   "OmniRoute at {0} rejected the API key (HTTP {1}).": "{0} पर OmniRoute सर्वर ने API कुंजी अस्वीकार कर दी (HTTP {1})।",
   "OmniRoute at {0} needs an API key (HTTP {1}).": "{0} पर OmniRoute सर्वर को API कुंजी चाहिए (HTTP {1})।",
   "The model's answer was cut off before the tool call was complete. Raise omnicopilot.maxOutputTokens or ask for smaller steps.": "टूल कॉल पूरा होने से पहले मॉडल का उत्तर कट गया। सेटिंग omnicopilot.maxOutputTokens का मान बढ़ाएँ या छोटे चरण माँगें।",
-  "The model sent a tool call with invalid arguments.": "मॉडल ने अमान्य आर्ग्युमेंट वाला टूल कॉल भेजा।"
+  "The model sent a tool call with invalid arguments.": "मॉडल ने अमान्य आर्ग्युमेंट वाला टूल कॉल भेजा।",
+  "The model used its whole output limit before it wrote an answer. Raise omnicopilot.maxOutputTokens or lower the thinking effort.": "मॉडल ने उत्तर लिखने से पहले अपनी पूरी आउटपुट सीमा इस्तेमाल कर ली। सेटिंग omnicopilot.maxOutputTokens का मान बढ़ाएँ या चिंतन प्रयास घटाएँ।",
+  "This workspace's API key will be handed to {0}, whose configuration is shared by all your projects.": "इस वर्कस्पेस की API कुंजी {0} टूल को दी जाएगी, जिसका कॉन्फ़िगरेशन आपके सभी प्रोजेक्ट साझा करते हैं।"
 }

@@ -87,7 +87,6 @@
   "unlimited": "无限制",
   "Could not read the connection status.": "无法读取连接状态。",
   "Continue": "继续",
-  "This workspace's API key will be written to the configuration of {0}, which all your projects share.": "此工作区的 API 密钥将写入 {0} 的配置中，你的所有项目共用该配置。",
   "Models listed from {1}: {0}.": "已从 {1} 获取模型：{0} 个。",
   "API key for this workspace": "此工作区的 API 密钥",
   "Free": "免费",
@@ -99,5 +98,7 @@
   "OmniRoute at {0} rejected the API key (HTTP {1}).": "位于 {0} 的 OmniRoute 拒绝了该 API 密钥（HTTP {1}）。",
   "OmniRoute at {0} needs an API key (HTTP {1}).": "位于 {0} 的 OmniRoute 需要 API 密钥（HTTP {1}）。",
   "The model's answer was cut off before the tool call was complete. Raise omnicopilot.maxOutputTokens or ask for smaller steps.": "模型的回答在工具调用完成之前被截断。请调高 omnicopilot.maxOutputTokens，或将任务拆分为更小的步骤。",
-  "The model sent a tool call with invalid arguments.": "模型发送的工具调用包含无效参数。"
+  "The model sent a tool call with invalid arguments.": "模型发送的工具调用包含无效参数。",
+  "The model used its whole output limit before it wrote an answer. Raise omnicopilot.maxOutputTokens or lower the thinking effort.": "模型在写出回答之前就用完了全部输出上限。请调高 omnicopilot.maxOutputTokens，或降低思考强度。",
+  "This workspace's API key will be handed to {0}, whose configuration is shared by all your projects.": "此工作区的 API 密钥将交给 {0}，其配置由你的所有项目共用。"
 }

@@ -87,7 +87,6 @@
   "unlimited": "ไม่จำกัด",
   "Could not read the connection status.": "ไม่สามารถอ่านสถานะการเชื่อมต่อได้",
   "Continue": "ดำเนินการต่อ",
-  "This workspace's API key will be written to the configuration of {0}, which all your projects share.": "คีย์ API ของพื้นที่ทำงานนี้จะถูกเขียนลงในการกำหนดค่าของ {0} ซึ่งทุกโปรเจกต์ของคุณใช้ร่วมกัน",
   "Models listed from {1}: {0}.": "รายการโมเดลจาก {1}: {0} รายการ",
   "API key for this workspace": "คีย์ API สำหรับพื้นที่ทำงานนี้",
   "Free": "ฟรี",
@@ -99,5 +98,7 @@
   "OmniRoute at {0} rejected the API key (HTTP {1}).": "OmniRoute ที่ {0} ปฏิเสธคีย์ API (HTTP {1})",
   "OmniRoute at {0} needs an API key (HTTP {1}).": "OmniRoute ที่ {0} ต้องใช้คีย์ API (HTTP {1})",
   "The model's answer was cut off before the tool call was complete. Raise omnicopilot.maxOutputTokens or ask for smaller steps.": "คำตอบของโมเดลถูกตัดก่อนที่การเรียกใช้เครื่องมือจะเสร็จสมบูรณ์ เพิ่มค่า omnicopilot.maxOutputTokens หรือขอทีละขั้นตอนย่อย ๆ",
-  "The model sent a tool call with invalid arguments.": "โมเดลส่งการเรียกใช้เครื่องมือที่มีอาร์กิวเมนต์ไม่ถูกต้อง"
+  "The model sent a tool call with invalid arguments.": "โมเดลส่งการเรียกใช้เครื่องมือที่มีอาร์กิวเมนต์ไม่ถูกต้อง",
+  "The model used its whole output limit before it wrote an answer. Raise omnicopilot.maxOutputTokens or lower the thinking effort.": "โมเดลใช้ขีดจำกัดเอาต์พุตจนหมดก่อนที่จะเขียนคำตอบ เพิ่มค่า omnicopilot.maxOutputTokens หรือลดระดับการคิด",
+  "This workspace's API key will be handed to {0}, whose configuration is shared by all your projects.": "คีย์ API ของพื้นที่ทำงานนี้จะถูกส่งให้ {0} ซึ่งมีการกำหนดค่าเดียวที่ทุกโปรเจกต์ของคุณใช้ร่วมกัน"
 }

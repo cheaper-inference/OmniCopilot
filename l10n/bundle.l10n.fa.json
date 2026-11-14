@@ -87,7 +87,6 @@
   "unlimited": "نامحدود",
   "Could not read the connection status.": "خواندن وضعیت اتصال ممکن نشد.",
   "Continue": "ادامه",
-  "This workspace's API key will be written to the configuration of {0}, which all your projects share.": "کلید API این فضای کار در پیکربندی ابزار {0} نوشته خواهد شد؛ این پیکربندی میان همه پروژه‌های شما مشترک است.",
   "Models listed from {1}: {0}.": "مدل‌های فهرست‌شده از سرور {1}: {0}.",
   "API key for this workspace": "کلید API برای این فضای کار",
   "Free": "رایگان",
@@ -99,5 +98,7 @@
   "OmniRoute at {0} rejected the API key (HTTP {1}).": "سرور OmniRoute در {0} کلید API را نپذیرفت (HTTP {1}).",
   "OmniRoute at {0} needs an API key (HTTP {1}).": "سرور OmniRoute در {0} به کلید API نیاز دارد (HTTP {1}).",
   "The model's answer was cut off before the tool call was complete. Raise omnicopilot.maxOutputTokens or ask for smaller steps.": "پاسخ مدل پیش از کامل شدن فراخوانی ابزار قطع شد. مقدار تنظیم omnicopilot.maxOutputTokens را افزایش دهید یا مراحل کوچک‌تری بخواهید.",
-  "The model sent a tool call with invalid arguments.": "مدل یک فراخوانی ابزار با آرگومان‌های نامعتبر ارسال کرد."
+  "The model sent a tool call with invalid arguments.": "مدل یک فراخوانی ابزار با آرگومان‌های نامعتبر ارسال کرد.",
+  "The model used its whole output limit before it wrote an answer. Raise omnicopilot.maxOutputTokens or lower the thinking effort.": "مدل پیش از نوشتن پاسخ، کل سقف خروجی خود را مصرف کرد. مقدار تنظیم omnicopilot.maxOutputTokens را افزایش دهید یا تلاش تفکر را کاهش دهید.",
+  "This workspace's API key will be handed to {0}, whose configuration is shared by all your projects.": "کلید API این فضای کار به ابزار {0} داده خواهد شد؛ پیکربندی این ابزار میان همه پروژه‌های شما مشترک است."
 }

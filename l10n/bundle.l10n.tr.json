@@ -87,7 +87,6 @@
   "unlimited": "sınırsız",
   "Could not read the connection status.": "Bağlantı durumu okunamadı.",
   "Continue": "Devam et",
-  "This workspace's API key will be written to the configuration of {0}, which all your projects share.": "Bu çalışma alanının API anahtarı, tüm projelerinizin paylaştığı {0} yapılandırmasına yazılacak.",
   "Models listed from {1}: {0}.": "{1} sunucusundan listelenen modeller: {0}.",
   "API key for this workspace": "Bu çalışma alanı için API anahtarı",
   "Free": "Ücretsiz",
@@ -99,5 +98,7 @@
   "OmniRoute at {0} rejected the API key (HTTP {1}).": "{0} adresindeki OmniRoute API anahtarını reddetti (HTTP {1}).",
   "OmniRoute at {0} needs an API key (HTTP {1}).": "{0} adresindeki OmniRoute bir API anahtarı gerektiriyor (HTTP {1}).",
   "The model's answer was cut off before the tool call was complete. Raise omnicopilot.maxOutputTokens or ask for smaller steps.": "Modelin yanıtı, araç çağrısı tamamlanmadan kesildi. omnicopilot.maxOutputTokens değerini artırın veya daha küçük adımlar isteyin.",
-  "The model sent a tool call with invalid arguments.": "Model, geçersiz bağımsız değişkenlerle bir araç çağrısı gönderdi."
+  "The model sent a tool call with invalid arguments.": "Model, geçersiz bağımsız değişkenlerle bir araç çağrısı gönderdi.",
+  "The model used its whole output limit before it wrote an answer. Raise omnicopilot.maxOutputTokens or lower the thinking effort.": "Model, bir yanıt yazmadan önce tüm çıktı sınırını kullandı. omnicopilot.maxOutputTokens değerini artırın veya akıl yürütme çabasını azaltın.",
+  "This workspace's API key will be handed to {0}, whose configuration is shared by all your projects.": "Bu çalışma alanının API anahtarı, yapılandırması tüm projelerinizin paylaştığı {0} aracına verilecek."
 }

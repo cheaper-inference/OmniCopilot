@@ -87,7 +87,6 @@
   "unlimited": "walang limitasyon",
   "Could not read the connection status.": "Hindi mabasa ang status ng koneksyon.",
   "Continue": "Magpatuloy",
-  "This workspace's API key will be written to the configuration of {0}, which all your projects share.": "Isusulat ang API key ng workspace na ito sa configuration ng {0}, na ibinabahagi ng lahat ng iyong proyekto.",
   "Models listed from {1}: {0}.": "Nakalista ang {0} model mula sa {1}.",
   "API key for this workspace": "API key para sa workspace na ito",
   "Free": "Libre",
@@ -99,5 +98,7 @@
   "OmniRoute at {0} rejected the API key (HTTP {1}).": "Tinanggihan ng OmniRoute sa {0} ang API key (HTTP {1}).",
   "OmniRoute at {0} needs an API key (HTTP {1}).": "Nangangailangan ng API key ang OmniRoute sa {0} (HTTP {1}).",
   "The model's answer was cut off before the tool call was complete. Raise omnicopilot.maxOutputTokens or ask for smaller steps.": "Naputol ang sagot ng model bago makumpleto ang tool call. Taasan ang omnicopilot.maxOutputTokens o humiling ng mas maliliit na hakbang.",
-  "The model sent a tool call with invalid arguments.": "Nagpadala ang model ng tool call na may di-wastong mga argument."
+  "The model sent a tool call with invalid arguments.": "Nagpadala ang model ng tool call na may di-wastong mga argument.",
+  "The model used its whole output limit before it wrote an answer. Raise omnicopilot.maxOutputTokens or lower the thinking effort.": "Naubos ng model ang buong output limit nito bago ito makasulat ng sagot. Taasan ang omnicopilot.maxOutputTokens o ibaba ang antas ng pag-iisip.",
+  "This workspace's API key will be handed to {0}, whose configuration is shared by all your projects.": "Ibibigay ang API key ng workspace na ito sa {0}, na ang configuration ay ibinabahagi ng lahat ng iyong proyekto."
 }

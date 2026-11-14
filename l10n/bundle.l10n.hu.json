@@ -87,7 +87,6 @@
   "unlimited": "korlátlan",
   "Could not read the connection status.": "A kapcsolat állapotát nem sikerült beolvasni.",
   "Continue": "Folytatás",
-  "This workspace's API key will be written to the configuration of {0}, which all your projects share.": "A munkaterület API-kulcsa a(z) {0} konfigurációjába lesz írva, amelyen az összes projektje osztozik.",
   "Models listed from {1}: {0}.": "A(z) {1} kiszolgálóról listázott modellek: {0}.",
   "API key for this workspace": "API-kulcs ehhez a munkaterülethez",
   "Free": "Ingyenes",
@@ -99,5 +98,7 @@
   "OmniRoute at {0} rejected the API key (HTTP {1}).": "A(z) {0} címen lévő OmniRoute elutasította az API-kulcsot (HTTP {1}).",
   "OmniRoute at {0} needs an API key (HTTP {1}).": "A(z) {0} címen lévő OmniRoute API-kulcsot igényel (HTTP {1}).",
   "The model's answer was cut off before the tool call was complete. Raise omnicopilot.maxOutputTokens or ask for smaller steps.": "A modell válasza megszakadt, mielőtt az eszközhívás befejeződött volna. Növelje az omnicopilot.maxOutputTokens értékét, vagy kérjen kisebb lépéseket.",
-  "The model sent a tool call with invalid arguments.": "A modell érvénytelen argumentumokkal küldött eszközhívást."
+  "The model sent a tool call with invalid arguments.": "A modell érvénytelen argumentumokkal küldött eszközhívást.",
+  "The model used its whole output limit before it wrote an answer. Raise omnicopilot.maxOutputTokens or lower the thinking effort.": "A modell felhasználta a teljes kimeneti korlátját, mielőtt választ írt volna. Növelje az omnicopilot.maxOutputTokens értékét, vagy csökkentse a gondolkodási ráfordítást.",
+  "This workspace's API key will be handed to {0}, whose configuration is shared by all your projects.": "A munkaterület API-kulcsát megkapja a(z) {0}, amelynek konfigurációján az összes projektje osztozik."
 }

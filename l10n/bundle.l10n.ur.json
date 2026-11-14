@@ -87,7 +87,6 @@
   "unlimited": "لامحدود",
   "Could not read the connection status.": "کنکشن کی حالت پڑھی نہیں جا سکی۔",
   "Continue": "جاری رکھیں",
-  "This workspace's API key will be written to the configuration of {0}, which all your projects share.": "اس ورک اسپیس کی API کلید ٹول {0} کی کنفیگریشن میں لکھی جائے گی، جو آپ کے تمام پروجیکٹس میں مشترک ہے۔",
   "Models listed from {1}: {0}.": "سرور {1} سے درج شدہ ماڈلز: {0}۔",
   "API key for this workspace": "اس ورک اسپیس کے لیے API کلید",
   "Free": "مفت",
@@ -99,5 +98,7 @@
   "OmniRoute at {0} rejected the API key (HTTP {1}).": "ایڈریس {0} پر موجود OmniRoute سرور نے API کلید مسترد کر دی (HTTP {1})۔",
   "OmniRoute at {0} needs an API key (HTTP {1}).": "ایڈریس {0} پر موجود OmniRoute سرور کو API کلید درکار ہے (HTTP {1})۔",
   "The model's answer was cut off before the tool call was complete. Raise omnicopilot.maxOutputTokens or ask for smaller steps.": "ٹول کال مکمل ہونے سے پہلے ماڈل کا جواب کٹ گیا۔ سیٹنگ omnicopilot.maxOutputTokens کی قدر بڑھائیں یا چھوٹے مراحل مانگیں۔",
-  "The model sent a tool call with invalid arguments.": "ماڈل نے غلط آرگیومنٹس کے ساتھ ٹول کال بھیجی۔"
+  "The model sent a tool call with invalid arguments.": "ماڈل نے غلط آرگیومنٹس کے ساتھ ٹول کال بھیجی۔",
+  "The model used its whole output limit before it wrote an answer. Raise omnicopilot.maxOutputTokens or lower the thinking effort.": "ماڈل نے جواب لکھنے سے پہلے اپنی پوری آؤٹ پٹ حد استعمال کر لی۔ سیٹنگ omnicopilot.maxOutputTokens کی قدر بڑھائیں یا سوچ کی کوشش کم کریں۔",
+  "This workspace's API key will be handed to {0}, whose configuration is shared by all your projects.": "اس ورک اسپیس کی API کلید ٹول {0} کو دی جائے گی، جس کی کنفیگریشن آپ کے تمام پروجیکٹس میں مشترک ہے۔"
 }

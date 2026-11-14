@@ -87,7 +87,6 @@
   "unlimited": "अमर्याद",
   "Could not read the connection status.": "कनेक्शनची स्थिती वाचता आली नाही.",
   "Continue": "सुरू ठेवा",
-  "This workspace's API key will be written to the configuration of {0}, which all your projects share.": "या वर्कस्पेसची API की {0} साधनाच्या कॉन्फिगरेशनमध्ये लिहिली जाईल, जे तुमचे सर्व प्रोजेक्ट शेअर करतात.",
   "Models listed from {1}: {0}.": "{1} सर्व्हरवरील सूचीबद्ध मॉडेल: {0}.",
   "API key for this workspace": "या वर्कस्पेससाठी API की",
   "Free": "मोफत",
@@ -99,5 +98,7 @@
   "OmniRoute at {0} rejected the API key (HTTP {1}).": "{0} पत्त्यावरील OmniRoute सर्व्हरने API की नाकारली (HTTP {1}).",
   "OmniRoute at {0} needs an API key (HTTP {1}).": "{0} पत्त्यावरील OmniRoute सर्व्हरला API की आवश्यक आहे (HTTP {1}).",
   "The model's answer was cut off before the tool call was complete. Raise omnicopilot.maxOutputTokens or ask for smaller steps.": "साधन कॉल पूर्ण होण्यापूर्वी मॉडेलचे उत्तर कापले गेले. omnicopilot.maxOutputTokens सेटिंगचे मूल्य वाढवा किंवा लहान टप्पे मागा.",
-  "The model sent a tool call with invalid arguments.": "मॉडेलने अवैध आर्ग्युमेंटसह साधन कॉल पाठवला."
+  "The model sent a tool call with invalid arguments.": "मॉडेलने अवैध आर्ग्युमेंटसह साधन कॉल पाठवला.",
+  "The model used its whole output limit before it wrote an answer. Raise omnicopilot.maxOutputTokens or lower the thinking effort.": "उत्तर लिहिण्यापूर्वीच मॉडेलने आपली संपूर्ण आउटपुट मर्यादा वापरली. omnicopilot.maxOutputTokens सेटिंगचे मूल्य वाढवा किंवा विचार प्रयत्न कमी करा.",
+  "This workspace's API key will be handed to {0}, whose configuration is shared by all your projects.": "या वर्कस्पेसची API की {0} साधनाला दिली जाईल, ज्याचे कॉन्फिगरेशन तुमचे सर्व प्रोजेक्ट शेअर करतात."
 }
