@@ -1,6 +1,9 @@
 import { afterEach, describe, expect, it, vi } from "vitest";
 import {
   buildUsagePayload,
+  dailyUsageLine,
+  exactPercentLeft,
+  fetchPersonalUsage,
   fetchUsage,
   formatResetIn,
   formatUsd,
@@ -717,5 +720,87 @@ describe("fetchUsage fallback to the key's own status", () => {
     vi.stubGlobal("fetch", fetchMock);
     expect((await fetchUsage("http://gateway.test", undefined)).kind).toBe("disabled");
     expect(fetchMock).toHaveBeenCalledTimes(1);
+  });
+});
+
+describe("exactPercentLeft", () => {
+  it("is the share left, unrounded, clamped to 0-100", () => {
+    expect(exactPercentLeft(1.2, 5)).toBeCloseTo(76, 10);
+    expect(exactPercentLeft(1, 3)).toBeCloseTo(66.6667, 3);
+    expect(exactPercentLeft(12, 10)).toBe(0);
+    expect(exactPercentLeft(0, 10)).toBe(100);
+  });
+
+  it("is null without a usable limit", () => {
+    expect(exactPercentLeft(1, null)).toBeNull();
+    expect(exactPercentLeft(1, 0)).toBeNull();
+    expect(exactPercentLeft(1, Number.NaN)).toBeNull();
+  });
+});
+
+describe("dailyUsageLine", () => {
+  const personal = {
+    enabled: true,
+    dailyLimitUsd: 5,
+    weeklyLimitUsd: null,
+    dailySpentUsd: 1.2,
+    weeklySpentUsd: 0,
+    dailyResetAtIso: "2026-11-15T03:00:00Z",
+    weeklyResetAtIso: null,
+    dailyExceeded: false,
+    weeklyExceeded: false,
+  };
+  const now = Date.parse("2026-11-15T00:00:00Z");
+
+  it("words the daily line the way the panel does", () => {
+    const view = toUsageView({ allowed: true, personal, provider: null }, now);
+    if (view.kind !== "ready" || !view.personal) throw new Error("expected a personal view");
+    expect(dailyUsageLine(view.personal)).toBe("Daily: $1.20 / $5.00 (76% left) · resets in 3h 0m");
+  });
+
+  it("goes through the translation function it is given", () => {
+    const t = (source: string, ...args: unknown[]) => `<${source}|${args.join(",")}>`;
+    const view = toUsageView({ allowed: true, personal, provider: null }, now, t);
+    if (view.kind !== "ready" || !view.personal) throw new Error("expected a personal view");
+    expect(dailyUsageLine(view.personal, t)).toBe("<Daily|>: $1.20 / $5.00 (<{0}% left|76>) · <resets in {0}|3h 0m>");
+  });
+
+  it("has no line without a daily limit", () => {
+    const view = toUsageView({ allowed: true, personal: { ...personal, dailyLimitUsd: null }, provider: null }, now);
+    if (view.kind !== "ready" || !view.personal) throw new Error("expected a personal view");
+    expect(dailyUsageLine(view.personal)).toBeNull();
+  });
+});
+
+describe("fetchPersonalUsage", () => {
+  afterEach(() => vi.unstubAllGlobals());
+  const json = (body: unknown) =>
+    new Response(JSON.stringify(body), { headers: { "content-type": "application/json" } });
+
+  it("returns the personal view, also through the /v1/me/status fallback", async () => {
+    vi.stubGlobal(
+      "fetch",
+      vi
+        .fn()
+        .mockResolvedValueOnce(json({ allowed: false }))
+        .mockResolvedValueOnce(json(selfStatus()))
+    );
+    const personal = await fetchPersonalUsage("http://gateway.test", "sk-test");
+    expect(personal?.dailyLimitUsd).toBe(10);
+  });
+
+  it("is null when usage is not enabled and the fallback has nothing, or the server answers text", async () => {
+    vi.stubGlobal("fetch", vi.fn().mockResolvedValueOnce(json({ allowed: false })));
+    expect(await fetchPersonalUsage("http://gateway.test", undefined)).toBeNull();
+    vi.stubGlobal(
+      "fetch",
+      vi.fn().mockResolvedValueOnce(new Response("text", { headers: { "content-type": "text/plain" } }))
+    );
+    expect(await fetchPersonalUsage("http://gateway.test", "sk-test")).toBeNull();
+  });
+
+  it("throws when the server cannot be reached", async () => {
+    vi.stubGlobal("fetch", vi.fn().mockRejectedValueOnce(new TypeError("fetch failed")));
+    await expect(fetchPersonalUsage("http://gateway.test", "sk-test")).rejects.toThrow("fetch failed");
   });
 });

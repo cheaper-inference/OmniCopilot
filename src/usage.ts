@@ -134,6 +134,13 @@ export function percentLeft(spent: number, limit: number | null): number | null 
   return Math.max(0, Math.min(100, Math.round((1 - spent / limit) * 100)));
 }
 
+/** The share of the limit still available, unrounded and clamped to 0-100, for
+ * callers that round it their own way (the status bar rounds down). */
+export function exactPercentLeft(spent: number, limit: number | null): number | null {
+  if (typeof limit !== "number" || !Number.isFinite(limit) || limit <= 0) return null;
+  return Math.max(0, Math.min(100, (1 - spent / limit) * 100));
+}
+
 /** Fills `{0}`-style placeholders without translating: the default for tests. */
 const untranslated: Translate = (source, ...args) =>
   source.replace(/\{(\d+)\}/g, (match, index: string) =>
@@ -146,6 +153,14 @@ function limitText(spent: number, limit: number | null, left: number | null, t: 
   if (limit === null) return spent > 0 ? formatUsd(spent) : "";
   const share = left === null ? "" : ` (${t("{0}% left", left)})`;
   return `${formatUsd(spent)} / ${formatUsd(limit)}${share}`;
+}
+
+/** The panel's daily line as one sentence ("Daily: $1.20 / $5.00 (76% left) ·
+ * resets in 3h 0m"), for the status-bar tooltip. Null without a daily limit. */
+export function dailyUsageLine(personal: UsageLimitView, t: Translate = untranslated): string | null {
+  if (personal.dailyLimitUsd === null || !personal.dailyText) return null;
+  const reset = personal.dailyResetIn ? ` · ${t("resets in {0}", personal.dailyResetIn)}` : "";
+  return `${t("Daily")}: ${personal.dailyText}${reset}`;
 }
 
 /** The text of a quota row: a money balance wins over `unlimited` and over a

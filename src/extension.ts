@@ -15,6 +15,7 @@ import {
 import { OmniPanelProvider } from "./panel";
 import { OmniRouteChatProvider } from "./provider";
 import { ConnectionStatusBar } from "./statusBar";
+import { fetchPersonalUsage } from "./usage";
 
 const OMNIROUTE_REPO = "https://github.com/cheaper-inference/OmniRoute";
 const VENDOR = "omniroute";
@@ -48,7 +49,9 @@ export function activate(context: vscode.ExtensionContext): void {
     () => resolveConnection(context),
     // The model picker is empty when the server was down at startup; list again once a poll
     // finds it accepting requests.
-    () => background("Model refresh", provider?.refresh())
+    () => background("Model refresh", provider?.refresh()),
+    // The key's daily limit next to the status (setting omnicopilot.statusBarUsage).
+    (connection) => fetchPersonalUsage(connection.baseUrl, connection.apiKey, vscode.l10n.t)
   );
   context.subscriptions.push(statusBar);
 
