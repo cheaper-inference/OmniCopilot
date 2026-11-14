@@ -164,7 +164,7 @@ describe("remoteUrlArgument", () => {
 describe("Configure Coding CLI and the workspace key", () => {
   const WS = "file:///work/acme";
   const QUESTION =
-    "This workspace's API key will be written to the configuration of Codex CLI, which all your projects share.";
+    "This workspace's API key will be handed to Codex CLI, whose configuration is shared by all your projects.";
 
   afterEach(() => {
     vi.restoreAllMocks();
