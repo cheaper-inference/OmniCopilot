@@ -155,6 +155,13 @@ describe("priceLabel", () => {
     expect(priceLabel(priced(Infinity, 10))).toBeUndefined();
   });
 
+  it("treats a price above one million dollars per 1M tokens as absent", () => {
+    expect(priceLabel(priced(1e21, 2))).toBeUndefined();
+    expect(priceLabel(priced(2, 1_000_001))).toBeUndefined();
+    expect(priceLabel(priced(2, 1_000_000))).toBe("$2 in · $1000000 out per 1M");
+    expect(priceLabel(priced(1e21, 1e21, { free: true }))).toBeUndefined();
+  });
+
   it("localises through the function it is given", () => {
     const t = (message: string, ...args: string[]) => `<${message}|${args.join(",")}>`;
     expect(priceLabel(priced(0, 0, { free: true }), t)).toBe("<Free|>");
@@ -220,5 +227,57 @@ describe("comboSummaryMarkdown", () => {
       "p · `m0` → `m1` → `m2` → `m3` → `m4` → `m5` → …"
     );
     expect(comboSummaryMarkdown({ name: "c", strategy: "p", models: [] })).toBe("p");
+  });
+});
+
+describe("combo summaries with server-supplied text", () => {
+  const withStep = (model: string, strategy = "priority"): OmniRouteCombo => ({
+    name: "c",
+    strategy,
+    models: [{ kind: "model", model }],
+  });
+
+  it("collapses every kind of line break and whitespace run into one space", () => {
+    const messy = " a\r\n\r\nb\t\tc\u2028d\u2029e  f ";
+    expect(comboSummary(withStep(messy, "pri\n\n  ority"))).toBe("pri ority · a b c d e f");
+    expect(comboSummaryMarkdown(withStep(messy, "pri\n\n  ority"))).toBe("pri ority · `a b c d e f`");
+  });
+
+  it("skips a step, and falls back to the default strategy, when only whitespace is left", () => {
+    const combo: OmniRouteCombo = {
+      name: "c",
+      strategy: " \n\t ",
+      models: [{ kind: "model", model: " \n " }, { kind: "model", model: "a/b" }],
+    };
+    expect(comboSummary(combo)).toBe("combo · a/b");
+    expect(comboSummaryMarkdown(combo)).toBe("combo · `a/b`");
+  });
+
+  it("keeps a blank line and a link in a step name inside one code span", () => {
+    const md = comboSummaryMarkdown(withStep("a\n\n[x](http://evil.example)\n\nb"));
+    expect(md).toBe("priority · `a [x](http://evil.example) b`");
+    expect(md).not.toMatch(/\n/);
+    // Everything outside the code spans stays free of markdown syntax.
+    expect(md.replace(/`[^`]*`/g, "")).toBe("priority · ");
+  });
+
+  it("cannot turn a strategy into a heading underline or a break", () => {
+    const md = comboSummaryMarkdown(withStep("a/b", "pri\n===\n\n[x](http://evil.example)"));
+    expect(md).not.toMatch(/\n/);
+    const outside = md.replace(/`[^`]*`/g, "");
+    expect(outside).not.toMatch(/(^|[^\\])[=\[\]()&]/);
+    expect(outside).toBe("pri \\=\\=\\= \\[x\\]\\(http://evil\\.example\\) · ");
+  });
+
+  it("escapes & and = in the strategy", () => {
+    expect(comboSummaryMarkdown(withStep("a/b", "a&amp;b=c"))).toBe("a\\&amp;b\\=c · `a/b`");
+  });
+
+  it("caps a step name at 80 characters and the strategy at 40, then adds an ellipsis", () => {
+    const md = comboSummaryMarkdown(withStep("m".repeat(81), "s".repeat(41)));
+    expect(md).toBe(`${"s".repeat(40)}… · \`${"m".repeat(80)}…\``);
+    expect(comboSummaryMarkdown(withStep("m".repeat(80), "s".repeat(40)))).toBe(
+      `${"s".repeat(40)} · \`${"m".repeat(80)}\``
+    );
   });
 });

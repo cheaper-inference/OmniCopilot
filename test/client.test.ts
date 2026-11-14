@@ -629,14 +629,16 @@ describe("OmniRouteClient.listCombos", () => {
     expect(await new OmniRouteClient({ baseUrl: "http://x" }).listCombos()).toEqual([]);
   });
 
-  it("gives up by itself after 15 seconds and returns []", async () => {
+  it("gives up by itself after 3 seconds, aborts the request and returns []", async () => {
     vi.useFakeTimers();
     try {
+      let signal: AbortSignal | undefined;
       vi.stubGlobal(
         "fetch",
         vi.fn(
           (_url: string, init: RequestInit) =>
             new Promise((_resolve, reject) => {
+              signal = init.signal ?? undefined;
               init.signal?.addEventListener("abort", () =>
                 reject(new DOMException("This operation was aborted", "AbortError"))
               );
@@ -644,8 +646,14 @@ describe("OmniRouteClient.listCombos", () => {
         )
       );
       const pending = new OmniRouteClient({ baseUrl: "http://x" }).listCombos();
-      await vi.advanceTimersByTimeAsync(15_000);
+      let settled = false;
+      void pending.then(() => (settled = true));
+      await vi.advanceTimersByTimeAsync(2_999);
+      expect(settled).toBe(false);
+      expect(signal?.aborted).toBe(false);
+      await vi.advanceTimersByTimeAsync(1);
       expect(await pending).toEqual([]);
+      expect(signal?.aborted).toBe(true);
     } finally {
       vi.useRealTimers();
     }

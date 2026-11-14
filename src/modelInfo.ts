@@ -58,8 +58,14 @@ export type Localize = (message: string, ...args: string[]) => string;
 const substitute: Localize = (message, ...args) =>
   message.replace(/\{(\d+)\}/g, (match, index: string) => args[Number(index)] ?? match);
 
+/** No real model costs a million dollars per 1M tokens: anything above that is
+ * junk, and treating it as absent also keeps `toFixed` out of exponent notation. */
+const MAX_PLAUSIBLE_PRICE = 1_000_000;
+
 function priceNumber(value: unknown): number | undefined {
-  return typeof value === "number" && Number.isFinite(value) && value >= 0 ? value : undefined;
+  return typeof value === "number" && Number.isFinite(value) && value >= 0 && value <= MAX_PLAUSIBLE_PRICE
+    ? value
+    : undefined;
 }
 
 /** At most four significant digits, no trailing zeros, never exponent notation. */
@@ -95,6 +101,19 @@ export function priceLabel(model: OmniRouteModel, t: Localize = substitute): str
 }
 
 const MAX_COMBO_STEPS = 6;
+/** Caps for the hover banner, where the text comes from the server. */
+const MAX_MARKDOWN_STEP_CHARS = 80;
+const MAX_MARKDOWN_STRATEGY_CHARS = 40;
+
+/** One line: every run of whitespace (line breaks, tabs, U+2028/U+2029) becomes one space. */
+function oneLine(text: string): string {
+  return text.replace(/[\s\u2028\u2029]+/g, " ").trim();
+}
+
+function capped(text: string, max: number): string {
+  const chars = Array.from(text);
+  return chars.length > max ? `${chars.slice(0, max).join("")}…` : text;
+}
 
 /** Names of the usable steps of a combo; a step without any name is skipped. */
 function comboStepNames(combo: OmniRouteCombo, clean: (name: string) => string = (n) => n): string[] {
@@ -103,15 +122,15 @@ function comboStepNames(combo: OmniRouteCombo, clean: (name: string) => string =
   for (const step of steps) {
     const preferred = step?.kind === "combo-ref" ? step.comboName : step?.model;
     const fallback = step?.kind === "combo-ref" ? step.model : step?.comboName;
-    const raw = [preferred, fallback].find((n) => typeof n === "string" && n.length > 0);
-    const name = raw === undefined ? "" : clean(raw);
+    const raw = [preferred, fallback].find((n) => typeof n === "string" && oneLine(n) !== "");
+    const name = raw === undefined ? "" : clean(oneLine(raw));
     if (name) names.push(name);
   }
   return names;
 }
 
 function comboStrategy(combo: OmniRouteCombo): string {
-  return typeof combo.strategy === "string" && combo.strategy ? combo.strategy : "combo";
+  return (typeof combo.strategy === "string" && oneLine(combo.strategy)) || "combo";
 }
 
 function joinSummary(strategy: string, steps: string[], truncated: boolean): string {
@@ -125,11 +144,19 @@ export function comboSummary(combo: OmniRouteCombo): string {
   return joinSummary(comboStrategy(combo), names.slice(0, MAX_COMBO_STEPS), names.length > MAX_COMBO_STEPS);
 }
 
-/** The same summary as markdown, for the host's info banner: steps in inline
- * code (model ids contain `_` and `*`) and the strategy escaped. */
+/** The same summary as markdown, for the host's info banner. The names come
+ * from the server and the host renders this field as markdown, so everything is
+ * one line: steps in one inline-code span each (model ids contain `_` and `*`;
+ * backticks stripped), the strategy escaped (including `&` and `=`), and both
+ * capped in length. */
 export function comboSummaryMarkdown(combo: OmniRouteCombo): string {
-  const names = comboStepNames(combo, (name) => name.replace(/`/g, ""));
-  const code = names.slice(0, MAX_COMBO_STEPS).map((name) => `\`${name}\``);
-  const strategy = comboStrategy(combo).replace(/[\\`*_{}[\]()<>#+\-.!|~]/g, "\\$&");
+  const names = comboStepNames(combo, (name) => oneLine(name.replace(/`/g, "")));
+  const code = names
+    .slice(0, MAX_COMBO_STEPS)
+    .map((name) => `\`${capped(name, MAX_MARKDOWN_STEP_CHARS)}\``);
+  const strategy = capped(comboStrategy(combo), MAX_MARKDOWN_STRATEGY_CHARS).replace(
+    /[\\`*_{}[\]()<>#+\-.!|~&=]/g,
+    "\\$&"
+  );
   return joinSummary(strategy, code, names.length > MAX_COMBO_STEPS);
 }

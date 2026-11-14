@@ -25,6 +25,10 @@ const USER_AGENT = "OmniCopilot-VSCode";
 /** The model catalog call gives up on its own after this long. */
 const MODELS_TIMEOUT_MS = 15_000;
 
+/** The combo lookup only decorates the picker, so it must never hold it for
+ * long: a server that black-holes the call costs this much, not 15 s. */
+const COMBOS_TIMEOUT_MS = 3_000;
+
 export interface RequestErrorInfo {
   /** HTTP status, from the response or from an error reported inside the stream. */
   status?: number;
@@ -209,7 +213,7 @@ export class OmniRouteClient {
    */
   async listCombos(token?: { isCancellationRequested?: boolean }): Promise<OmniRouteCombo[]> {
     const ctrl = new AbortController();
-    const timer = setTimeout(() => ctrl.abort(), MODELS_TIMEOUT_MS);
+    const timer = setTimeout(() => ctrl.abort(), COMBOS_TIMEOUT_MS);
     try {
       const res = await fetch(`${this.baseUrl}/combos`, {
         headers: headers(this.opts.apiKey, false),
