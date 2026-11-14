@@ -385,6 +385,17 @@ export async function resolveConnection(context: vscode.ExtensionContext): Promi
 }
 
 /**
+ * Everything a resolved connection says, with the key replaced by its SHA-256 (the
+ * key itself is never kept). Two connections with the same value would make every
+ * refresh come out the same. Held in memory only, never logged.
+ */
+export function connectionRefreshFingerprint(connection: Connection): string {
+  const { apiKey, ...rest } = connection;
+  const keyHash = apiKey === undefined ? undefined : createHash("sha256").update(apiKey).digest("hex");
+  return JSON.stringify({ ...rest, apiKey: keyHash ?? null, ignoredWorkspaceUrl: rest.ignoredWorkspaceUrl ?? null });
+}
+
+/**
  * The scope the "Set API Key" command writes: the one the user chose. The
  * workspace's when a workspace is open and its switch is on (even before it has
  * a key, so the typed key becomes the workspace key), the global one otherwise.

@@ -4,6 +4,7 @@ import { configureCliTool } from "./cliBridge";
 import {
   clearApiKey,
   chosenKeyScope,
+  connectionRefreshFingerprint,
   readStoredKey,
   resolveConnection,
   showIgnoredWorkspaceUrlNotice,
@@ -25,9 +26,46 @@ const VENDOR = "omniroute";
 let provider: OmniRouteChatProvider | undefined;
 let statusBar: ConnectionStatusBar | undefined;
 let panel: OmniPanelProvider | undefined;
+/** The connection the last refresh ran for (`connectionRefreshFingerprint`: the key only by its hash). */
+let refreshedFor: string | undefined;
 
 function getConfig() {
   return vscode.workspace.getConfiguration("omnicopilot");
+}
+
+/**
+ * "The connection may have changed": the status bar restarts (and reads its usage
+ * again), the picker lists again and the panel shows a fresh status. Every trigger
+ * that can change the key in effect comes through here: the panel's Save and Clear,
+ * the "Set API Key" command, the withheld-key warning and the key watcher.
+ * `panelRefresh: "start"` starts the panel's refresh without waiting for it.
+ */
+async function connectionMayHaveChanged(
+  context: vscode.ExtensionContext,
+  panelRefresh: "await" | "start" = "await",
+  fingerprint?: string
+): Promise<void> {
+  refreshedFor = fingerprint ?? connectionRefreshFingerprint(await resolveConnection(context));
+  statusBar?.restart();
+  await provider?.refresh();
+  const panelRefreshed = panel?.refreshStatus();
+  if (panelRefresh === "await") await panelRefreshed;
+}
+
+/**
+ * The key watcher's refresh: only when the resolved connection differs, field for
+ * field, from the one the last refresh ran for. That skips the echo of this window's
+ * own write (the explicit refresh already ran) and a change of a key this window does
+ * not use (the global key, while the workspace key is in effect).
+ */
+async function refreshIfConnectionChanged(
+  context: vscode.ExtensionContext,
+  log: vscode.LogOutputChannel
+): Promise<void> {
+  const fingerprint = connectionRefreshFingerprint(await resolveConnection(context));
+  if (fingerprint === refreshedFor) return;
+  log.info("API key changed — refreshing models and status");
+  await connectionMayHaveChanged(context, "await", fingerprint);
 }
 
 async function makeClient(context: vscode.ExtensionContext): Promise<OmniRouteClient> {
@@ -69,10 +107,7 @@ export function activate(context: vscode.ExtensionContext): void {
   panel = new OmniPanelProvider(
     context,
     log,
-    async () => {
-      statusBar?.restart();
-      await provider?.refresh();
-    },
+    () => connectionMayHaveChanged(context),
     () => provider!.currentListing()
   );
   context.subscriptions.push(
@@ -81,26 +116,30 @@ export function activate(context: vscode.ExtensionContext): void {
 
   registerCommands(context, log);
 
-  // What a key that is approved, replaced or cleared changes: the status bar (and
-  // its usage number, through its restart), the picker's list and the panel.
-  const refreshAfterKeyChange = async () => {
-    statusBar?.restart();
-    await provider?.refresh();
-    await panel?.refreshStatus();
-  };
+  // "Use the key here" in the withheld-key warning is the user approving the server.
   const withheldKeyWatcher = createWithheldKeyWatcher(
     context,
-    refreshAfterKeyChange,
+    () => connectionMayHaveChanged(context),
     (err) => log.warn(`Withheld-key check failed: ${String(err)}`)
   );
   context.subscriptions.push(withheldKeyWatcher);
 
-  // A key stored, replaced or cleared in another window of this machine arrives here.
+  // A key stored, replaced or cleared in another window of this machine arrives here, and so
+  // does the echo of this window's own writes; only a change of the connection refreshes.
   context.subscriptions.push(
-    watchKeySecrets(context, async () => {
-      log.info("API key changed — refreshing models and status");
-      await refreshAfterKeyChange();
-    }, (err) => log.warn(`Refresh after an API key change failed: ${String(err)}`))
+    watchKeySecrets(
+      context,
+      () => refreshIfConnectionChanged(context, log),
+      (err) => log.warn(`Refresh after an API key change failed: ${String(err)}`)
+    )
+  );
+  // What the start-up (the first poll and the host's first listing) runs for, unless an
+  // explicit refresh has already recorded a newer one.
+  background(
+    "Connection check",
+    resolveConnection(context).then((connection) => {
+      refreshedFor ??= connectionRefreshFingerprint(connection);
+    })
   );
 
   context.subscriptions.push(
@@ -339,11 +378,9 @@ async function setApiKey(
     await clearApiKey(context, scope);
     log.info("API key cleared");
   }
-  // The same refresh a configuration change does, so the status bar (and its usage
-  // number) follows the key that was just stored or cleared.
-  statusBar?.restart();
-  if (!optionalFlow) await provider?.refresh();
-  void panel?.refreshStatus();
+  // The status bar (and its usage number), the picker and the panel follow the key
+  // that was just stored or cleared.
+  await connectionMayHaveChanged(context, "start");
 }
 
 /** One-time welcome: point users at the model picker or at installing OmniRoute. */
@@ -393,4 +430,5 @@ export function deactivate(): void {
   provider = undefined;
   statusBar = undefined;
   panel = undefined;
+  refreshedFor = undefined;
 }

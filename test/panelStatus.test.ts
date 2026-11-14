@@ -267,6 +267,24 @@ describe("panel status refresh that fails", () => {
     expect(posted).toEqual([{ type: "statusError", detail: "OmniRoute: Error: keychain locked" }]);
   });
 
+  it("shows the status without a count when reading the picker's listing fails", async () => {
+    vi.spyOn(OmniRouteClient.prototype, "probe").mockResolvedValue({ ok: true, status: 200 });
+    setMockConfig({ baseUrl: "https://user.example" });
+    const log = { info: vi.fn(), warn: vi.fn(), error: vi.fn(), debug: vi.fn() };
+    const panel = new OmniPanelProvider(fakeContext(), log as unknown as vscode.LogOutputChannel, async () => undefined, async () => {
+      throw new Error("catalog could not be shaped");
+    });
+    const posted: Array<Record<string, unknown>> = [];
+    (panel as unknown as { view: unknown }).view = {
+      webview: { postMessage: async (message: Record<string, unknown>) => void posted.push(message) },
+    };
+
+    await panel.refreshStatus();
+
+    expect(posted).toHaveLength(1);
+    expect(posted[0]).toMatchObject({ type: "status", online: true, modelCount: null, url: "https://user.example" });
+  });
+
   it("renders the failure in the panel script", () => {
     const { view } = fakeView();
     const log = { info: vi.fn(), warn: vi.fn(), error: vi.fn(), debug: vi.fn() };

@@ -115,6 +115,8 @@ export class OmniPanelProvider implements vscode.WebviewViewProvider {
   constructor(
     private readonly context: vscode.ExtensionContext,
     private readonly log: vscode.LogOutputChannel,
+    /** After a Save or a Clear: refreshes everything that depends on the connection
+     * (the status bar, the picker and this panel's status). */
     private readonly onSettingsSaved: () => Promise<void>,
     /** What the model picker lists right now (the provider's own listing): the panel
      * shows that count and never downloads the catalog itself. */
@@ -201,8 +203,8 @@ export class OmniPanelProvider implements vscode.WebviewViewProvider {
             .update("baseUrl", url, vscode.ConfigurationTarget.Global);
         }
 
+        // The refresh after a change of the connection, this panel's status included.
         await this.onSettingsSaved();
-        await this.refreshStatus();
         break;
       }
 
@@ -211,7 +213,6 @@ export class OmniPanelProvider implements vscode.WebviewViewProvider {
         await clearApiKey(this.context, await keyScopeInEffect(this.context));
         this.log.info("API key cleared via panel");
         await this.onSettingsSaved();
-        await this.refreshStatus();
         break;
 
       case "action":
@@ -241,12 +242,17 @@ export class OmniPanelProvider implements vscode.WebviewViewProvider {
     }
     if (online) {
       // The count is the picker's: what the provider listed, after the chat-model
-      // filter and omnicopilot.modelFilter.
-      const listing = await this.currentListing();
-      if (listing.ok) {
-        modelCount = listing.count;
-      } else if (listing.failure?.message) {
-        detail = detail ? `${detail} ${listing.failure.message}` : listing.failure.message;
+      // filter and omnicopilot.modelFilter. A failure to read it leaves the status
+      // without a count rather than failing the whole status.
+      try {
+        const listing = await this.currentListing();
+        if (listing.ok) {
+          modelCount = listing.count;
+        } else if (listing.failure?.message) {
+          detail = detail ? `${detail} ${listing.failure.message}` : listing.failure.message;
+        }
+      } catch (err) {
+        this.log.warn(`Panel model count failed: ${String(err)}`);
       }
       // The usage endpoints answer to a key. With none in effect (none stored, or the
       // stored one withheld from this server) they are not asked and the section is hidden.

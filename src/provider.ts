@@ -176,8 +176,12 @@ export class OmniRouteChatProvider
   private effortTiersById = new Map<string, string[]>();
   /** What the last listing that succeeded came to, until the next `refresh()`. */
   private lastListing: ModelListing | undefined;
-  /** The listing `currentListing` started and that has not finished yet. */
-  private pendingListing: Promise<ModelListing> | undefined;
+  /** The listing under way (whoever started it), for `currentListing` to join. Its
+   * `result` is undefined when the host cancelled it or it threw: that is nobody's answer. */
+  private inFlightListing: { generation: number; result: Promise<ModelListing | undefined> } | undefined;
+  /** Whether the host's last listing in this refresh generation succeeded; undefined
+   * until it has listed (a cancelled listing does not count). */
+  private hostListingOk: boolean | undefined;
   /** Counts `refresh()` calls: a listing that finishes after one belongs to a
    * connection that may no longer be the current one. */
   private refreshGeneration = 0;
@@ -192,7 +196,8 @@ export class OmniRouteChatProvider
   async refresh(): Promise<void> {
     this.refreshGeneration += 1;
     this.lastListing = undefined;
-    this.pendingListing = undefined;
+    this.inFlightListing = undefined;
+    this.hostListingOk = undefined;
     this.cachedModels = [];
     this.cachedCombos = [];
     this.reasoningModelIds.clear();
@@ -221,42 +226,78 @@ export class OmniRouteChatProvider
     options: { silent: boolean },
     token: vscode.CancellationToken
   ): Promise<OmniModelInfo[]> {
-    return (await this.listModels(options, token)).infos;
+    const generation = this.refreshGeneration;
+    const listing = await this.listModels(options, token);
+    if (generation === this.refreshGeneration && !token.isCancellationRequested) {
+      this.hostListingOk = listing.ok;
+    }
+    return listing.infos;
   }
 
   /**
    * One real listing of the server's models. Unless `silent`, a failure tells
    * the user why (the message is not awaited: it must not hold the listing).
    * `silent: true` never prompts: an unreachable server simply contributes no
-   * models until the user fixes the connection.
+   * models until the user fixes the connection. While it runs, `currentListing`
+   * joins it instead of downloading the catalog again.
    */
-  async listModels(options: { silent: boolean }, token?: vscode.CancellationToken): Promise<ModelListing> {
+  listModels(options: { silent: boolean }, token?: vscode.CancellationToken): Promise<ModelListing> {
     const generation = this.refreshGeneration;
-    const listing = await this.listFromServer(options, token);
-    // A listing whose request the host cancelled is not an answer about the server (the
-    // client returns no models for a cancelled token): it neither becomes the count nor
-    // clears the one already known.
-    if (generation === this.refreshGeneration && !token?.isCancellationRequested) {
-      this.lastListing = listing.ok ? listing : undefined;
-    }
+    const listing = this.listFromServer(options, token).then((result) => {
+      // A listing whose request the host cancelled is not an answer about the server (the
+      // client returns no models for a cancelled token): it neither becomes the count nor
+      // clears the one already known.
+      if (generation === this.refreshGeneration && !token?.isCancellationRequested) {
+        this.lastListing = result.ok ? result : undefined;
+      }
+      return result;
+    });
+    const entry = {
+      generation,
+      result: listing.then(
+        (result) => (token?.isCancellationRequested ? undefined : result),
+        () => undefined
+      ),
+    };
+    this.inFlightListing = entry;
+    // Once it is over the entry goes: a failed listing is not kept for the next caller.
+    void entry.result.then(() => {
+      if (this.inFlightListing === entry) this.inFlightListing = undefined;
+    });
     return listing;
   }
 
   /**
    * What the picker lists right now, for a view that only reports it (the panel):
-   * the last listing that succeeded, else one silent listing that every caller
-   * asking while it runs shares. Read-only: it never prompts, and a failed
-   * listing is not kept, so the next call lists again.
+   * the last listing that succeeded, else the listing under way in this refresh
+   * generation, else one silent listing of its own that every caller asking while
+   * it runs shares. Read-only: it never prompts, and a failed listing is not kept,
+   * so the next call lists again. A listing the host cancelled is nobody's answer:
+   * a caller that joined it lists for itself.
+   *
+   * When its own listing succeeds after the host's last listing failed, the picker
+   * is told to list again (once), so the two agree.
    */
-  currentListing(): Promise<ModelListing> {
-    if (this.lastListing) return Promise.resolve(this.lastListing);
-    if (!this.pendingListing) {
-      const pending = this.listModels({ silent: true }).finally(() => {
-        if (this.pendingListing === pending) this.pendingListing = undefined;
-      });
-      this.pendingListing = pending;
+  async currentListing(): Promise<ModelListing> {
+    let joined: typeof this.inFlightListing;
+    for (;;) {
+      if (this.lastListing) return this.lastListing;
+      const running =
+        this.inFlightListing?.generation === this.refreshGeneration ? this.inFlightListing : undefined;
+      if (!running || running === joined) break;
+      joined = running;
+      const shared = await running.result;
+      if (shared) return shared;
     }
-    return this.pendingListing;
+    const generation = this.refreshGeneration;
+    const listing = await this.listModels({ silent: true });
+    if (listing.ok && generation === this.refreshGeneration && this.hostListingOk === false) {
+      // The host still holds the empty list of its failed listing. The listing this event
+      // causes is the host's own, so it cannot start another round.
+      this.hostListingOk = undefined;
+      this._onDidChange.fire();
+    }
+    return listing;
   }
 
   private async listFromServer(
