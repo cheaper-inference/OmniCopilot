@@ -1516,6 +1516,33 @@ describe("provider current listing (what the panel reports)", () => {
     expect(catalogDownloads()).toBe(2);
   });
 
+  /** A host token whose request was cancelled while the answer was on its way. */
+  const cancelled = { isCancellationRequested: true, onCancellationRequested: () => ({ dispose() {} }) } as never;
+
+  it("does not take a cancelled picker listing for the count: the panel lists for itself", async () => {
+    const { provider } = makeProvider();
+
+    // The client answers a cancelled request with no models at all.
+    const fromHost = await provider.provideLanguageModelChatInformation({ silent: true }, cancelled);
+    const listing = await provider.currentListing();
+
+    expect(fromHost).toEqual([]);
+    expect(listing).toMatchObject({ ok: true, count: 3 });
+    expect(catalogDownloads()).toBe(2);
+  });
+
+  it("does not let a cancelled listing replace a good earlier one", async () => {
+    const { provider } = makeProvider();
+    await provider.currentListing();
+    expect(catalogDownloads()).toBe(1);
+
+    await provider.provideLanguageModelChatInformation({ silent: true }, cancelled);
+    const listing = await provider.currentListing();
+
+    expect(listing).toMatchObject({ ok: true, count: 3 });
+    expect(catalogDownloads()).toBe(2); // the cancelled call's own, none for the panel
+  });
+
   it("does not keep a failed listing: the next call lists again, and never prompts", async () => {
     fetchMock.mockImplementationOnce(async () => new Response("{}", { status: 401 }));
     const warn = vi.spyOn(vscode.window, "showWarningMessage");

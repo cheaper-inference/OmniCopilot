@@ -233,7 +233,12 @@ export class OmniRouteChatProvider
   async listModels(options: { silent: boolean }, token?: vscode.CancellationToken): Promise<ModelListing> {
     const generation = this.refreshGeneration;
     const listing = await this.listFromServer(options, token);
-    if (generation === this.refreshGeneration) this.lastListing = listing.ok ? listing : undefined;
+    // A listing whose request the host cancelled is not an answer about the server (the
+    // client returns no models for a cancelled token): it neither becomes the count nor
+    // clears the one already known.
+    if (generation === this.refreshGeneration && !token?.isCancellationRequested) {
+      this.lastListing = listing.ok ? listing : undefined;
+    }
     return listing;
   }
 
