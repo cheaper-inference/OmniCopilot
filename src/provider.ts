@@ -498,6 +498,8 @@ export class OmniRouteChatProvider
         let completionChars = 0;
         let finishReason: string | undefined;
         let invalidToolCall = false;
+        // Text or a tool call reached the editor: there is an answer, however short.
+        let answered = false;
 
         try {
           for await (const event of client.streamChat(request, abort.signal)) {
@@ -514,6 +516,7 @@ export class OmniRouteChatProvider
               }
             } else if (event.kind === "text") {
               streamedOutput = true;
+              answered = true;
               completionChars += event.text.length;
               progress.report(new vscode.LanguageModelTextPart(event.text));
             } else if (event.kind === "finish") {
@@ -532,6 +535,7 @@ export class OmniRouteChatProvider
                 );
                 invalidToolCall = true;
               } else {
+                answered = true;
                 progress.report(
                   new vscode.LanguageModelToolCallPart(event.id, aliases.fromWire(event.name), input)
                 );
@@ -549,6 +553,15 @@ export class OmniRouteChatProvider
                       "The model's answer was cut off before the tool call was complete. Raise omnicopilot.maxOutputTokens or ask for smaller steps."
                     )
                   : vscode.l10n.t("The model sent a tool call with invalid arguments.")
+              );
+            }
+            if (finishReason === "length" && !answered) {
+              // Reasoning (shown or not) took the whole limit. Not retried: the same
+              // request would spend the limit the same way.
+              throw new Error(
+                vscode.l10n.t(
+                  "The model used its whole output limit before it wrote an answer. Raise omnicopilot.maxOutputTokens or lower the thinking effort."
+                )
               );
             }
           }
