@@ -1,6 +1,6 @@
 import { afterEach, beforeEach, describe, expect, it, vi } from "vitest";
 import * as vscode from "vscode";
-import { setMockConfig, setThinkingPartAvailable } from "./vscode.mock";
+import { setMockConfig, setMockWorkspace, setThinkingPartAvailable } from "./vscode.mock";
 import { OmniRouteChatProvider } from "../src/provider";
 import { aliasToolName } from "../src/toolNames";
 
@@ -1012,5 +1012,67 @@ describe("provider test harness", () => {
     await context.workspaceState.update("w", 2);
     expect(context.globalState.get("g")).toBe(1);
     expect(context.workspaceState.get("w")).toBe(2);
+  });
+});
+
+describe("provider project header", () => {
+  let fetchMock: ReturnType<typeof vi.fn>;
+
+  beforeEach(() => {
+    fetchMock = vi.fn().mockImplementation(async () => sseResponse([{ choices: [{ delta: { content: "ok" } }] }]));
+    vi.stubGlobal("fetch", fetchMock);
+  });
+  afterEach(() => {
+    vi.unstubAllGlobals();
+    setMockWorkspace();
+  });
+
+  async function chat(config: Record<string, unknown>) {
+    const { provider, progress, token } = makeProvider({ config });
+    await provider.provideLanguageModelChatResponse(
+      modelInfo(false),
+      [
+        {
+          role: vscode.LanguageModelChatMessageRole.User,
+          content: [new vscode.LanguageModelTextPart("go")],
+        } as never,
+      ],
+      { toolMode: 1 } as never,
+      progress,
+      token
+    );
+    return (fetchMock.mock.calls[0][1] as RequestInit).headers as Record<string, string>;
+  }
+
+  it("sends the workspace name only when the setting is on", async () => {
+    setMockWorkspace({ name: "acme api", folders: ["file:///work/acme"] });
+    expect((await chat({ sendProjectName: true }))["x-omniroute-project"]).toBe("acme api");
+  });
+
+  it("sends no header by default, nor with the setting off", async () => {
+    setMockWorkspace({ name: "acme", folders: ["file:///work/acme"] });
+    expect(await chat({})).not.toHaveProperty("x-omniroute-project");
+    fetchMock.mockClear();
+    expect(await chat({ sendProjectName: false })).not.toHaveProperty("x-omniroute-project");
+  });
+
+  it("sends no header when no workspace is open", async () => {
+    expect(await chat({ sendProjectName: true })).not.toHaveProperty("x-omniroute-project");
+  });
+
+  it("reduces the name to printable ASCII", async () => {
+    setMockWorkspace({ name: "São Paulo\r\nX-Evil: 1", folders: ["file:///work/x"] });
+    expect((await chat({ sendProjectName: true }))["x-omniroute-project"]).toBe("S-o Paulo-X-Evil: 1");
+  });
+
+  it("leaves the model listing without it", async () => {
+    setMockWorkspace({ name: "acme", folders: ["file:///work/acme"] });
+    fetchMock.mockImplementation(async () => new Response(JSON.stringify({ data: [] }), { status: 200 }));
+    const { provider, token } = makeProvider({ config: { sendProjectName: true } });
+    await provider.provideLanguageModelChatInformation({ silent: true }, token);
+    expect(fetchMock).toHaveBeenCalled();
+    for (const call of fetchMock.mock.calls) {
+      expect((call[1] as RequestInit).headers).not.toHaveProperty("x-omniroute-project");
+    }
   });
 });
