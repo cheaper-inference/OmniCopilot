@@ -18,6 +18,9 @@ import type {
 export interface ClientOptions {
   baseUrl: string;
   apiKey?: string;
+  /** The project name to send as `x-omniroute-project` on chat requests, already
+   * reduced by `projectHeaderValue`. Nothing is sent without it. */
+  project?: string;
 }
 
 const USER_AGENT = "OmniCopilot-VSCode";
@@ -59,6 +62,26 @@ function headers(apiKey: string | undefined, json: boolean): Record<string, stri
   if (json) h["Content-Type"] = "application/json";
   if (apiKey) h["Authorization"] = `Bearer ${apiKey}`;
   return h;
+}
+
+/** Longest project name sent; the server reads up to 120 characters. */
+const MAX_PROJECT_HEADER_CHARS = 80;
+
+/**
+ * A workspace name as an `x-omniroute-project` value. An HTTP header value must be
+ * a byte string, so every character outside printable ASCII (a letter with an
+ * accent, an emoji, a line break) becomes `-`; runs of `-` and of spaces collapse,
+ * the ends are trimmed of both, and the result is cut to 80 characters.
+ * Undefined when nothing is left, so no header is sent.
+ */
+export function projectHeaderValue(name: string | undefined): string | undefined {
+  if (!name) return undefined;
+  const tidy = (text: string) => text.replace(/^[- ]+|[- ]+$/g, "");
+  const reduced = name
+    .replace(/[^\x20-\x7E]/gu, "-")
+    .replace(/-{2,}/g, "-")
+    .replace(/ {2,}/g, " ");
+  return tidy(tidy(reduced).slice(0, MAX_PROJECT_HEADER_CHARS)) || undefined;
 }
 
 /** Normalize a user-supplied base URL for API calls: trim, drop trailing
@@ -253,7 +276,10 @@ export class OmniRouteClient {
     try {
       res = await fetch(`${this.baseUrl}/chat/completions`, {
         method: "POST",
-        headers: headers(this.opts.apiKey, true),
+        headers: {
+          ...headers(this.opts.apiKey, true),
+          ...(this.opts.project ? { "x-omniroute-project": this.opts.project } : {}),
+        },
         body: JSON.stringify(request),
         signal,
       });

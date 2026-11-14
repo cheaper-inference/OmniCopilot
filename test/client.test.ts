@@ -4,6 +4,7 @@ import {
   OmniRouteClient,
   OmniRouteRequestError,
   normalizeBaseUrl,
+  projectHeaderValue,
   serverRootUrl,
 } from "../src/client";
 import type { StreamEvent } from "../src/types";
@@ -656,6 +657,84 @@ describe("OmniRouteClient.listCombos", () => {
       expect(signal?.aborted).toBe(true);
     } finally {
       vi.useRealTimers();
+    }
+  });
+});
+
+describe("projectHeaderValue", () => {
+  it("keeps a plain ASCII name as it is", () => {
+    expect(projectHeaderValue("my-project")).toBe("my-project");
+    expect(projectHeaderValue("acme api (Workspace)")).toBe("acme api (Workspace)");
+  });
+
+  it("replaces each non-ASCII character with a hyphen, so the value is a byte string", () => {
+    expect(projectHeaderValue("São Paulo")).toBe("S-o Paulo");
+    expect(projectHeaderValue("rocket \u{1F680} app")).toBe("rocket - app");
+    expect(projectHeaderValue("ação-2")).toBe("a-o-2");
+  });
+
+  it("sends nothing for a name made only of non-ASCII characters", () => {
+    expect(projectHeaderValue("项目")).toBeUndefined();
+    expect(projectHeaderValue("\u{1F680}\u{1F680}")).toBeUndefined();
+  });
+
+  it("turns line breaks and other control characters into hyphens that cannot split a header", () => {
+    const value = projectHeaderValue("a\r\nX-Evil: 1\tb\u0000c");
+    expect(value).toBe("a-X-Evil: 1-b-c");
+    expect(value).toMatch(/^[\x20-\x7E]+$/);
+  });
+
+  it("collapses runs of hyphens and of spaces, and trims the ends", () => {
+    expect(projectHeaderValue("  a    b  ")).toBe("a b");
+    expect(projectHeaderValue("a\u00e9\u00e9\u00e9b")).toBe("a-b");
+    expect(projectHeaderValue("--a--")).toBe("a");
+    expect(projectHeaderValue("caf\u00e9")).toBe("caf");
+  });
+
+  it("cuts a long name to 80 characters without leaving a dangling separator", () => {
+    expect(projectHeaderValue("x".repeat(200))).toBe("x".repeat(80));
+    expect(projectHeaderValue(`${"x".repeat(79)} tail`)).toBe("x".repeat(79));
+  });
+
+  it("sends nothing for an empty or missing name", () => {
+    expect(projectHeaderValue("")).toBeUndefined();
+    expect(projectHeaderValue("   ")).toBeUndefined();
+    expect(projectHeaderValue(undefined)).toBeUndefined();
+  });
+});
+
+describe("the project header", () => {
+  afterEach(() => vi.unstubAllGlobals());
+
+  const sent = (fetchMock: ReturnType<typeof vi.fn>) =>
+    fetchMock.mock.calls[0][1].headers as Record<string, string>;
+
+  it("goes on chat requests only when the client was given a project", async () => {
+    const fetchMock = vi.fn().mockImplementation(async () => sseResponse(["data: [DONE]"]));
+    vi.stubGlobal("fetch", fetchMock);
+
+    await collect(new OmniRouteClient({ baseUrl: "http://x/v1", project: "acme" }));
+    expect(sent(fetchMock)["x-omniroute-project"]).toBe("acme");
+
+    fetchMock.mockClear();
+    await collect(new OmniRouteClient({ baseUrl: "http://x/v1" }));
+    expect(sent(fetchMock)["x-omniroute-project"]).toBeUndefined();
+  });
+
+  it("stays off the model listing, the combo lookup, the probe and the usage call", async () => {
+    const fetchMock = vi
+      .fn()
+      .mockImplementation(async () => new Response(JSON.stringify({ data: [] }), { status: 200 }));
+    vi.stubGlobal("fetch", fetchMock);
+    const client = new OmniRouteClient({ baseUrl: "http://x/v1", apiKey: "k", project: "acme" });
+
+    await client.listModels();
+    await client.listCombos();
+    await client.probe();
+
+    expect(fetchMock.mock.calls.length).toBeGreaterThanOrEqual(3);
+    for (const call of fetchMock.mock.calls) {
+      expect((call[1] as RequestInit).headers).not.toHaveProperty("x-omniroute-project");
     }
   });
 });

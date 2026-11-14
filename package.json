@@ -298,6 +298,13 @@
           "default": false,
           "order": 10,
           "description": "%cfg.exposeToAgentsWindow%"
+        },
+        "omnicopilot.sendProjectName": {
+          "type": "boolean",
+          "default": false,
+          "scope": "application",
+          "order": 11,
+          "description": "%cfg.sendProjectName%"
         }
       }
     }

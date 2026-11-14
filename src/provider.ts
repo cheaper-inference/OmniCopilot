@@ -1,7 +1,7 @@
 import * as vscode from "vscode";
 import { expandForAgentsWindow } from "./agentsWindow";
 import { selectChatModels } from "./catalogFilter";
-import { OmniRouteClient, OmniRouteRequestError, serverRootUrl } from "./client";
+import { OmniRouteClient, OmniRouteRequestError, projectHeaderValue, serverRootUrl } from "./client";
 import { SECRET_API_KEY, displayUrl, resolveConnection } from "./connection";
 import { estimateTokens, toOpenAiMessages, toOpenAiTools } from "./convert";
 import { comboSummary, comboSummaryMarkdown, describeModel, priceLabel } from "./modelInfo";
@@ -154,7 +154,12 @@ export class OmniRouteChatProvider
 
   private async makeClient(): Promise<OmniRouteClient> {
     const { baseUrl, apiKey } = await resolveConnection(this.deps.context);
-    return new OmniRouteClient({ baseUrl, apiKey });
+    // The client puts the project on chat requests only; this is a read of a privacy
+    // opt-in (off by default), which the extension never writes.
+    const project = getConfig().get<boolean>("sendProjectName", false)
+      ? projectHeaderValue(vscode.workspace.name)
+      : undefined;
+    return new OmniRouteClient({ baseUrl, apiKey, project });
   }
 
   // ── Model discovery ─────────────────────────────────────────────────────
