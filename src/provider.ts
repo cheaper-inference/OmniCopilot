@@ -166,8 +166,6 @@ export class OmniRouteChatProvider
   private readonly _onDidChange = new vscode.EventEmitter<void>();
   readonly onDidChangeLanguageModelChatInformation = this._onDidChange.event;
 
-  private cachedModels: OmniRouteModel[] = [];
-  private cachedCombos: OmniRouteCombo[] = [];
   /** Ids the catalog marks as reasoning/thinking-capable, refreshed with the
    * catalog. Chat requests consult it before applying the configured default
    * effort — the request itself carries no capability information. */
@@ -198,8 +196,6 @@ export class OmniRouteChatProvider
     this.lastListing = undefined;
     this.inFlightListing = undefined;
     this.hostListingOk = undefined;
-    this.cachedModels = [];
-    this.cachedCombos = [];
     this.reasoningModelIds.clear();
     this.effortTiersById.clear();
     this._onDidChange.fire();
@@ -307,12 +303,12 @@ export class OmniRouteChatProvider
     const { client, connection } = await this.connect();
     const serverUrl = serverRootUrl(client.baseUrl);
 
+    let models: OmniRouteModel[];
+    let combos: OmniRouteCombo[];
     try {
       // The combos only add detail to the picker, so they are fetched at the
       // same time and a failure there (listCombos never throws) costs nothing.
-      const [models, combos] = await Promise.all([client.listModels(token), client.listCombos(token)]);
-      this.cachedModels = models;
-      this.cachedCombos = combos;
+      [models, combos] = await Promise.all([client.listModels(token), client.listCombos(token)]);
       this.deps.onActivity?.(true);
     } catch (err) {
       // An HTTP error (a 401, say) means the server answered: still reachable.
@@ -339,7 +335,7 @@ export class OmniRouteChatProvider
       };
     }
 
-    const infos = this.toModelInfos(this.cachedModels, this.cachedCombos);
+    const infos = this.toModelInfos(models, combos);
     this.deps.log.info(`Listed ${infos.length} models from ${client.baseUrl}`);
     return {
       infos,
@@ -493,9 +489,6 @@ export class OmniRouteChatProvider
     }
 
     const modelOptions = options.modelOptions as Record<string, unknown> | undefined;
-    if (typeof modelOptions?.temperature === "number") {
-      request.temperature = modelOptions.temperature;
-    }
     Object.assign(
       request,
       requestParamsFromModelOptions(modelOptions, { maxOutputTokens: model.maxOutputTokens })

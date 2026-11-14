@@ -403,7 +403,7 @@ describe("OmniRoute: Check connection after a real listing", () => {
 
     await ext.run("omnicopilot.checkConnection");
 
-    expect(texts(info)).toEqual(["Connected to OmniRoute at http://localhost:20128/v1."]);
+    expect(texts(info)).toEqual(["Connected to OmniRoute at http://localhost:20128."]);
     expect(warn).not.toHaveBeenCalled();
     ext.dispose();
   });

@@ -136,10 +136,12 @@ export type CliRemoteDecision =
  */
 export function cliRemoteDecision(root: string): CliRemoteDecision {
   if (isDefaultRoot(root)) return { kind: "default" };
-  const remote = remoteUrlArgument(root);
-  return remote === undefined ? { kind: "refused" } : { kind: "remote", remote };
+  if (!isSafeRemoteUrl(root)) return { kind: "refused" };
+  // isSafeRemoteUrl has just established that the argument exists.
+  return { kind: "remote", remote: remoteUrlArgument(root) as string };
 }
 
+/** The one check of whether a root can be passed to the CLI as `--remote`. */
 export function isSafeRemoteUrl(root: string): boolean {
   return remoteUrlArgument(root) !== undefined;
 }
