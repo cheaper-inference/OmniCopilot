@@ -1602,6 +1602,108 @@ describe("provider current listing (what the panel reports)", () => {
     expect(catalogDownloads()).toBe(2); // the cancelled call's own, none for the panel
   });
 
+  /** A host token that the test cancels while the request is out. */
+  function hostToken() {
+    const state = { isCancellationRequested: false, onCancellationRequested: () => ({ dispose() {} }) };
+    return { token: state as never, cancel: () => void (state.isCancellationRequested = true) };
+  }
+
+  /** Holds the next catalog download until `release()`; the combos call answers at once. */
+  function holdNextCatalog() {
+    let release: (() => void) | undefined;
+    const fallback = fetchMock.getMockImplementation()!;
+    fetchMock.mockImplementation(async (url: string) => {
+      if (String(url).includes("/combos") || release) return fallback(url);
+      return new Promise<Response>((resolve) => {
+        release = () => resolve(fallback(url) as Response);
+      });
+    });
+    return { release: () => release?.(), held: () => release !== undefined };
+  }
+
+  it("joins the picker's listing that is under way instead of downloading again", async () => {
+    const { provider } = makeProvider();
+    const gate = holdNextCatalog();
+    const { token } = hostToken();
+
+    const fromHost = provider.provideLanguageModelChatInformation({ silent: true }, token);
+    await vi.waitFor(() => expect(gate.held()).toBe(true));
+    const joined = provider.currentListing();
+    gate.release();
+
+    expect(await joined).toMatchObject({ ok: true, count: 3 });
+    expect(await fromHost).toHaveLength(3);
+    expect(catalogDownloads()).toBe(1);
+  });
+
+  it("does not join a listing from before a refresh()", async () => {
+    const { provider } = makeProvider();
+    const gate = holdNextCatalog();
+    const { token } = hostToken();
+
+    const fromHost = provider.provideLanguageModelChatInformation({ silent: true }, token);
+    await vi.waitFor(() => expect(gate.held()).toBe(true));
+    await provider.refresh();
+    const listing = provider.currentListing();
+    gate.release();
+    await fromHost;
+
+    expect(await listing).toMatchObject({ ok: true, count: 3 });
+    expect(catalogDownloads()).toBe(2);
+  });
+
+  it("gives a caller that joined a listing the host then cancelled a real listing of its own", async () => {
+    const { provider } = makeProvider();
+    const gate = holdNextCatalog();
+    const { token, cancel } = hostToken();
+
+    const fromHost = provider.provideLanguageModelChatInformation({ silent: true }, token);
+    await vi.waitFor(() => expect(gate.held()).toBe(true));
+    const joined = provider.currentListing();
+    cancel();
+    gate.release();
+
+    expect(await fromHost).toEqual([]);
+    expect(await joined).toMatchObject({ ok: true, count: 3 });
+    expect(catalogDownloads()).toBe(2);
+  });
+
+  it("tells the picker to list again when its own listing succeeds after the host's last one failed", async () => {
+    fetchMock.mockImplementationOnce(async () => new Response("{}", { status: 503 }));
+    const { provider } = makeProvider();
+    const { token } = hostToken();
+    let events = 0;
+    provider.onDidChangeLanguageModelChatInformation(() => void (events += 1));
+
+    expect(await provider.provideLanguageModelChatInformation({ silent: true }, token)).toEqual([]);
+    expect(await provider.currentListing()).toMatchObject({ ok: true, count: 3 });
+    expect(events).toBe(1);
+
+    // Once: the panel asking again before the host has listed does not fire again.
+    await provider.currentListing();
+    expect(events).toBe(1);
+  });
+
+  it("does not tell the picker anything when the host's last listing succeeded or has not happened", async () => {
+    const { provider } = makeProvider();
+    let events = 0;
+    provider.onDidChangeLanguageModelChatInformation(() => void (events += 1));
+
+    // The host has not listed yet.
+    await provider.currentListing();
+    expect(events).toBe(0);
+
+    // The host's listing succeeded; a failed listing of another caller (Refresh Models)
+    // then leaves nothing to report, and the panel's own listing that follows says nothing.
+    await provider.refresh();
+    events = 0;
+    await provider.provideLanguageModelChatInformation({ silent: true }, hostToken().token);
+    fetchMock.mockImplementationOnce(async () => new Response("{}", { status: 503 }));
+    expect(await provider.listModels({ silent: true })).toMatchObject({ ok: false });
+    await provider.currentListing();
+    expect(events).toBe(0);
+  });
+
   it("does not keep a failed listing: the next call lists again, and never prompts", async () => {
     fetchMock.mockImplementationOnce(async () => new Response("{}", { status: 401 }));
     const warn = vi.spyOn(vscode.window, "showWarningMessage");

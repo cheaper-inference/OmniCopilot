@@ -590,9 +590,26 @@ describe("a key changed in another window", () => {
     await settle();
     expect(listings()).toBe(before);
 
+    // This workspace follows its own key, so its pair changing changes the key in effect.
+    ext.local.set("omnicopilot.useWorkspaceKey", true);
     ext.changedElsewhere(workspaceSecretName(WS), "sk-ws");
     await settle();
     expect(listings()).toBeGreaterThan(before);
+    ext.dispose();
+  });
+
+  it("costs nothing when the pair of this workspace changes while this workspace uses the global key", async () => {
+    const { ext, requests, statuses, listings } = open();
+    await settle();
+    const before = { requests: requests.length, statuses: statuses.length, listings: listings() };
+
+    // The switch is off: the global key stays in effect and nothing this window shows changes.
+    ext.changedElsewhere(workspaceOriginsSecretName(WS), JSON.stringify([]));
+    ext.changedElsewhere(workspaceSecretName(WS), "sk-ws");
+    ext.changedElsewhere(workspaceOriginsSecretName(WS), JSON.stringify(["https://a.example"]));
+    await settle();
+
+    expect({ requests: requests.length, statuses: statuses.length, listings: listings() }).toEqual(before);
     ext.dispose();
   });
 
