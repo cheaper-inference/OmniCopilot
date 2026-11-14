@@ -33,6 +33,8 @@
 - **1200+ models, one picker.** OmniRoute unifies 340+ providers (OpenAI-compatible, Anthropic, Gemini, Ollama, local, OAuth-based free tiers…) behind a single endpoint — **90+ providers are free, and free forever**. Every model it serves shows up in your Copilot Chat model dropdown.
 - **Agent mode, tool calling, MCP, instructions — all of it still works.** This plugs into VS Code's native language-model provider API, so Copilot's entire stack now runs on the model *you* choose.
 - **Vision included.** Models flagged as vision-capable in the OmniRoute catalog accept image attachments directly in chat.
+- **Reasoning you can read.** Thinking models show their reasoning in the chat as it streams, above the answer.
+- **Prices in the picker.** Each model shows what OmniRoute says it costs, its context window, and for a combo the strategy and the steps behind it.
 - **Combos & auto-fallback.** OmniRoute combos (priority, round-robin, cost-optimized, fusion…) appear as regular models — pick one and get automatic failover across providers behind the scenes.
 - **Online at a glance.** A status-bar dot and an Activity Bar panel show whether your OmniRoute server is reachable, how many models it serves, and where to configure everything — URL and API key included.
 - **Speaks your language.** The UI ships in 42 languages, mirroring OmniRoute's own catalog — VS Code picks the one matching your display language automatically.
@@ -67,6 +69,8 @@ Windsurf and VSCodium. Or grab the `.vsix` from the [releases](https://github.co
 
 That's it. If OmniRoute runs on the default `http://localhost:20128`, there is nothing to configure.
 
+The same four steps are in VS Code itself: open the **Welcome** page and pick **Get started with OmniRoute** (or run `Welcome: Open Walkthrough…`). The last step points chat titles, commit messages and inline chat at an OmniRoute model too (`chat.utilityModel`, `chat.utilitySmallModel`, `inlineChat.defaultModel`).
+
 ## Remote server / API key
 
 Click the **OmniRoute icon in the Activity Bar** (or run `OmniRoute: Manage Connection`, or click the status-bar dot) to open the connection panel:
@@ -79,6 +83,15 @@ Two rules keep the connection yours:
 
 - **The server URL comes from your user settings.** In a remote window (WSL, SSH, a dev container) the remote machine's settings count too. A value in a workspace's `.vscode/settings.json` is ignored, so opening a repository cannot point the extension at another server.
 - **The API key is tied to the server it was saved for.** If the URL changes, the key stays put until you approve the new server, with **Save & Test** or **Use the key here** on the warning. A server reached over plain `http://` outside your own machine gets a one-time warning before the key travels.
+
+### One API key per workspace
+
+Teams that give each project its own OmniRoute key can keep that key with the workspace. With a folder or workspace open, tick **Use this key only in this workspace** in the panel and save the key. It is stored in the OS keychain for that workspace and is used whenever that workspace is open; every other workspace keeps using your global key. The line under the field says which key is in use, and **Clear key** removes the one in use.
+
+- A workspace key is tied to its server like the global one, and each key has its own approved servers.
+- Moving or renaming the folder (or the workspace file) makes it a new workspace: the key stays stored but unused until you save it again there.
+- **Configure Coding CLI** asks before it hands a workspace key to a tool, because the tool keeps one configuration for all your projects.
+- To group usage by project on the server even when workspaces share a key, turn on `omnicopilot.sendProjectName`: chat requests then carry the workspace name. It is off by default.
 
 ### Troubleshooting the connection
 
@@ -119,11 +132,13 @@ Run **`OmniRoute: Configure Coding CLI`** and pick a tool — the extension driv
 | `omnicopilot.maxOutputTokens` | `16384` | Output budget reserved per response |
 | `omnicopilot.defaultContextLength` | `128000` | Context assumed when the catalog omits it |
 | `omnicopilot.statusBar` | `true` | Show the connection dot |
+| `omnicopilot.statusBarUsage` | `true` | Show how much of the key's daily limit is left next to the dot |
 | `omnicopilot.healthCheckIntervalSeconds` | `30` | Probe frequency |
 | `omnicopilot.dashboardOpen` | `external` | Open the dashboard in the browser, or in a VS Code tab (`editor`) — see below |
 | `omnicopilot.defaultReasoningEffort` | *(unset)* | Effort for models with extended thinking — `none`/`low`/`medium`/`high`/`xhigh`/`max`; see below |
 | `omnicopilot.cliPath` | `omniroute` | Path to the OmniRoute CLI (a machine setting; put a path with spaces in quotes) |
 | `omnicopilot.exposeToAgentsWindow` | `false` | Experimental: also list the models in the Copilot Agents window — see below |
+| `omnicopilot.sendProjectName` | `false` | Send the workspace name with chat requests so OmniRoute can group usage by project. Read from your user settings only |
 
 ### Reasoning effort
 
@@ -172,15 +187,23 @@ API key — the same data as the terminal `@@om-usage` command, never the manage
 Each line shows what is left and when it resets. A quota that is a prepaid balance (DeepSeek,
 Kilo, Lyceum…) shows the money left, such as `$0.37 left`, instead of a percentage.
 
+When the usage command is not enabled for a key, the panel reads the key's own daily and weekly spend
+from OmniRoute's self-service endpoint (`GET /v1/me/status`) instead, so most keys see their numbers
+without anyone changing a flag. Provider quotas still need the usage command.
+
+A key with a daily limit also shows how much of it is left in the status bar, such as
+`OmniRoute · 76%`. It is read at most once every five minutes, and not at all while the status bar is
+hidden; `omnicopilot.statusBarUsage` turns it off.
+
 Three states are normal and distinct:
 
 - **"Usage is not enabled for this key"** — the key lacks the `allowUsageCommand` flag, which
-  is **off by default**. An admin turns it on per key in OmniRoute's API-key manager. This is a
-  setting, not an error.
+  is **off by default**, and the self-service endpoint is not available for it either. An admin
+  turns the flag on per key in OmniRoute's API-key manager. This is a setting, not an error.
 - **"nothing is cached yet"** — the key is allowed but the server has no learned quota for the
   connection yet. It fills in after the first requests.
-- **No section at all** — the OmniRoute server predates `?format=json`; the panel hides it
-  rather than parse the older text form.
+- **No section at all** — no API key is in use, the usage call failed, or the OmniRoute server
+  predates `?format=json`; the panel hides the section rather than guess.
 
 Requires OmniRoute with the usage JSON endpoint (v3.8.50+). See
 [`docs/CATALOG.md`](docs/CATALOG.md) for the server version the feature matrix assumes.
@@ -210,6 +233,7 @@ mode, the non-chat filter and the free/keyless providers, with measured numbers.
 ## Good to know
 
 - **Chat, agent mode and utility tasks** run through your OmniRoute models. Inline code completions and embeddings-based features are outside VS Code's provider API and still require GitHub Copilot.
+- **A cut-off answer fails loudly.** When a model hits its output limit in the middle of a tool call, or spends all of it on reasoning, the request fails and says so instead of running the tool with empty input or returning nothing. Raise `omnicopilot.maxOutputTokens` if it happens often.
 - **Temporary errors are retried.** A rate limit or a busy provider is retried up to twice before you see an error, as long as nothing has been shown in the chat yet.
 - **Long tool names work.** MCP tool names over 64 characters are shortened on the wire and restored on the way back, so OpenAI-format providers accept them.
 - On **Copilot Business/Enterprise**, admins can disable third-party model providers via the "Bring Your Own Language Model Key" policy.

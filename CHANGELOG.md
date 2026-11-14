@@ -1,5 +1,85 @@
 # Changelog
 
+## 1.5.0
+
+What other gateways' extensions already do, now here: the model's reasoning in the chat, prices and
+combo details in the picker, one API key per workspace, and a walkthrough for the first run. Plus a
+second round of fixes found by reading the code against real server behaviour.
+
+### Added
+
+- **The model's reasoning shows in the chat as it streams.** Thinking models (DeepSeek R1, Claude
+  with thinking, GPT-5.x, Gemini Thinking and others) now show their reasoning above the answer
+  instead of a silent wait. It works with the three forms servers use (`reasoning_content`,
+  `reasoning` and `reasoning_details`).
+- **Price, context window and combo details in the model picker.** Each model shows what OmniRoute
+  says it costs (`Free`, or dollars in and out per million tokens) and its total context window. A
+  combo shows its strategy, and its steps on hover. A provider that bills per request shows no price
+  rather than a guessed "Free".
+- **One API key per workspace.** Tick *Use this key only in this workspace* in the panel and save a
+  key: it is stored in the OS keychain for that workspace and wins over the global key whenever that
+  workspace is open. The panel says which key is in use. Requested by @Narquadah in
+  [#26](https://github.com/cheaper-inference/OmniCopilot/issues/26).
+- **Usage grouped by project, if you want it.** With `omnicopilot.sendProjectName` on, chat requests
+  carry the workspace name, and OmniRoute groups usage by project even when two workspaces share a
+  key. Off by default.
+- **Your key's usage without asking an admin.** When the usage command is not enabled for a key, the
+  panel now reads the key's own daily and weekly spend from OmniRoute's self-service endpoint. The
+  "usage is not enabled for this key" message only appears when that is not available either.
+- **Daily limit in the status bar.** A key with a daily limit shows how much of it is left next to
+  the connection dot, such as `OmniRoute · 76%`. It is read at most every five minutes, and not at
+  all while the status bar is hidden. `omnicopilot.statusBarUsage` turns it off.
+- **A walkthrough for the first run.** *Get started with OmniRoute* on the Welcome page: run
+  OmniRoute, connect, pick your models, and use OmniRoute for chat titles, commit messages and
+  inline chat.
+- **Standard sampling parameters are forwarded.** Extensions that call the model with
+  `modelOptions` can pass `max_tokens`, `top_p`, `stop`, `seed`, `presence_penalty`,
+  `frequency_penalty` and `response_format`. Only `temperature` got through before. A value of the
+  wrong type or out of range is left out of the request.
+
+### Fixed
+
+- **A tool call cut off by the output limit is no longer run with empty input.** The request fails
+  and says so, pointing at `omnicopilot.maxOutputTokens`, instead of calling the tool with `{}`.
+  That includes a call cut before its first argument arrived, the usual shape with Claude models.
+- **Reasoning that uses up the output limit says so.** A thinking model that spent its whole output
+  limit on reasoning used to end as an empty answer. The chat now says what happened and points at
+  `omnicopilot.maxOutputTokens` and the thinking effort.
+- **Parallel tool calls from servers that stream them loosely.** Servers that leave out the `index`,
+  reuse one for several calls, renew the id on every fragment or repeat the whole tool name now
+  produce the right calls.
+- **A rejected API key is reported as that.** A server that answers 401 or 403 to the model listing
+  gets "rejected the API key" (or "needs an API key" when none is stored) with a *Set API key*
+  button, instead of "Could not reach OmniRoute. Is it running?".
+- **Refresh models and Check connection report what happened.** Both do a real listing and show the
+  number of models or the failure. Before, "refreshed" and "connected" appeared even with the server
+  down or the key wrong.
+- **A key changed in one window reaches the others.** Saving, replacing or clearing the API key
+  refreshes the model list, the status bar and the panel in every open window, without a reload.
+- **The panel counts what the picker lists.** "Online — N models available" used to count the whole
+  catalog, embeddings and image models included, from a second download. It now shows the number of
+  chat models the picker has, from the same listing.
+- **Save & Test pressed while the panel is still loading keeps your server address.** A Save in
+  the first moments after opening the panel, before the status had loaded, stored the default
+  address over yours. Only what you typed is saved now.
+- **The usage section stops guessing.** Without an API key the section is not shown, instead of
+  claiming usage "is not enabled for this key". A usage call that fails hides the section instead of
+  saying nothing is cached yet.
+- **Configure Coding CLI follows a local server on another port.** A server at
+  `http://localhost:3000` or `https://localhost:20128` is now passed to the tool. Before, anything
+  on localhost configured the tool for the default port.
+- **A workspace key is not handed to a shared configuration silently.** Configure Coding CLI asks
+  first when the key in use is the workspace's own, because the tool keeps one configuration for all
+  projects.
+
+### Changed
+
+- **Two more requests in the background.** With a key stored, the extension reads the key's usage
+  when it starts and then at most every five minutes while the status bar shows it, and every model
+  listing also asks for the combos (`GET /v1/combos`). Both go to the same server, with the same
+  key, as the model listing.
+- **Translations.** Every new string ships in all 42 languages.
+
 ## 1.4.0
 
 The most reported problems are fixed, the server URL and the API key got a security pass, and the
