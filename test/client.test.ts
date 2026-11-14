@@ -483,6 +483,97 @@ describe("OmniRouteClient.streamChat errors", () => {
   });
 });
 
+describe("OmniRouteClient.streamChat tool-call assembly", () => {
+  afterEach(() => vi.unstubAllGlobals());
+
+  /** One SSE line carrying the given tool_calls deltas. */
+  const toolDelta = (...deltas: unknown[]) =>
+    `data: ${JSON.stringify({ choices: [{ delta: { tool_calls: deltas } }] })}`;
+  const finish = 'data: {"choices":[{"delta":{},"finish_reason":"tool_calls"}]}';
+
+  async function toolCalls(lines: string[]) {
+    vi.stubGlobal("fetch", vi.fn().mockResolvedValue(sseResponse([...lines, finish, "data: [DONE]"])));
+    const events = await collect(new OmniRouteClient({ baseUrl: "http://x/v1" }));
+    return events.filter((e) => e.kind === "toolCall");
+  }
+
+  it("keeps two calls apart when the deltas carry no index", async () => {
+    const calls = await toolCalls([
+      toolDelta({ id: "a", function: { name: "read_file", arguments: '{"p":1}' } }),
+      toolDelta({ id: "b", function: { name: "list_dir", arguments: '{"d":2}' } }),
+    ]);
+    expect(calls).toEqual([
+      { kind: "toolCall", id: "a", name: "read_file", args: '{"p":1}' },
+      { kind: "toolCall", id: "b", name: "list_dir", args: '{"d":2}' },
+    ]);
+  });
+
+  it("follows the id for the fragments of an indexless call", async () => {
+    const calls = await toolCalls([
+      toolDelta({ id: "a", function: { name: "read_file", arguments: '{"p"' } }),
+      toolDelta({ id: "b", function: { name: "list_dir", arguments: '{"d"' } }),
+      toolDelta({ id: "a", function: { arguments: ":1}" } }),
+      toolDelta({ id: "b", function: { arguments: ":2}" } }),
+    ]);
+    expect(calls).toEqual([
+      { kind: "toolCall", id: "a", name: "read_file", args: '{"p":1}' },
+      { kind: "toolCall", id: "b", name: "list_dir", args: '{"d":2}' },
+    ]);
+  });
+
+  it("continues the latest call with a delta that has neither index nor id", async () => {
+    const calls = await toolCalls([
+      toolDelta({ id: "a", function: { name: "run", arguments: '{"x"' } }),
+      toolDelta({ function: { arguments: ":1}" } }),
+    ]);
+    expect(calls).toEqual([{ kind: "toolCall", id: "a", name: "run", args: '{"x":1}' }]);
+  });
+
+  it("opens a new call when a different id arrives under the same index", async () => {
+    const calls = await toolCalls([
+      toolDelta({ index: 0, id: "a", function: { name: "read_file", arguments: '{"p":1}' } }),
+      toolDelta({ index: 0, id: "b", function: { name: "list_dir", arguments: '{"d"' } }),
+      toolDelta({ index: 0, function: { arguments: ":2}" } }),
+    ]);
+    expect(calls).toEqual([
+      { kind: "toolCall", id: "a", name: "read_file", args: '{"p":1}' },
+      { kind: "toolCall", id: "b", name: "list_dir", args: '{"d":2}' },
+    ]);
+  });
+
+  it("keeps a name that is re-sent whole in every delta", async () => {
+    const calls = await toolCalls([
+      toolDelta({ index: 0, id: "a", function: { name: "read_file", arguments: '{"p"' } }),
+      toolDelta({ index: 0, function: { name: "read_file", arguments: ':1}' } }),
+    ]);
+    expect(calls).toEqual([{ kind: "toolCall", id: "a", name: "read_file", args: '{"p":1}' }]);
+  });
+
+  it("replaces a partial name with a longer one that starts with it", async () => {
+    const calls = await toolCalls([
+      toolDelta({ index: 0, id: "a", function: { name: "read", arguments: "{}" } }),
+      toolDelta({ index: 0, function: { name: "read_file" } }),
+    ]);
+    expect(calls).toEqual([{ kind: "toolCall", id: "a", name: "read_file", args: "{}" }]);
+  });
+
+  it("flushes the calls in the order they were opened", async () => {
+    const calls = await toolCalls([
+      toolDelta({ index: 1, id: "b", function: { name: "second", arguments: "{}" } }),
+      toolDelta({ index: 0, id: "a", function: { name: "first", arguments: "{}" } }),
+    ]);
+    expect(calls.map((c) => (c as { name: string }).name)).toEqual(["second", "first"]);
+  });
+
+  it("is one call when the id only shows up in a later delta", async () => {
+    const calls = await toolCalls([
+      toolDelta({ index: 0, function: { name: "run", arguments: '{"x"' } }),
+      toolDelta({ index: 0, id: "late", function: { arguments: ":1}" } }),
+    ]);
+    expect(calls).toEqual([{ kind: "toolCall", id: "late", name: "run", args: '{"x":1}' }]);
+  });
+});
+
 describe("normalizeBaseUrl / serverRootUrl", () => {
   it("appends /v1 to a bare server root (the new default shape)", () => {
     expect(normalizeBaseUrl("http://localhost:20128")).toBe("http://localhost:20128/v1");
