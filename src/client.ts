@@ -402,47 +402,62 @@ interface ToolCallSlot {
   args: string;
 }
 
+/** The slot number of a delta: a non-negative integer, or a string of digits
+ * (some servers send `"0"`); anything else is no index. */
+function deltaIndex(index: unknown): number | undefined {
+  if (typeof index === "number") return Number.isInteger(index) ? index : undefined;
+  if (typeof index === "string" && /^\d+$/.test(index)) return Number(index);
+  return undefined;
+}
+
 /** Reassembles incremental tool_calls deltas into complete calls, emitted once
  * their JSON arguments are whole.
  *
- * A fragment belongs to the slot of its `index` when that is an integer, else
- * to the slot of its `id`, else to the most recent slot. Servers do not agree
- * on this: some leave `index` out, some reuse one index for several calls
- * (told apart by `id`) and some repeat the whole name in every delta. */
+ * A fragment belongs to the slot of its `id` when that id was seen before, else
+ * to the slot of its `index`, else to the most recent slot. Servers do not agree
+ * on this: some leave `index` out, some reuse one index for several calls (told
+ * apart by `id`), some stamp a new id on every fragment of one call and some
+ * repeat the whole name in every delta. A different id starts another call only
+ * when the delta names a function, as a new call must; otherwise it continues
+ * the call it lands on, which keeps its first id. */
 class ToolCallAssembler {
   /** Slots in the order they were opened. */
   private slots: ToolCallSlot[] = [];
-  private byKey = new Map<string, ToolCallSlot>();
+  private byIndex = new Map<number, ToolCallSlot>();
+  private byId = new Map<string, ToolCallSlot>();
 
   accept(deltas: StreamToolCallDelta[]): void {
     for (const d of deltas) {
       const id = typeof d.id === "string" ? d.id : "";
-      const key = Number.isInteger(d.index) ? `i:${d.index}` : id ? `d:${id}` : undefined;
+      const index = deltaIndex(d.index);
+      const name = typeof d.function?.name === "string" ? d.function.name : "";
 
-      let slot = key === undefined ? this.slots[this.slots.length - 1] : this.byKey.get(key);
-      // A different id under a key already in use is another call.
-      if (slot && id && slot.id && slot.id !== id) slot = undefined;
+      let slot: ToolCallSlot | undefined = id ? this.byId.get(id) : undefined;
+      if (!slot) {
+        const current = index === undefined ? this.slots[this.slots.length - 1] : this.byIndex.get(index);
+        // Another id on a call that is already named is a new call only if this
+        // delta names one too.
+        slot = current && id && current.id && current.id !== id && name ? undefined : current;
+      }
       if (!slot) {
         slot = { id: "", name: "", args: "" };
         this.slots.push(slot);
+        if (index !== undefined) this.byIndex.set(index, slot);
+      } else if (index !== undefined && !this.byIndex.has(index)) {
+        this.byIndex.set(index, slot);
       }
-      if (key !== undefined) this.byKey.set(key, slot);
-      if (id) {
+      if (id && !slot.id) {
         slot.id = id;
-        this.byKey.set(`d:${id}`, slot);
+        this.byId.set(id, slot);
       }
 
-      const name = d.function?.name;
       if (name) {
-        // Same rule as the server's own bookkeeping: a repeated or growing name
-        // replaces what was collected, a fragment of it is appended.
-        if (name === slot.name) {
-          // already whole
-        } else if (slot.name && name.startsWith(slot.name)) {
-          slot.name = name;
-        } else {
-          slot.name += name;
-        }
+        // Same rule as the server's own bookkeeping: a name that repeats or
+        // extends what was collected replaces it, anything else is appended.
+        // That cannot tell `a` + `ab` (one name, two fragments) from the name
+        // `a` followed by a fragment `ab`; it is the server's reading too, so
+        // leave it alone.
+        slot.name = slot.name && name.startsWith(slot.name) ? name : slot.name + name;
       }
       if (d.function?.arguments) slot.args += d.function.arguments;
     }
@@ -457,7 +472,8 @@ class ToolCallAssembler {
       yield { kind: "toolCall", id, name: call.name, args: call.args || "{}" };
     }
     this.slots = [];
-    this.byKey.clear();
+    this.byIndex.clear();
+    this.byId.clear();
   }
 }
 
