@@ -828,6 +828,8 @@ describe("fetchPersonalUsage: a failed read is told apart from nothing to show",
     ["a 200 page that is not the server's (HTML)", () => new Response("<html>login</html>", { headers: { "content-type": "text/html" } })],
     ["a 200 JSON body that is not an object", () => json([1, 2])],
     ["a 200 JSON object without allowed", () => json({ hello: "world" })],
+    ["a 400 JSON error object without allowed", () => json({ error: { message: "bad request" } }, 400)],
+    ["a 404 JSON object without allowed", () => json({ message: "not found" }, 404)],
   ])("throws on the first call: %s", async (_name, answer) => {
     vi.stubGlobal("fetch", vi.fn().mockResolvedValueOnce(answer()));
     await expect(read()).rejects.toThrow();

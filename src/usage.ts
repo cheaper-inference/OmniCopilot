@@ -311,7 +311,9 @@ async function loadUsage(
       throw new UsageUnsupportedError("server predates ?format=json");
     }
     const parsed: unknown = await res.json();
-    if (!isRecord(parsed) || (res.ok && typeof parsed.allowed !== "boolean")) {
+    // Every answer of the usage command, a refusal included, says `allowed`. A body
+    // without it (an error object, another kind of server) is not that command's answer.
+    if (!isRecord(parsed) || typeof parsed.allowed !== "boolean") {
       throw new UsageReadError("the usage endpoint answered an unexpected body");
     }
     body = parsed as unknown as UsageResponse;
