@@ -87,7 +87,6 @@
   "unlimited": "neomezeno",
   "Could not read the connection status.": "Stav připojení se nepodařilo načíst.",
   "Continue": "Pokračovat",
-  "This workspace's API key will be written to the configuration of {0}, which all your projects share.": "Klíč API tohoto pracovního prostoru bude zapsán do konfigurace nástroje {0}, kterou sdílejí všechny vaše projekty.",
   "Models listed from {1}: {0}.": "Modely vypsané ze serveru {1}: {0}.",
   "API key for this workspace": "Klíč API pro tento pracovní prostor",
   "Free": "Zdarma",
@@ -99,5 +98,7 @@
   "OmniRoute at {0} rejected the API key (HTTP {1}).": "OmniRoute na adrese {0} odmítl klíč API (HTTP {1}).",
   "OmniRoute at {0} needs an API key (HTTP {1}).": "OmniRoute na adrese {0} vyžaduje klíč API (HTTP {1}).",
   "The model's answer was cut off before the tool call was complete. Raise omnicopilot.maxOutputTokens or ask for smaller steps.": "Odpověď modelu byla přerušena dřív, než bylo volání nástroje dokončeno. Zvyšte hodnotu omnicopilot.maxOutputTokens nebo požádejte o menší kroky.",
-  "The model sent a tool call with invalid arguments.": "Model odeslal volání nástroje s neplatnými argumenty."
+  "The model sent a tool call with invalid arguments.": "Model odeslal volání nástroje s neplatnými argumenty.",
+  "The model used its whole output limit before it wrote an answer. Raise omnicopilot.maxOutputTokens or lower the thinking effort.": "Model vyčerpal celý svůj výstupní limit, než napsal odpověď. Zvyšte hodnotu omnicopilot.maxOutputTokens nebo snižte míru uvažování.",
+  "This workspace's API key will be handed to {0}, whose configuration is shared by all your projects.": "Klíč API tohoto pracovního prostoru bude předán nástroji {0}, jehož konfiguraci sdílejí všechny vaše projekty."
 }

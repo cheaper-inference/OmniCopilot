@@ -87,7 +87,6 @@
   "unlimited": "ubegrenset",
   "Could not read the connection status.": "Kunne ikke lese tilkoblingsstatusen.",
   "Continue": "Fortsett",
-  "This workspace's API key will be written to the configuration of {0}, which all your projects share.": "API-nøkkelen for dette arbeidsområdet skrives til konfigurasjonen til {0}, som alle prosjektene dine deler.",
   "Models listed from {1}: {0}.": "Modeller oppført fra {1}: {0}.",
   "API key for this workspace": "API-nøkkel for dette arbeidsområdet",
   "Free": "Gratis",
@@ -99,5 +98,7 @@
   "OmniRoute at {0} rejected the API key (HTTP {1}).": "OmniRoute på {0} avviste API-nøkkelen (HTTP {1}).",
   "OmniRoute at {0} needs an API key (HTTP {1}).": "OmniRoute på {0} krever en API-nøkkel (HTTP {1}).",
   "The model's answer was cut off before the tool call was complete. Raise omnicopilot.maxOutputTokens or ask for smaller steps.": "Modellens svar ble avbrutt før verktøykallet var fullført. Øk omnicopilot.maxOutputTokens eller be om mindre trinn.",
-  "The model sent a tool call with invalid arguments.": "Modellen sendte et verktøykall med ugyldige argumenter."
+  "The model sent a tool call with invalid arguments.": "Modellen sendte et verktøykall med ugyldige argumenter.",
+  "The model used its whole output limit before it wrote an answer. Raise omnicopilot.maxOutputTokens or lower the thinking effort.": "Modellen brukte hele utdatagrensen sin før den skrev et svar. Øk omnicopilot.maxOutputTokens eller senk tenkeinnsatsen.",
+  "This workspace's API key will be handed to {0}, whose configuration is shared by all your projects.": "API-nøkkelen for dette arbeidsområdet gis til {0}, hvis konfigurasjon deles av alle prosjektene dine."
 }

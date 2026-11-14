@@ -87,7 +87,6 @@
   "unlimited": "無制限",
   "Could not read the connection status.": "接続状態を読み取れませんでした。",
   "Continue": "続行",
-  "This workspace's API key will be written to the configuration of {0}, which all your projects share.": "このワークスペースのAPIキーは、すべてのプロジェクトで共有される {0} の構成に書き込まれます。",
   "Models listed from {1}: {0}.": "{1} から取得したモデル: {0}個。",
   "API key for this workspace": "このワークスペース用のAPIキー",
   "Free": "無料",
@@ -99,5 +98,7 @@
   "OmniRoute at {0} rejected the API key (HTTP {1}).": "{0} のOmniRouteがAPIキーを拒否しました（HTTP {1}）。",
   "OmniRoute at {0} needs an API key (HTTP {1}).": "{0} のOmniRouteにはAPIキーが必要です（HTTP {1}）。",
   "The model's answer was cut off before the tool call was complete. Raise omnicopilot.maxOutputTokens or ask for smaller steps.": "モデルの応答がツール呼び出しの完了前に途切れました。omnicopilot.maxOutputTokensを引き上げるか、より小さなステップで依頼してください。",
-  "The model sent a tool call with invalid arguments.": "モデルが無効な引数を含むツール呼び出しを送信しました。"
+  "The model sent a tool call with invalid arguments.": "モデルが無効な引数を含むツール呼び出しを送信しました。",
+  "The model used its whole output limit before it wrote an answer. Raise omnicopilot.maxOutputTokens or lower the thinking effort.": "モデルは回答を書く前に出力上限をすべて使い切りました。omnicopilot.maxOutputTokensを引き上げるか、思考強度を下げてください。",
+  "This workspace's API key will be handed to {0}, whose configuration is shared by all your projects.": "このワークスペースのAPIキーは、構成がすべてのプロジェクトで共有される {0} に渡されます。"
 }

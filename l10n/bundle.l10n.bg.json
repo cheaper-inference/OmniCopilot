@@ -87,7 +87,6 @@
   "unlimited": "неограничено",
   "Could not read the connection status.": "Състоянието на връзката не можа да бъде прочетено.",
   "Continue": "Продължаване",
-  "This workspace's API key will be written to the configuration of {0}, which all your projects share.": "API ключът на тази работна област ще бъде записан в конфигурацията на {0}, която се споделя от всички ваши проекти.",
   "Models listed from {1}: {0}.": "Изброени модели от сървър {1}: {0}.",
   "API key for this workspace": "API ключ за тази работна област",
   "Free": "Безплатно",
@@ -99,5 +98,7 @@
   "OmniRoute at {0} rejected the API key (HTTP {1}).": "OmniRoute на {0} отхвърли API ключа (HTTP {1}).",
   "OmniRoute at {0} needs an API key (HTTP {1}).": "OmniRoute на {0} изисква API ключ (HTTP {1}).",
   "The model's answer was cut off before the tool call was complete. Raise omnicopilot.maxOutputTokens or ask for smaller steps.": "Отговорът на модела беше прекъснат, преди извикването на инструмента да приключи. Увеличете omnicopilot.maxOutputTokens или поискайте по-малки стъпки.",
-  "The model sent a tool call with invalid arguments.": "Моделът изпрати извикване на инструмент с невалидни аргументи."
+  "The model sent a tool call with invalid arguments.": "Моделът изпрати извикване на инструмент с невалидни аргументи.",
+  "The model used its whole output limit before it wrote an answer. Raise omnicopilot.maxOutputTokens or lower the thinking effort.": "Моделът изразходва целия си лимит на изход, преди да напише отговор. Увеличете omnicopilot.maxOutputTokens или намалете нивото на разсъждение.",
+  "This workspace's API key will be handed to {0}, whose configuration is shared by all your projects.": "API ключът на тази работна област ще бъде предоставен на {0}, чиято конфигурация се споделя от всички ваши проекти."
 }

@@ -87,7 +87,6 @@
   "unlimited": "tanpa had",
   "Could not read the connection status.": "Tidak dapat membaca status sambungan.",
   "Continue": "Teruskan",
-  "This workspace's API key will be written to the configuration of {0}, which all your projects share.": "Kunci API ruang kerja ini akan ditulis ke konfigurasi {0}, yang dikongsi oleh semua projek anda.",
   "Models listed from {1}: {0}.": "{0} model disenaraikan daripada {1}.",
   "API key for this workspace": "Kunci API untuk ruang kerja ini",
   "Free": "Percuma",
@@ -99,5 +98,7 @@
   "OmniRoute at {0} rejected the API key (HTTP {1}).": "OmniRoute di {0} menolak kunci API (HTTP {1}).",
   "OmniRoute at {0} needs an API key (HTTP {1}).": "OmniRoute di {0} memerlukan kunci API (HTTP {1}).",
   "The model's answer was cut off before the tool call was complete. Raise omnicopilot.maxOutputTokens or ask for smaller steps.": "Jawapan model terpotong sebelum panggilan alat selesai. Tingkatkan omnicopilot.maxOutputTokens atau minta langkah yang lebih kecil.",
-  "The model sent a tool call with invalid arguments.": "Model menghantar panggilan alat dengan argumen yang tidak sah."
+  "The model sent a tool call with invalid arguments.": "Model menghantar panggilan alat dengan argumen yang tidak sah.",
+  "The model used its whole output limit before it wrote an answer. Raise omnicopilot.maxOutputTokens or lower the thinking effort.": "Model telah menggunakan keseluruhan had outputnya sebelum menulis jawapan. Tingkatkan omnicopilot.maxOutputTokens atau turunkan usaha berfikir.",
+  "This workspace's API key will be handed to {0}, whose configuration is shared by all your projects.": "Kunci API ruang kerja ini akan diberikan kepada {0}, yang konfigurasinya dikongsi oleh semua projek anda."
 }

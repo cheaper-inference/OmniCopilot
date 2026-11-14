@@ -87,7 +87,6 @@
   "unlimited": "bez limitu",
   "Could not read the connection status.": "Nie udało się odczytać stanu połączenia.",
   "Continue": "Kontynuuj",
-  "This workspace's API key will be written to the configuration of {0}, which all your projects share.": "Klucz API tego obszaru roboczego zostanie zapisany w konfiguracji narzędzia {0}, współdzielonej przez wszystkie Twoje projekty.",
   "Models listed from {1}: {0}.": "Modele pobrane z serwera {1}: {0}.",
   "API key for this workspace": "Klucz API dla tego obszaru roboczego",
   "Free": "Za darmo",
@@ -99,5 +98,7 @@
   "OmniRoute at {0} rejected the API key (HTTP {1}).": "OmniRoute pod adresem {0} odrzucił klucz API (HTTP {1}).",
   "OmniRoute at {0} needs an API key (HTTP {1}).": "OmniRoute pod adresem {0} wymaga klucza API (HTTP {1}).",
   "The model's answer was cut off before the tool call was complete. Raise omnicopilot.maxOutputTokens or ask for smaller steps.": "Odpowiedź modelu została ucięta, zanim wywołanie narzędzia zostało ukończone. Zwiększ wartość omnicopilot.maxOutputTokens lub poproś o mniejsze kroki.",
-  "The model sent a tool call with invalid arguments.": "Model wysłał wywołanie narzędzia z nieprawidłowymi argumentami."
+  "The model sent a tool call with invalid arguments.": "Model wysłał wywołanie narzędzia z nieprawidłowymi argumentami.",
+  "The model used its whole output limit before it wrote an answer. Raise omnicopilot.maxOutputTokens or lower the thinking effort.": "Model wykorzystał cały swój limit danych wyjściowych, zanim napisał odpowiedź. Zwiększ wartość omnicopilot.maxOutputTokens lub obniż poziom rozumowania.",
+  "This workspace's API key will be handed to {0}, whose configuration is shared by all your projects.": "Klucz API tego obszaru roboczego zostanie przekazany narzędziu {0}, którego konfiguracja jest współdzielona przez wszystkie Twoje projekty."
 }

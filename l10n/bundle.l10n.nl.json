@@ -87,7 +87,6 @@
   "unlimited": "onbeperkt",
   "Could not read the connection status.": "De verbindingsstatus kon niet worden gelezen.",
   "Continue": "Doorgaan",
-  "This workspace's API key will be written to the configuration of {0}, which all your projects share.": "De API-sleutel van deze werkruimte wordt weggeschreven naar de configuratie van {0}, die al uw projecten delen.",
   "Models listed from {1}: {0}.": "Modellen weergegeven van {1}: {0}.",
   "API key for this workspace": "API-sleutel voor deze werkruimte",
   "Free": "Gratis",
@@ -99,5 +98,7 @@
   "OmniRoute at {0} rejected the API key (HTTP {1}).": "OmniRoute op {0} heeft de API-sleutel geweigerd (HTTP {1}).",
   "OmniRoute at {0} needs an API key (HTTP {1}).": "OmniRoute op {0} heeft een API-sleutel nodig (HTTP {1}).",
   "The model's answer was cut off before the tool call was complete. Raise omnicopilot.maxOutputTokens or ask for smaller steps.": "Het antwoord van het model werd afgekapt voordat de aanroep van het hulpprogramma voltooid was. Verhoog omnicopilot.maxOutputTokens of vraag om kleinere stappen.",
-  "The model sent a tool call with invalid arguments.": "Het model heeft een aanroep van een hulpprogramma met ongeldige argumenten verzonden."
+  "The model sent a tool call with invalid arguments.": "Het model heeft een aanroep van een hulpprogramma met ongeldige argumenten verzonden.",
+  "The model used its whole output limit before it wrote an answer. Raise omnicopilot.maxOutputTokens or lower the thinking effort.": "Het model heeft zijn volledige uitvoerlimiet gebruikt voordat het een antwoord schreef. Verhoog omnicopilot.maxOutputTokens of verlaag de denkinspanning.",
+  "This workspace's API key will be handed to {0}, whose configuration is shared by all your projects.": "De API-sleutel van deze werkruimte wordt doorgegeven aan {0}, waarvan de configuratie door al uw projecten wordt gedeeld."
 }

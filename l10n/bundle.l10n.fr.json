@@ -87,7 +87,6 @@
   "unlimited": "illimité",
   "Could not read the connection status.": "Impossible de lire l'état de la connexion.",
   "Continue": "Continuer",
-  "This workspace's API key will be written to the configuration of {0}, which all your projects share.": "La clé API de cet espace de travail sera écrite dans la configuration de {0}, que tous vos projets partagent.",
   "Models listed from {1}: {0}.": "Modèles listés depuis {1} : {0}.",
   "API key for this workspace": "Clé API pour cet espace de travail",
   "Free": "Gratuit",
@@ -99,5 +98,7 @@
   "OmniRoute at {0} rejected the API key (HTTP {1}).": "OmniRoute sur {0} a rejeté la clé API (HTTP {1}).",
   "OmniRoute at {0} needs an API key (HTTP {1}).": "OmniRoute sur {0} nécessite une clé API (HTTP {1}).",
   "The model's answer was cut off before the tool call was complete. Raise omnicopilot.maxOutputTokens or ask for smaller steps.": "La réponse du modèle a été coupée avant la fin de l'appel d'outil. Augmentez omnicopilot.maxOutputTokens ou demandez des étapes plus petites.",
-  "The model sent a tool call with invalid arguments.": "Le modèle a envoyé un appel d'outil avec des arguments non valides."
+  "The model sent a tool call with invalid arguments.": "Le modèle a envoyé un appel d'outil avec des arguments non valides.",
+  "The model used its whole output limit before it wrote an answer. Raise omnicopilot.maxOutputTokens or lower the thinking effort.": "Le modèle a utilisé toute sa limite de sortie avant d'écrire une réponse. Augmentez omnicopilot.maxOutputTokens ou réduisez l'effort de réflexion.",
+  "This workspace's API key will be handed to {0}, whose configuration is shared by all your projects.": "La clé API de cet espace de travail sera transmise à {0}, dont la configuration est partagée par tous vos projets."
 }

@@ -87,7 +87,6 @@
   "unlimited": "không giới hạn",
   "Could not read the connection status.": "Không thể đọc trạng thái kết nối.",
   "Continue": "Tiếp tục",
-  "This workspace's API key will be written to the configuration of {0}, which all your projects share.": "Khóa API của không gian làm việc này sẽ được ghi vào cấu hình của {0}, được dùng chung cho mọi dự án của bạn.",
   "Models listed from {1}: {0}.": "Đã tải {0} mô hình từ {1}.",
   "API key for this workspace": "Khóa API cho không gian làm việc này",
   "Free": "Miễn phí",
@@ -99,5 +98,7 @@
   "OmniRoute at {0} rejected the API key (HTTP {1}).": "OmniRoute tại {0} đã từ chối khóa API (HTTP {1}).",
   "OmniRoute at {0} needs an API key (HTTP {1}).": "OmniRoute tại {0} cần khóa API (HTTP {1}).",
   "The model's answer was cut off before the tool call was complete. Raise omnicopilot.maxOutputTokens or ask for smaller steps.": "Câu trả lời của mô hình bị cắt trước khi lệnh gọi công cụ hoàn tất. Hãy tăng omnicopilot.maxOutputTokens hoặc yêu cầu từng bước nhỏ hơn.",
-  "The model sent a tool call with invalid arguments.": "Mô hình đã gửi một lệnh gọi công cụ có đối số không hợp lệ."
+  "The model sent a tool call with invalid arguments.": "Mô hình đã gửi một lệnh gọi công cụ có đối số không hợp lệ.",
+  "The model used its whole output limit before it wrote an answer. Raise omnicopilot.maxOutputTokens or lower the thinking effort.": "Mô hình đã dùng hết giới hạn đầu ra trước khi viết câu trả lời. Hãy tăng omnicopilot.maxOutputTokens hoặc giảm mức độ tư duy.",
+  "This workspace's API key will be handed to {0}, whose configuration is shared by all your projects.": "Khóa API của không gian làm việc này sẽ được chuyển cho {0}, có cấu hình được dùng chung cho mọi dự án của bạn."
 }

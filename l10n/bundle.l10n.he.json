@@ -87,7 +87,6 @@
   "unlimited": "ללא הגבלה",
   "Could not read the connection status.": "לא ניתן לקרוא את מצב החיבור.",
   "Continue": "המשך",
-  "This workspace's API key will be written to the configuration of {0}, which all your projects share.": "מפתח ה-API של סביבת העבודה הזו ייכתב להגדרות של הכלי {0}, המשותפות לכל הפרויקטים שלכם.",
   "Models listed from {1}: {0}.": "המודלים שהוצגו מהשרת {1}: {0}.",
   "API key for this workspace": "מפתח API לסביבת העבודה הזו",
   "Free": "חינם",
@@ -99,5 +98,7 @@
   "OmniRoute at {0} rejected the API key (HTTP {1}).": "שרת OmniRoute בכתובת {0} דחה את מפתח ה-API (HTTP {1}).",
   "OmniRoute at {0} needs an API key (HTTP {1}).": "שרת OmniRoute בכתובת {0} דורש מפתח API (HTTP {1}).",
   "The model's answer was cut off before the tool call was complete. Raise omnicopilot.maxOutputTokens or ask for smaller steps.": "תשובת המודל נקטעה לפני שקריאת הכלי הושלמה. הגדילו את ערך ההגדרה omnicopilot.maxOutputTokens או בקשו צעדים קטנים יותר.",
-  "The model sent a tool call with invalid arguments.": "המודל שלח קריאת כלי עם ארגומנטים לא תקינים."
+  "The model sent a tool call with invalid arguments.": "המודל שלח קריאת כלי עם ארגומנטים לא תקינים.",
+  "The model used its whole output limit before it wrote an answer. Raise omnicopilot.maxOutputTokens or lower the thinking effort.": "המודל ניצל את כל מגבלת הפלט שלו לפני שכתב תשובה. הגדילו את ערך ההגדרה omnicopilot.maxOutputTokens או הפחיתו את מאמץ החשיבה.",
+  "This workspace's API key will be handed to {0}, whose configuration is shared by all your projects.": "מפתח ה-API של סביבת העבודה הזו יימסר לכלי {0}, שההגדרות שלו משותפות לכל הפרויקטים שלכם."
 }

@@ -87,7 +87,6 @@
   "unlimited": "rajoittamaton",
   "Could not read the connection status.": "Yhteyden tilaa ei voitu lukea.",
   "Continue": "Jatka",
-  "This workspace's API key will be written to the configuration of {0}, which all your projects share.": "Tämän työtilan API-avain kirjoitetaan työkalun {0} konfiguraatioon, jonka kaikki projektisi jakavat.",
   "Models listed from {1}: {0}.": "Mallit listattu osoitteesta {1}: {0}.",
   "API key for this workspace": "Tämän työtilan API-avain",
   "Free": "Ilmainen",
@@ -99,5 +98,7 @@
   "OmniRoute at {0} rejected the API key (HTTP {1}).": "OmniRoute osoitteessa {0} hylkäsi API-avaimen (HTTP {1}).",
   "OmniRoute at {0} needs an API key (HTTP {1}).": "OmniRoute osoitteessa {0} vaatii API-avaimen (HTTP {1}).",
   "The model's answer was cut off before the tool call was complete. Raise omnicopilot.maxOutputTokens or ask for smaller steps.": "Mallin vastaus katkesi ennen kuin työkalukutsu oli valmis. Nosta asetusta omnicopilot.maxOutputTokens tai pyydä pienempiä vaiheita.",
-  "The model sent a tool call with invalid arguments.": "Malli lähetti työkalukutsun, jonka argumentit ovat virheellisiä."
+  "The model sent a tool call with invalid arguments.": "Malli lähetti työkalukutsun, jonka argumentit ovat virheellisiä.",
+  "The model used its whole output limit before it wrote an answer. Raise omnicopilot.maxOutputTokens or lower the thinking effort.": "Malli käytti koko tulostekiintiönsä ennen kuin kirjoitti vastauksen. Nosta asetusta omnicopilot.maxOutputTokens tai laske ajattelun tasoa.",
+  "This workspace's API key will be handed to {0}, whose configuration is shared by all your projects.": "Tämän työtilan API-avain annetaan työkalulle {0}, jonka konfiguraation kaikki projektisi jakavat."
 }

@@ -87,7 +87,6 @@
   "unlimited": "무제한",
   "Could not read the connection status.": "연결 상태를 읽을 수 없습니다.",
   "Continue": "계속",
-  "This workspace's API key will be written to the configuration of {0}, which all your projects share.": "이 작업 영역의 API 키가 모든 프로젝트에서 공유하는 {0}의 구성에 기록됩니다.",
   "Models listed from {1}: {0}.": "{1}에서 불러온 모델: {0}개.",
   "API key for this workspace": "이 작업 영역의 API 키",
   "Free": "무료",
@@ -99,5 +98,7 @@
   "OmniRoute at {0} rejected the API key (HTTP {1}).": "{0}의 OmniRoute가 API 키를 거부했습니다(HTTP {1}).",
   "OmniRoute at {0} needs an API key (HTTP {1}).": "{0}의 OmniRoute에 API 키가 필요합니다(HTTP {1}).",
   "The model's answer was cut off before the tool call was complete. Raise omnicopilot.maxOutputTokens or ask for smaller steps.": "모델의 응답이 도구 호출이 완료되기 전에 끊겼습니다. omnicopilot.maxOutputTokens 값을 높이거나 더 작은 단계로 요청하세요.",
-  "The model sent a tool call with invalid arguments.": "모델이 잘못된 인수가 담긴 도구 호출을 보냈습니다."
+  "The model sent a tool call with invalid arguments.": "모델이 잘못된 인수가 담긴 도구 호출을 보냈습니다.",
+  "The model used its whole output limit before it wrote an answer. Raise omnicopilot.maxOutputTokens or lower the thinking effort.": "모델이 답변을 작성하기 전에 출력 한도를 모두 사용했습니다. omnicopilot.maxOutputTokens 값을 높이거나 사고 강도를 낮추세요.",
+  "This workspace's API key will be handed to {0}, whose configuration is shared by all your projects.": "이 작업 영역의 API 키가 모든 프로젝트에서 구성을 공유하는 {0}에 전달됩니다."
 }

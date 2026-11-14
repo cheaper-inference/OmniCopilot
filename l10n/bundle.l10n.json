@@ -87,7 +87,6 @@
   "{0} left": "{0} left",
   "unlimited": "unlimited",
   "Continue": "Continue",
-  "This workspace's API key will be written to the configuration of {0}, which all your projects share.": "This workspace's API key will be written to the configuration of {0}, which all your projects share.",
   "Models listed from {1}: {0}.": "Models listed from {1}: {0}.",
   "API key for this workspace": "API key for this workspace",
   "Free": "Free",
@@ -99,5 +98,7 @@
   "OmniRoute at {0} rejected the API key (HTTP {1}).": "OmniRoute at {0} rejected the API key (HTTP {1}).",
   "OmniRoute at {0} needs an API key (HTTP {1}).": "OmniRoute at {0} needs an API key (HTTP {1}).",
   "The model's answer was cut off before the tool call was complete. Raise omnicopilot.maxOutputTokens or ask for smaller steps.": "The model's answer was cut off before the tool call was complete. Raise omnicopilot.maxOutputTokens or ask for smaller steps.",
-  "The model sent a tool call with invalid arguments.": "The model sent a tool call with invalid arguments."
+  "The model sent a tool call with invalid arguments.": "The model sent a tool call with invalid arguments.",
+  "This workspace's API key will be handed to {0}, whose configuration is shared by all your projects.": "This workspace's API key will be handed to {0}, whose configuration is shared by all your projects.",
+  "The model used its whole output limit before it wrote an answer. Raise omnicopilot.maxOutputTokens or lower the thinking effort.": "The model used its whole output limit before it wrote an answer. Raise omnicopilot.maxOutputTokens or lower the thinking effort."
 }
