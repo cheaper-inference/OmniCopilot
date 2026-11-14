@@ -1,9 +1,11 @@
-import { describe, expect, it } from "vitest";
+import { afterEach, describe, expect, it, vi } from "vitest";
 import {
   buildUsagePayload,
+  fetchUsage,
   formatResetIn,
   formatUsd,
   percentLeft,
+  personalFromSelfStatus,
   quotaRemainingPercent,
   resetLabel,
   toUsageView,
@@ -428,7 +430,19 @@ describe("personal limit text", () => {
     const view = toUsageView({ allowed: true, personal, provider: null });
     if (view.kind !== "ready") throw new Error("expected a ready view");
     expect(view.personal?.dailyText).toBe("$1.20 / $5.00 (76% left)");
-    expect(view.personal?.weeklyText).toBe("$3.00 / —");
+    // A window with spend and no limit reads as the spend alone.
+    expect(view.personal?.weeklyText).toBe("$3.00");
+  });
+
+  it("leaves the text empty for a window with neither a limit nor any spend", () => {
+    const view = toUsageView({
+      allowed: true,
+      personal: { ...personal, dailyLimitUsd: null, dailySpentUsd: 0 },
+      provider: null,
+    });
+    if (view.kind !== "ready") throw new Error("expected a ready view");
+    expect(view.personal?.dailyText).toBe("");
+    expect(view.personal?.dailyPercentLeft).toBeNull();
   });
 });
 
@@ -449,5 +463,259 @@ describe("malformed quota windows", () => {
     if (view.kind !== "ready") throw new Error("expected a ready view");
     expect(Object.keys(view.providers[0]?.quotas ?? {})).toEqual(["session"]);
     expect(view.providers[0]?.quotas?.session?.text).toBe("62% left");
+  });
+});
+
+// Bodies of GET /v1/me/status, shaped as the server builds them
+// (OmniRoute src/lib/usage/apiKeySelfService.ts, buildApiKeySelfServiceStatus).
+// The limit entry is the one in tests/unit/api-key-self-service-limits.test.ts.
+const dailyEntry = {
+  id: "usage_limit:daily",
+  source: "usage_limit",
+  metric: "usd",
+  window: "daily",
+  scope: { type: "global", value: null },
+  limit: 10,
+  used: 12,
+  remaining: 0,
+  utilization: 1,
+  exceeded: true,
+  periodStartAt: "2026-05-27T03:00:00.000Z",
+  resetAt: "2026-05-28T03:00:00.000Z",
+};
+const weeklyEntry = {
+  ...dailyEntry,
+  id: "usage_limit:weekly",
+  window: "weekly",
+  limit: 50,
+  used: 5,
+  remaining: 45,
+  utilization: 0.1,
+  exceeded: false,
+  periodStartAt: "2026-05-25T03:00:00.000Z",
+  resetAt: "2026-06-01T03:00:00.000Z",
+};
+const tokens = { input: 0, output: 0, cacheRead: 0, cacheCreation: 0, reasoning: 0, total: 0 };
+const usageWindows = {
+  cost: { periodStartAt: null },
+  tokens: { periodStartAt: null, ...tokens },
+  daily: {
+    periodStartAt: "2026-05-27T03:00:00.000Z",
+    resetAt: "2026-05-28T03:00:00.000Z",
+    costUsd: 1.2,
+    requests: 4,
+    tokens,
+  },
+  weekly: {
+    periodStartAt: "2026-05-25T03:00:00.000Z",
+    resetAt: "2026-06-01T03:00:00.000Z",
+    costUsd: 3.4,
+    requests: 9,
+    tokens,
+  },
+};
+const selfStatus = (over: Record<string, unknown> = {}) => ({
+  apiKey: { id: "key-1", name: "laptop" },
+  generatedAt: "2026-05-27T12:00:00.000Z",
+  usage: usageWindows,
+  limits: [dailyEntry, weeklyEntry],
+  ...over,
+});
+
+describe("personalFromSelfStatus", () => {
+  it("reads both limits from the usage_limit entries", () => {
+    expect(personalFromSelfStatus(selfStatus())).toEqual({
+      enabled: true,
+      dailyLimitUsd: 10,
+      dailySpentUsd: 12,
+      dailyResetAtIso: "2026-05-28T03:00:00.000Z",
+      dailyExceeded: true,
+      weeklyLimitUsd: 50,
+      weeklySpentUsd: 5,
+      weeklyResetAtIso: "2026-06-01T03:00:00.000Z",
+      weeklyExceeded: false,
+    });
+  });
+
+  it("takes the other window from the usage totals when only one has a limit", () => {
+    expect(personalFromSelfStatus(selfStatus({ limits: [dailyEntry] }))).toEqual({
+      enabled: true,
+      dailyLimitUsd: 10,
+      dailySpentUsd: 12,
+      dailyResetAtIso: "2026-05-28T03:00:00.000Z",
+      dailyExceeded: true,
+      weeklyLimitUsd: null,
+      weeklySpentUsd: 3.4,
+      weeklyResetAtIso: "2026-06-01T03:00:00.000Z",
+      weeklyExceeded: false,
+    });
+  });
+
+  it("reports the spend alone when there are no limits", () => {
+    expect(personalFromSelfStatus(selfStatus({ limits: [] }))).toEqual({
+      enabled: false,
+      dailyLimitUsd: null,
+      dailySpentUsd: 1.2,
+      dailyResetAtIso: "2026-05-28T03:00:00.000Z",
+      dailyExceeded: false,
+      weeklyLimitUsd: null,
+      weeklySpentUsd: 3.4,
+      weeklyResetAtIso: "2026-06-01T03:00:00.000Z",
+      weeklyExceeded: false,
+    });
+  });
+
+  it("ignores limit entries that are not the two usage limits", () => {
+    const budget = { ...dailyEntry, id: "budget:monthly", source: "budget", window: "monthly" };
+    const personal = personalFromSelfStatus(selfStatus({ limits: [budget] }));
+    expect(personal?.dailyLimitUsd).toBeNull();
+    expect(personal?.dailySpentUsd).toBe(1.2);
+  });
+
+  it("counts a number only when it is finite and not negative", () => {
+    const broken = { ...dailyEntry, limit: -1, used: Number.NaN, resetAt: 5 };
+    const personal = personalFromSelfStatus(
+      selfStatus({ limits: [broken], usage: { ...usageWindows, weekly: { costUsd: "3" } } })
+    );
+    // The broken entry is treated as absent: the daily window falls back to its totals.
+    expect(personal?.dailyLimitUsd).toBeNull();
+    expect(personal?.dailySpentUsd).toBe(1.2);
+    expect(personal?.dailyResetAtIso).toBe("2026-05-28T03:00:00.000Z");
+    expect(personal?.weeklySpentUsd).toBe(0);
+    expect(personal?.weeklyResetAtIso).toBeNull();
+  });
+
+  it("is null when the body has neither limits nor usage, or is not an object", () => {
+    expect(personalFromSelfStatus({})).toBeNull();
+    expect(personalFromSelfStatus({ limits: [], usage: {} })).toBeNull();
+    expect(personalFromSelfStatus(selfStatus({ limits: "none", usage: null }))).toBeNull();
+    expect(personalFromSelfStatus(null)).toBeNull();
+    expect(personalFromSelfStatus("nope")).toBeNull();
+    expect(personalFromSelfStatus([dailyEntry])).toBeNull();
+  });
+});
+
+describe("fetchUsage fallback to the key's own status", () => {
+  const json = (body: unknown, status = 200) =>
+    new Response(JSON.stringify(body), {
+      status,
+      headers: { "content-type": "application/json" },
+    });
+  const refusal = { allowed: false, error: { message: "Usage command is not enabled" } };
+  const urls = (fetchMock: ReturnType<typeof vi.fn>) =>
+    fetchMock.mock.calls.map((call) => String(call[0]));
+
+  afterEach(() => vi.unstubAllGlobals());
+
+  it("shows the key's own numbers when om-usage refuses and /v1/me/status answers 200", async () => {
+    const fetchMock = vi
+      .fn()
+      .mockResolvedValueOnce(json(refusal))
+      .mockResolvedValueOnce(json(selfStatus()));
+    vi.stubGlobal("fetch", fetchMock);
+
+    const view = await fetchUsage("http://gateway.test/v1", "sk-test");
+
+    expect(urls(fetchMock)).toEqual([
+      "http://gateway.test/api/usage/om-usage?format=json",
+      "http://gateway.test/v1/me/status",
+    ]);
+    expect(fetchMock.mock.calls[1]?.[1]?.headers).toEqual({ Authorization: "Bearer sk-test" });
+    if (view.kind !== "ready") throw new Error(`expected ready, got ${view.kind}`);
+    expect(view.providers).toEqual([]);
+    expect(view.personal?.dailyText).toBe("$12.00 / $10.00 (0% left)");
+    expect(view.personal?.dailyPercentLeft).toBe(0);
+    expect(view.personal?.weeklyText).toBe("$5.00 / $50.00 (90% left)");
+  });
+
+  it("shows a window that has spend and no limit as the spend alone", async () => {
+    vi.stubGlobal(
+      "fetch",
+      vi
+        .fn()
+        .mockResolvedValueOnce(json(refusal))
+        .mockResolvedValueOnce(json(selfStatus({ limits: [] })))
+    );
+    const view = await fetchUsage("http://gateway.test", "sk-test");
+    if (view.kind !== "ready") throw new Error(`expected ready, got ${view.kind}`);
+    expect(view.personal?.dailyText).toBe("$1.20");
+    expect(view.personal?.dailyPercentLeft).toBeNull();
+    expect(view.personal?.weeklyText).toBe("$3.40");
+  });
+
+  it.each([401, 403, 404, 500])("keeps the not-enabled state on a %i", async (status) => {
+    vi.stubGlobal(
+      "fetch",
+      vi
+        .fn()
+        .mockResolvedValueOnce(json(refusal))
+        .mockResolvedValueOnce(json({ error: "no" }, status))
+    );
+    expect(await fetchUsage("http://gateway.test", "sk-test")).toEqual({
+      kind: "disabled",
+      message: "Usage command is not enabled",
+    });
+  });
+
+  it.each([
+    ["a body that is not an object", "[1, 2]"],
+    ["a body that is not JSON", "<html>"],
+    ["an object without limits or usage", "{}"],
+  ])("keeps the not-enabled state for %s", async (_name, raw) => {
+    vi.stubGlobal(
+      "fetch",
+      vi
+        .fn()
+        .mockResolvedValueOnce(json(refusal))
+        .mockResolvedValueOnce(new Response(raw, { status: 200 }))
+    );
+    const view = await fetchUsage("http://gateway.test", "sk-test");
+    expect(view.kind).toBe("disabled");
+  });
+
+  it("keeps the not-enabled state, without throwing, when the second call fails", async () => {
+    vi.stubGlobal(
+      "fetch",
+      vi
+        .fn()
+        .mockResolvedValueOnce(json(refusal))
+        .mockRejectedValueOnce(new TypeError("fetch failed"))
+    );
+    expect((await fetchUsage("http://gateway.test", "sk-test")).kind).toBe("disabled");
+  });
+
+  it("gives the second call the same time limit", async () => {
+    vi.stubGlobal(
+      "fetch",
+      vi
+        .fn()
+        .mockResolvedValueOnce(json(refusal))
+        .mockImplementationOnce(
+          (_url: string, init: RequestInit) =>
+            new Promise((_resolve, reject) => {
+              init.signal?.addEventListener("abort", () => reject(new Error("aborted")));
+            })
+        )
+    );
+    expect((await fetchUsage("http://gateway.test", "sk-test", undefined, 20)).kind).toBe(
+      "disabled"
+    );
+  });
+
+  it("does not call /v1/me/status when om-usage allows the key", async () => {
+    const fetchMock = vi
+      .fn()
+      .mockResolvedValueOnce(json({ allowed: true, personal: null, provider: null }));
+    vi.stubGlobal("fetch", fetchMock);
+    const view = await fetchUsage("http://gateway.test", "sk-test");
+    expect(view.kind).toBe("ready");
+    expect(fetchMock).toHaveBeenCalledTimes(1);
+  });
+
+  it("does not call /v1/me/status without a stored key", async () => {
+    const fetchMock = vi.fn().mockResolvedValueOnce(json(refusal));
+    vi.stubGlobal("fetch", fetchMock);
+    expect((await fetchUsage("http://gateway.test", undefined)).kind).toBe("disabled");
+    expect(fetchMock).toHaveBeenCalledTimes(1);
   });
 });
