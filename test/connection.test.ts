@@ -1140,3 +1140,97 @@ describe("saveKeyFromPanel", () => {
     expect(context.workspaceMap.size).toBe(0);
   });
 });
+
+describe("the withheld-key warning is announced per scope and origin", () => {
+  const A = "https://a.example";
+  const B = "https://b.example";
+  const WS = "file:///work/acme";
+  afterEach(() => {
+    vi.restoreAllMocks();
+    setMockWorkspace();
+  });
+
+  /** A global and a workspace key, both approved for A only; the URL moved to B. */
+  async function bothWithheldAtB() {
+    setMockConfig({ baseUrl: A });
+    setMockWorkspace({ folders: [WS] });
+    const context = fakeContext();
+    await storeApiKey(context, "sk-global");
+    await storeApiKey(context, "sk-ws", undefined, "workspace");
+    setMockConfig({ baseUrl: B });
+    return context;
+  }
+
+  it.each([
+    ["the global key first, then the workspace key", false],
+    ["the workspace key first, then the global key", true],
+  ])("announces %s for the same origin, and each once", async (_name, workspaceFirst) => {
+    const context = await bothWithheldAtB();
+    const warn = vi.spyOn(vscode.window, "showWarningMessage");
+    const warned = new Set<string>();
+    const useWorkspace = (on: boolean) => void context.workspaceState.update(STATE_USE_WORKSPACE_KEY, on);
+
+    useWorkspace(workspaceFirst);
+    await warnIfKeyWithheld(context, warned, async () => undefined);
+    await warnIfKeyWithheld(context, warned, async () => undefined);
+    expect(warn).toHaveBeenCalledTimes(1);
+
+    useWorkspace(!workspaceFirst);
+    await warnIfKeyWithheld(context, warned, async () => undefined);
+    await warnIfKeyWithheld(context, warned, async () => undefined);
+    expect(warn).toHaveBeenCalledTimes(2);
+  });
+
+  it("announces the same scope and origin once", async () => {
+    const context = await bothWithheldAtB();
+    const warn = vi.spyOn(vscode.window, "showWarningMessage");
+    const warned = new Set<string>();
+    for (let i = 0; i < 3; i++) await warnIfKeyWithheld(context, warned, async () => undefined);
+    expect(warn).toHaveBeenCalledTimes(1);
+  });
+});
+
+describe("a key is never paired with a list read at another moment", () => {
+  const A = "https://a.example";
+  const B = "https://b.example";
+  afterEach(() => vi.restoreAllMocks());
+
+  /** The old key (approved for A) is read; then a Save of a new key for B completes
+   * during the `nth` read of the key secret. */
+  async function resolveDuringSave(nth: number) {
+    setMockConfig({ baseUrl: A });
+    const context = fakeContext();
+    await storeApiKey(context, "sk-old");
+    setMockConfig({ baseUrl: B });
+
+    const get = context.secrets.get.bind(context.secrets);
+    let keyReads = 0;
+    let saving = false;
+    context.secrets.get = async (name: string) => {
+      const value = await get(name);
+      if (name === SECRET_API_KEY && ++keyReads === nth && !saving) {
+        saving = true;
+        await storeApiKey(context, "sk-new"); // approves B for sk-new only
+      }
+      return value;
+    };
+    return resolveConnection(context);
+  }
+
+  it.each([[1], [2]])("does not send the old key to the new origin when a Save lands during key read %i", async (nth) => {
+    const connection = await resolveDuringSave(nth);
+    expect(connection.apiKey).not.toBe("sk-old");
+  });
+
+  it("withholds the key for this call when the list changed between its two reads", async () => {
+    const connection = await resolveDuringSave(2);
+    expect(connection).toMatchObject({ apiKey: undefined, keyWithheld: true });
+  });
+
+  it("still sends a settled key", async () => {
+    setMockConfig({ baseUrl: A });
+    const context = fakeContext();
+    await storeApiKey(context, "sk-1");
+    expect(await resolveConnection(context)).toMatchObject({ apiKey: "sk-1", keyWithheld: false });
+  });
+});

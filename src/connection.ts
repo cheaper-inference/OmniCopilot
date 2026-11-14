@@ -349,12 +349,23 @@ export async function resolveConnection(context: vscode.ExtensionContext): Promi
     chosen.scope === "workspace" && workspaceId
       ? workspaceOriginsSecretName(workspaceId)
       : SECRET_API_KEY_ORIGINS;
-  const stored = await readApprovedOrigins(context, originsName);
+  const keyName =
+    chosen.scope === "workspace" && workspaceId ? workspaceSecretName(workspaceId) : SECRET_API_KEY;
+  // The list, then the key, then the list again. A Save landing in between would
+  // pair the old key with the new key's list; if the two reads of the list differ
+  // the key is withheld for this call, and the next poll reads a settled state.
+  const rawBefore = await context.secrets.get(originsName);
+  const storedKey = chosen.scope === "none" ? undefined : (await context.secrets.get(keyName)) || undefined;
+  const rawAfter = await context.secrets.get(originsName);
+  const settled = rawBefore === rawAfter;
+  const stored = parseApprovedOrigins(rawAfter);
   // Only the global key can predate the list (1.4.0). A workspace key is always
   // written with one, so a missing list there is damage and withholds the key.
   const approvedOrigins = chosen.scope === "workspace" ? (stored ?? []) : stored;
 
-  const decision = decideKeyUse({ storedKey: chosen.key, approvedOrigins, currentOrigin: origin });
+  const decision = settled
+    ? decideKeyUse({ storedKey, approvedOrigins, currentOrigin: origin })
+    : { apiKey: undefined, keyWithheld: Boolean(storedKey), bindNow: false };
   if (decision.bindNow) {
     await writeApprovedOrigins(context, [origin], originsName);
     await warnIfInsecure(context, origin);
@@ -363,7 +374,7 @@ export async function resolveConnection(context: vscode.ExtensionContext): Promi
     baseUrl,
     origin,
     apiKey: decision.apiKey,
-    hasStoredKey: Boolean(chosen.key),
+    hasStoredKey: Boolean(storedKey),
     keyWithheld: decision.keyWithheld,
     approvedOrigins: decision.bindNow ? [origin] : (approvedOrigins ?? []),
     ignoredWorkspaceUrl: setting.ignoredWorkspaceUrl,
@@ -527,7 +538,7 @@ export function keyWithheldMessage(connection: Connection): string | undefined {
 
 /**
  * After a configuration change: when the stored key is now withheld, say so once
- * per origin (`warned` is the caller's in-memory record) and offer to approve
+ * per scope and origin (`warned` is the caller's in-memory record) and offer to approve
  * the new server. `onRebound` refreshes whatever depends on the key.
  */
 export async function warnIfKeyWithheld(
@@ -536,8 +547,11 @@ export async function warnIfKeyWithheld(
   onRebound: () => Promise<void>
 ): Promise<void> {
   const connection = await resolveConnection(context);
-  if (!connection.keyWithheld || warned.has(connection.origin)) return;
-  warned.add(connection.origin);
+  // Per scope as well as origin: a global key announced for this server must not
+  // silence a workspace key withheld for the same one.
+  const announced = `${connection.keyScope}|${connection.origin}`;
+  if (!connection.keyWithheld || warned.has(announced)) return;
+  warned.add(announced);
   const useHere = vscode.l10n.t("Use the key here");
   const openPanel = vscode.l10n.t("Open panel");
   const pick = await vscode.window.showWarningMessage(
