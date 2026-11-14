@@ -2,7 +2,7 @@ import * as vscode from "vscode";
 import { expandForAgentsWindow } from "./agentsWindow";
 import { selectChatModels } from "./catalogFilter";
 import { OmniRouteClient, OmniRouteRequestError, projectHeaderValue, serverRootUrl } from "./client";
-import { SECRET_API_KEY, displayUrl, resolveConnection } from "./connection";
+import { SECRET_API_KEY, displayUrl, resolveConnection, type Connection } from "./connection";
 import { estimateTokens, toOpenAiMessages, toOpenAiTools } from "./convert";
 import { comboSummary, comboSummaryMarkdown, describeModel, priceLabel } from "./modelInfo";
 import {
@@ -74,6 +74,25 @@ function effortLabel(tier: string): string {
     default:
       return tier;
   }
+}
+
+/** What one listing of the server's models came to. */
+export interface ModelListing {
+  /** The picker entries; empty when the listing failed or nothing passed the filters. */
+  infos: OmniModelInfo[];
+  /** The server answered the listing and the answer was used. */
+  ok: boolean;
+  /** Root of the server the listing went to. */
+  serverUrl: string;
+  /** Why it failed: an HTTP status the server answered with, or no status at all. */
+  failure?: { status?: number };
+  /** The stored key was not sent to this server (see `Connection.keyWithheld`). */
+  keyWithheld: boolean;
+}
+
+/** The server turned the request down because of the key it saw (or did not see). */
+function isKeyRejection(status: number | undefined): status is 401 | 403 {
+  return status === 401 || status === 403;
 }
 
 export interface ProviderDeps {
@@ -167,13 +186,18 @@ export class OmniRouteChatProvider
   }
 
   private async makeClient(): Promise<OmniRouteClient> {
-    const { baseUrl, apiKey } = await resolveConnection(this.deps.context);
+    return (await this.connect()).client;
+  }
+
+  private async connect(): Promise<{ client: OmniRouteClient; connection: Connection }> {
+    const connection = await resolveConnection(this.deps.context);
+    const { baseUrl, apiKey } = connection;
     // The client puts the project on chat requests only. The opt-in is a privacy
     // choice that belongs to the user: only the user-level value counts, never a
     // workspace or folder one, whatever scope the platform enforces.
     const optIn = getConfig().inspect<boolean>("sendProjectName")?.globalValue === true;
     const project = optIn ? projectHeaderValue(vscode.workspace.name) : undefined;
-    return new OmniRouteClient({ baseUrl, apiKey, project });
+    return { client: new OmniRouteClient({ baseUrl, apiKey, project }), connection };
   }
 
   // ── Model discovery ─────────────────────────────────────────────────────
@@ -182,7 +206,18 @@ export class OmniRouteChatProvider
     options: { silent: boolean },
     token: vscode.CancellationToken
   ): Promise<OmniModelInfo[]> {
-    const client = await this.makeClient();
+    return (await this.listModels(options, token)).infos;
+  }
+
+  /**
+   * One real listing of the server's models. Unless `silent`, a failure tells
+   * the user why (the message is not awaited: it must not hold the listing).
+   * `silent: true` never prompts: an unreachable server simply contributes no
+   * models until the user fixes the connection.
+   */
+  async listModels(options: { silent: boolean }, token: vscode.CancellationToken): Promise<ModelListing> {
+    const { client, connection } = await this.connect();
+    const serverUrl = serverRootUrl(client.baseUrl);
 
     try {
       // The combos only add detail to the picker, so they are fetched at the
@@ -195,17 +230,22 @@ export class OmniRouteChatProvider
       // An HTTP error (a 401, say) means the server answered: still reachable.
       this.deps.onActivity?.(!isNetworkError(err));
       this.deps.log.warn(`Model discovery failed: ${String(err)}`);
+      const status = err instanceof OmniRouteRequestError ? err.info.status : undefined;
       if (!options.silent) {
-        void this.offerConnectionHelp(serverRootUrl(client.baseUrl));
+        if (!isKeyRejection(status)) {
+          void this.offerConnectionHelp(serverUrl);
+        } else if (!connection.keyWithheld) {
+          void this.offerKeyHelp(serverUrl, status);
+        }
+        // With the key withheld a 401/403 is the expected answer: the
+        // withheld-key warning and the panel already say why.
       }
-      // Contract: with silent=true never prompt; an unreachable server simply
-      // contributes no models until the user fixes the connection.
-      return [];
+      return { infos: [], ok: false, serverUrl, failure: { status }, keyWithheld: connection.keyWithheld };
     }
 
     const infos = this.toModelInfos(this.cachedModels, this.cachedCombos);
     this.deps.log.info(`Listed ${infos.length} models from ${client.baseUrl}`);
-    return infos;
+    return { infos, ok: true, serverUrl, keyWithheld: connection.keyWithheld };
   }
 
   private toModelInfos(models: OmniRouteModel[], combos: OmniRouteCombo[] = []): OmniModelInfo[] {
@@ -302,6 +342,18 @@ export class OmniRouteChatProvider
       void vscode.commands.executeCommand("omnicopilot.manage");
     } else if (pick === installLabel) {
       void vscode.commands.executeCommand("omnicopilot.installOmniRoute");
+    }
+  }
+
+  /** `serverUrl` is the root of the resolved connection the listing went to. */
+  private async offerKeyHelp(serverUrl: string, status: number): Promise<void> {
+    const setKeyLabel = vscode.l10n.t("Set API key");
+    const pick = await vscode.window.showWarningMessage(
+      vscode.l10n.t("OmniRoute at {0} rejected the API key (HTTP {1}).", displayUrl(serverUrl), status),
+      setKeyLabel
+    );
+    if (pick === setKeyLabel) {
+      void vscode.commands.executeCommand("omnicopilot.setApiKey");
     }
   }
 

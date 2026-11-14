@@ -1,6 +1,7 @@
 import { afterEach, beforeEach, describe, expect, it, vi } from "vitest";
 import * as vscode from "vscode";
 import { setMockConfig, setMockInspect, setMockWorkspace, setThinkingPartAvailable } from "./vscode.mock";
+import { SECRET_API_KEY, SECRET_API_KEY_ORIGINS } from "../src/connection";
 import { OmniRouteChatProvider } from "../src/provider";
 import { aliasToolName } from "../src/toolNames";
 
@@ -409,6 +410,119 @@ describe("provider cut-off answers", () => {
     const ctx = makeProvider();
     await ask(ctx);
     expect(ctx.log.warn).not.toHaveBeenCalled();
+  });
+});
+
+describe("provider rejected key", () => {
+  let fetchMock: ReturnType<typeof vi.fn>;
+
+  beforeEach(() => {
+    fetchMock = vi.fn();
+    vi.stubGlobal("fetch", fetchMock);
+  });
+  afterEach(() => {
+    vi.unstubAllGlobals();
+    vi.restoreAllMocks();
+  });
+
+  /** `/models` answers with `status`; every other path (the combo lookup) is a 404. */
+  const modelsAnswers = (status: number) =>
+    fetchMock.mockImplementation(async (url: string) =>
+      String(url).includes("/models")
+        ? new Response(JSON.stringify({ error: { message: "nope" } }), { status })
+        : new Response("{}", { status: 404 })
+    );
+  const flush = () => new Promise<void>((resolve) => setTimeout(resolve, 0));
+  const REJECTED = (url: string, status: number) =>
+    `OmniRoute at ${url} rejected the API key (HTTP ${status}).`;
+
+  it.each([401, 403])("says the key was rejected on a %s, with an action that opens the key prompt", async (status) => {
+    modelsAnswers(status);
+    const warn = vi.spyOn(vscode.window, "showWarningMessage").mockResolvedValue("Set API key" as never);
+    const exec = vi.spyOn(vscode.commands, "executeCommand");
+    const ctx = makeProvider();
+    await ctx.context.secrets.store(SECRET_API_KEY, "sk-1");
+    // Already approved for this server, so no plain-HTTP warning joins the one under test.
+    await ctx.context.secrets.store(SECRET_API_KEY_ORIGINS, JSON.stringify(["http://gateway.test"]));
+
+    const infos = await ctx.provider.provideLanguageModelChatInformation({ silent: false }, ctx.token);
+    await flush();
+
+    expect(infos).toEqual([]);
+    expect(warn).toHaveBeenCalledTimes(1);
+    expect(warn.mock.calls[0][0]).toBe(REJECTED("http://gateway.test", status));
+    expect(warn.mock.calls[0][1]).toBe("Set API key");
+    expect(exec).toHaveBeenCalledWith("omnicopilot.setApiKey");
+    // The server answered, so the connection indicator stays online.
+    expect(ctx.activity).toEqual([true]);
+  });
+
+  it("does not run the command when the notification is dismissed", async () => {
+    modelsAnswers(401);
+    vi.spyOn(vscode.window, "showWarningMessage").mockResolvedValue(undefined);
+    const exec = vi.spyOn(vscode.commands, "executeCommand");
+    const ctx = makeProvider();
+    await ctx.provider.provideLanguageModelChatInformation({ silent: false }, ctx.token);
+    await flush();
+    expect(exec).not.toHaveBeenCalled();
+  });
+
+  it("stays quiet on a background refresh (silent)", async () => {
+    modelsAnswers(401);
+    const warn = vi.spyOn(vscode.window, "showWarningMessage");
+    const ctx = makeProvider();
+    await ctx.provider.provideLanguageModelChatInformation({ silent: true }, ctx.token);
+    await flush();
+    expect(warn).not.toHaveBeenCalled();
+  });
+
+  it("shows nothing when the stored key is withheld from this server", async () => {
+    modelsAnswers(401);
+    const warn = vi.spyOn(vscode.window, "showWarningMessage");
+    const ctx = makeProvider();
+    await ctx.context.secrets.store(SECRET_API_KEY, "sk-1");
+    await ctx.context.secrets.store(SECRET_API_KEY_ORIGINS, JSON.stringify(["http://elsewhere.test"]));
+
+    await ctx.provider.provideLanguageModelChatInformation({ silent: false }, ctx.token);
+    await flush();
+
+    expect(warn).not.toHaveBeenCalled();
+    // The key was not sent either.
+    const init = fetchMock.mock.calls[0][1] as RequestInit;
+    expect((init.headers as Record<string, string>).Authorization).toBeUndefined();
+  });
+
+  it("keeps the could-not-reach message for a network failure", async () => {
+    fetchMock.mockRejectedValue(new TypeError("fetch failed"));
+    const warn = vi.spyOn(vscode.window, "showWarningMessage").mockResolvedValue(undefined);
+    const ctx = makeProvider();
+    await ctx.provider.provideLanguageModelChatInformation({ silent: false }, ctx.token);
+    await flush();
+    expect(warn).toHaveBeenCalledTimes(1);
+    expect(warn.mock.calls[0][0]).toBe("Could not reach OmniRoute at http://gateway.test. Is it running?");
+    expect(warn.mock.calls[0].slice(1)).toEqual(["Configure Connection", "Install OmniRoute"]);
+    expect(ctx.activity).toEqual([false]);
+  });
+
+  it("keeps the could-not-reach message for a server error", async () => {
+    modelsAnswers(500);
+    const warn = vi.spyOn(vscode.window, "showWarningMessage").mockResolvedValue(undefined);
+    const ctx = makeProvider();
+    await ctx.provider.provideLanguageModelChatInformation({ silent: false }, ctx.token);
+    await flush();
+    expect(warn.mock.calls[0][0]).toBe("Could not reach OmniRoute at http://gateway.test. Is it running?");
+  });
+
+  it("never lets the configured address become a link in the message", async () => {
+    modelsAnswers(401);
+    const warn = vi.spyOn(vscode.window, "showWarningMessage").mockResolvedValue(undefined);
+    const ctx = makeProvider({ config: { baseUrl: "[x](command:y)" } });
+    await ctx.provider.provideLanguageModelChatInformation({ silent: false }, ctx.token);
+    await flush();
+    expect(warn).toHaveBeenCalledTimes(1);
+    const text = String(warn.mock.calls[0][0]);
+    expect(text).toContain("rejected the API key (HTTP 401)");
+    expect(text).not.toContain("](");
   });
 });
 
