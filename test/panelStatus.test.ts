@@ -3,6 +3,7 @@ import * as vscode from "vscode";
 import { ConfigurationTarget, configUpdates, setMockConfig, setMockInspect } from "./vscode.mock";
 import { OmniRouteClient } from "../src/client";
 import type { ProbeResult } from "../src/diagnostics";
+import { storeApiKey } from "../src/connection";
 import { OmniPanelProvider } from "../src/panel";
 
 function fakeContext() {
@@ -19,11 +20,11 @@ function fakeContext() {
 }
 
 /** A panel whose webview only records the messages it is sent. */
-function openPanel() {
+function openPanel(context: vscode.ExtensionContext = fakeContext()) {
   const posted: Array<Record<string, unknown>> = [];
   const log = { info: vi.fn(), warn: vi.fn(), error: vi.fn(), debug: vi.fn() };
   const panel = new OmniPanelProvider(
-    fakeContext(),
+    context,
     log as unknown as vscode.LogOutputChannel,
     async () => undefined
   );
@@ -273,5 +274,51 @@ describe("panel status refresh that fails", () => {
     const html = (view.webview as unknown as { html: string }).html;
     expect(html).toContain('msg.type === "statusError"');
     expect(html).toContain("Could not read the connection status.");
+  });
+});
+
+describe("panel usage without the usage command", () => {
+  afterEach(() => {
+    vi.restoreAllMocks();
+    vi.unstubAllGlobals();
+  });
+
+  it("posts the key's own usage when om-usage refuses and /v1/me/status answers", async () => {
+    vi.spyOn(OmniRouteClient.prototype, "probe").mockResolvedValue({ ok: true, status: 200 });
+    vi.spyOn(OmniRouteClient.prototype, "listModels").mockResolvedValue([]);
+    const json = (body: unknown) =>
+      new Response(JSON.stringify(body), { headers: { "content-type": "application/json" } });
+    vi.stubGlobal(
+      "fetch",
+      vi
+        .fn()
+        .mockResolvedValueOnce(json({ allowed: false }))
+        .mockResolvedValueOnce(
+          json({
+            usage: { daily: { costUsd: 1.2, resetAt: "2999-01-01T00:00:00.000Z" } },
+            limits: [
+              {
+                id: "usage_limit:daily",
+                limit: 5,
+                used: 1.2,
+                exceeded: false,
+                resetAt: "2999-01-01T00:00:00.000Z",
+              },
+            ],
+          })
+        )
+    );
+    setMockConfig({ baseUrl: "https://gateway.test" });
+    const context = fakeContext();
+    await storeApiKey(context, "sk-test", "https://gateway.test");
+    const { panel, posted } = openPanel(context);
+
+    await panel.refreshStatus();
+
+    expect(posted[0]?.usage).toMatchObject({
+      kind: "ready",
+      providers: [],
+      personal: { dailyLimitUsd: 5, dailyText: "$1.20 / $5.00 (76% left)", weeklyText: "" },
+    });
   });
 });

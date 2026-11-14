@@ -6,6 +6,9 @@
  * (`src/lib/usage/internalUsageCommand.ts`). They are re-declared here rather
  * than imported because the extension ships standalone — keep the field names
  * aligned with the server when either side changes.
+ *
+ * When that endpoint refuses (the per-key usage command is off), the key's own
+ * usage is read from `GET /v1/me/status` instead (`personalFromSelfStatus`).
  */
 
 import type { Translate } from "./diagnostics";
@@ -16,7 +19,7 @@ export interface UsageLimitStatus {
   weeklyLimitUsd: number | null;
   dailySpentUsd: number;
   weeklySpentUsd: number;
-  dailyResetAtIso: string;
+  dailyResetAtIso: string | null;
   weeklyResetAtIso: string | null;
   dailyExceeded: boolean;
   weeklyExceeded: boolean;
@@ -64,7 +67,9 @@ export type UsageLimitView = UsageLimitStatus & {
   weeklyPercentLeft: number | null;
   dailyResetIn: string | null;
   weeklyResetIn: string | null;
-  /** "$1.20 / $5.00 (76% left)"; the share only when it is known. */
+  /** "$1.20 / $5.00 (76% left)" (the share only when it is known); the spend
+   * alone ("$1.20") for a window without a limit; "" when there is nothing to
+   * show, which hides the row. */
   dailyText: string;
   weeklyText: string;
 };
@@ -135,8 +140,10 @@ const untranslated: Translate = (source, ...args) =>
     Number(index) < args.length ? String(args[Number(index)]) : match
   );
 
-/** "$1.20 / $5.00 (76% left)" for a personal limit row. */
+/** "$1.20 / $5.00 (76% left)" for a personal limit row; the spend alone when the
+ * window has no limit, and "" when it has neither a limit nor any spend. */
 function limitText(spent: number, limit: number | null, left: number | null, t: Translate): string {
+  if (limit === null) return spent > 0 ? formatUsd(spent) : "";
   const share = left === null ? "" : ` (${t("{0}% left", left)})`;
   return `${formatUsd(spent)} / ${formatUsd(limit)}${share}`;
 }
@@ -222,6 +229,33 @@ export function toUsageView(
  * hides the section instead of surfacing a parse failure. */
 export class UsageUnsupportedError extends Error {}
 
+const usageRoot = (baseUrl: string): string => baseUrl.replace(/\/+$/, "").replace(/\/v1$/i, "");
+
+/** GET the key's own status (`/v1/me/status`), which any key with the
+ * self-service scope may read. Never throws: a refusal (401, 403, 404 on an
+ * older server), a network error, a timeout or a body of the wrong shape all
+ * answer null, and the caller keeps the "not enabled" state. */
+async function fetchSelfStatus(
+  root: string,
+  apiKey: string,
+  timeoutMs: number
+): Promise<UsageLimitStatus | null> {
+  const ctrl = new AbortController();
+  const timer = setTimeout(() => ctrl.abort(), timeoutMs);
+  try {
+    const res = await fetch(`${root}/v1/me/status`, {
+      headers: { Authorization: `Bearer ${apiKey}` },
+      signal: ctrl.signal,
+    });
+    if (!res.ok) return null;
+    return personalFromSelfStatus(await res.json());
+  } catch {
+    return null;
+  } finally {
+    clearTimeout(timer);
+  }
+}
+
 export async function fetchUsage(
   baseUrl: string,
   apiKey: string | undefined,
@@ -230,8 +264,9 @@ export async function fetchUsage(
 ): Promise<UsageView> {
   const ctrl = new AbortController();
   const timer = setTimeout(() => ctrl.abort(), timeoutMs);
+  const root = usageRoot(baseUrl);
+  let body: UsageResponse;
   try {
-    const root = baseUrl.replace(/\/+$/, "").replace(/\/v1$/i, "");
     const res = await fetch(`${root}/api/usage/om-usage?format=json`, {
       headers: apiKey ? { Authorization: `Bearer ${apiKey}` } : {},
       signal: ctrl.signal,
@@ -241,11 +276,96 @@ export async function fetchUsage(
       // Older OmniRoute (or a refusal on an old server) answers text/plain.
       throw new UsageUnsupportedError("server predates ?format=json");
     }
-    const body = (await res.json()) as UsageResponse;
-    return toUsageView(body, Date.now(), t);
+    body = (await res.json()) as UsageResponse;
   } finally {
     clearTimeout(timer);
   }
+  if (body.allowed === false && apiKey) {
+    // The per-key usage command is off: the key can still read its own numbers.
+    const personal = await fetchSelfStatus(root, apiKey, timeoutMs);
+    if (personal) return toUsageView({ allowed: true, personal, provider: null }, Date.now(), t);
+  }
+  return toUsageView(body, Date.now(), t);
+}
+
+/** The key's personal view alone, for callers that do not draw the panel (the
+ * status bar). Null when there is none: usage not enabled for the key, a server
+ * that predates ?format=json, or no limits and no spend. Throws when the usage
+ * endpoint cannot be reached. */
+export async function fetchPersonalUsage(
+  baseUrl: string,
+  apiKey: string | undefined,
+  t: Translate = untranslated,
+  timeoutMs = 6000
+): Promise<UsageLimitView | null> {
+  try {
+    const view = await fetchUsage(baseUrl, apiKey, t, timeoutMs);
+    return view.kind === "ready" ? view.personal : null;
+  } catch (err) {
+    if (err instanceof UsageUnsupportedError) return null;
+    throw err;
+  }
+}
+
+const isRecord = (value: unknown): value is Record<string, unknown> =>
+  typeof value === "object" && value !== null && !Array.isArray(value);
+
+/** A money amount only counts when it is finite and not negative. */
+const amount = (value: unknown): number | null =>
+  typeof value === "number" && Number.isFinite(value) && value >= 0 ? value : null;
+
+const text = (value: unknown): string | null =>
+  typeof value === "string" && value.trim() !== "" ? value : null;
+
+interface WindowReading {
+  limit: number | null;
+  spent: number | null;
+  resetAt: string | null;
+  exceeded: boolean;
+  /** Something real was read, so the window is worth a row. */
+  known: boolean;
+}
+
+/** One window (`daily` / `weekly`) of a `/v1/me/status` body: the
+ * `usage_limit:<window>` entry gives the limit; the totals under `usage.<window>`
+ * stand in for what the entry does not give (all of it, when there is no entry). */
+function readWindow(body: Record<string, unknown>, window: "daily" | "weekly"): WindowReading {
+  const entries = Array.isArray(body.limits) ? body.limits : [];
+  const entry = entries.find(
+    (candidate): candidate is Record<string, unknown> =>
+      isRecord(candidate) && candidate.id === `usage_limit:${window}` && amount(candidate.limit) !== null
+  );
+  const totals = isRecord(body.usage) && isRecord(body.usage[window]) ? body.usage[window] : {};
+  const spent = amount(entry?.used) ?? amount(totals.costUsd);
+  return {
+    limit: entry ? amount(entry.limit) : null,
+    spent,
+    resetAt: text(entry?.resetAt) ?? text(totals.resetAt),
+    exceeded: entry?.exceeded === true,
+    known: entry !== undefined || spent !== null,
+  };
+}
+
+/** Map a `GET /v1/me/status` body (OmniRoute `buildApiKeySelfServiceStatus`) to
+ * the personal shape the panel already draws. Null when the body is not an
+ * object or has neither a usage limit nor usage totals. Provider quotas
+ * (`accountQuotas`) are not read: they need another scope. */
+export function personalFromSelfStatus(body: unknown): UsageLimitStatus | null {
+  if (!isRecord(body)) return null;
+  const daily = readWindow(body, "daily");
+  const weekly = readWindow(body, "weekly");
+  if (!daily.known && !weekly.known) return null;
+  return {
+    enabled: daily.limit !== null || weekly.limit !== null,
+    dailyLimitUsd: daily.limit,
+    dailySpentUsd: daily.spent ?? 0,
+    dailyResetAtIso: daily.resetAt,
+    dailyExceeded: daily.exceeded,
+    weeklyLimitUsd: weekly.limit,
+    weeklySpentUsd: weekly.spent ?? 0,
+    weeklyResetAtIso: weekly.resetAt,
+    weeklyExceeded: weekly.exceeded,
+  };
 }
 
 /** Same coercion as the server's `toNumber`: finite numbers and numeric

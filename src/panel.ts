@@ -559,14 +559,13 @@ export class OmniPanelProvider implements vscode.WebviewViewProvider {
           };
           const reset = (value) => value ? " · " + S.usageResetsIn.replace("{0}", value) : "";
           const pers = u.personal;
-          if (pers) {
-            if (pers.dailyLimitUsd !== null)
-              line(S.usageDaily, pers.dailyText + reset(pers.dailyResetIn), pers.dailyPercentLeft);
-            if (pers.weeklyLimitUsd !== null)
-              line(S.usageWeekly, pers.weeklyText + reset(pers.weeklyResetIn), pers.weeklyPercentLeft);
-          }
+          // The host decides whether a window has anything to say: an empty text hides its row.
+          if (pers && pers.dailyText)
+            line(S.usageDaily, pers.dailyText + reset(pers.dailyResetIn), pers.dailyPercentLeft);
+          if (pers && pers.weeklyText)
+            line(S.usageWeekly, pers.weeklyText + reset(pers.weeklyResetIn), pers.weeklyPercentLeft);
           const providers = Array.isArray(u.providers) ? u.providers : [];
-          if (providers.length === 0 && !pers) {
+          if (providers.length === 0 && usageBody.childElementCount === 0) {
             usageBody.textContent = S.usageEmpty;
           } else {
             for (const snap of providers) {
