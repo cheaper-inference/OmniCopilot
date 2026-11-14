@@ -220,32 +220,39 @@
           "order": 2,
           "description": "%cfg.statusBar%"
         },
+        "omnicopilot.statusBarUsage": {
+          "type": "boolean",
+          "default": true,
+          "scope": "window",
+          "order": 3,
+          "description": "%cfg.statusBarUsage%"
+        },
         "omnicopilot.healthCheckIntervalSeconds": {
           "type": "number",
           "default": 30,
           "minimum": 5,
           "maximum": 3600,
-          "order": 3,
+          "order": 4,
           "description": "%cfg.healthCheckIntervalSeconds%"
         },
         "omnicopilot.maxOutputTokens": {
           "type": "number",
           "default": 16384,
           "minimum": 256,
-          "order": 4,
+          "order": 5,
           "description": "%cfg.maxOutputTokens%"
         },
         "omnicopilot.defaultContextLength": {
           "type": "number",
           "default": 128000,
           "minimum": 1024,
-          "order": 5,
+          "order": 6,
           "description": "%cfg.defaultContextLength%"
         },
         "omnicopilot.modelFilter": {
           "type": "string",
           "default": "",
-          "order": 6,
+          "order": 7,
           "description": "%cfg.modelFilter%"
         },
         "omnicopilot.dashboardOpen": {
@@ -259,7 +266,7 @@
             "%cfg.dashboardOpen.editor%"
           ],
           "default": "external",
-          "order": 7,
+          "order": 8,
           "description": "%cfg.dashboardOpen%"
         },
         "omnicopilot.defaultReasoningEffort": {
@@ -283,27 +290,27 @@
             "%cfg.defaultReasoningEffort.max%"
           ],
           "default": "",
-          "order": 8,
+          "order": 9,
           "description": "%cfg.defaultReasoningEffort%"
         },
         "omnicopilot.cliPath": {
           "type": "string",
           "default": "omniroute",
           "scope": "machine",
-          "order": 9,
+          "order": 10,
           "description": "%cfg.cliPath%"
         },
         "omnicopilot.exposeToAgentsWindow": {
           "type": "boolean",
           "default": false,
-          "order": 10,
+          "order": 11,
           "description": "%cfg.exposeToAgentsWindow%"
         },
         "omnicopilot.sendProjectName": {
           "type": "boolean",
           "default": false,
           "scope": "application",
-          "order": 11,
+          "order": 12,
           "description": "%cfg.sendProjectName%"
         }
       }

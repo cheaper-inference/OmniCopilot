@@ -2,8 +2,11 @@ import * as vscode from "vscode";
 import { OmniRouteClient, serverRootUrl } from "./client";
 import { describeProbeFailure, keyWithheldMessage, type Connection } from "./connection";
 import type { ProbeResult } from "./diagnostics";
+import { dailyUsageLine, exactPercentLeft, type UsageLimitView } from "./usage";
 
 const PROBE_TIMEOUT_MS = 4000;
+/** The usage numbers are read at most this often, whoever asks. */
+const USAGE_MIN_INTERVAL_MS = 5 * 60_000;
 
 type Status = "online" | "offline" | "checking";
 
@@ -61,6 +64,71 @@ export function statusPresentation(args: { status: Status; keyWithheld: boolean 
   }
 }
 
+/**
+ * The text appended to the status for the key's daily limit: " · 76%", the share
+ * of it left, rounded down. Empty without the setting, on a server that is not
+ * online, with a withheld key, or when the key has no daily limit.
+ */
+export function statusBarUsageSuffix(args: {
+  enabled: boolean;
+  online: boolean;
+  keyWithheld: boolean;
+  dailyPercentLeft: number | null;
+}): string {
+  const left = args.dailyPercentLeft;
+  if (!args.enabled || !args.online || args.keyWithheld) return "";
+  if (typeof left !== "number" || !Number.isFinite(left)) return "";
+  // A tiny epsilon keeps a share that is 57% in decimal from reading 56 in binary.
+  return ` · ${Math.max(0, Math.min(100, Math.floor(left + 1e-9)))}%`;
+}
+
+/** Whether the usage numbers may be read again: nothing was tried yet, the
+ * minimum interval has passed since the last attempt, or the clock went back. */
+export function shouldRefreshUsage(args: {
+  now: number;
+  lastAttemptAt: number | undefined;
+  minIntervalMs: number;
+}): boolean {
+  if (args.lastAttemptAt === undefined || args.now < args.lastAttemptAt) return true;
+  return args.now - args.lastAttemptAt >= args.minIntervalMs;
+}
+
+/** What the status bar remembers of the key's daily limit between two readings. */
+export interface UsageSample {
+  /** Unrounded share of the daily limit left (0-100). */
+  percentLeft: number;
+  /** The tooltip line, already worded. */
+  line: string;
+  /** Failed refreshes in a row since the last good reading. */
+  failures: number;
+}
+
+export type UsageReading =
+  | { kind: "read"; percentLeft: number; line: string }
+  | { kind: "none" }
+  | { kind: "failed" };
+
+/**
+ * The sample after a refresh. A reading replaces it; "none" (usage not enabled,
+ * or no daily limit) clears it, as that is the real state; a failed refresh keeps
+ * the last number for one more interval and the second one in a row drops it.
+ */
+export function nextUsageSample(
+  previous: UsageSample | undefined,
+  reading: UsageReading
+): UsageSample | undefined {
+  switch (reading.kind) {
+    case "read":
+      return { percentLeft: reading.percentLeft, line: reading.line, failures: 0 };
+    case "none":
+      return undefined;
+    default:
+      return previous && previous.failures < 1
+        ? { ...previous, failures: previous.failures + 1 }
+        : undefined;
+  }
+}
+
 /** Status-bar "dot": green when the OmniRoute server answers the HEAD
  * /v1/models probe, red when it does not. Click → quick actions menu. */
 export class ConnectionStatusBar implements vscode.Disposable {
@@ -75,6 +143,12 @@ export class ConnectionStatusBar implements vscode.Disposable {
   private root = "";
   /** Whether the last poll was accepted (2xx); undefined before the first poll. */
   private lastPollOk: boolean | undefined;
+  /** The last reading of the key's daily limit, if one is still worth showing. */
+  private usageSample: UsageSample | undefined;
+  private lastUsageAttemptAt: number | undefined;
+  private usageInFlight = false;
+  /** Bumped by `restart`, so a reading that began before it is not applied after it. */
+  private usageGeneration = 0;
 
   constructor(
     private readonly getClient: () => Promise<OmniRouteClient>,
@@ -82,7 +156,9 @@ export class ConnectionStatusBar implements vscode.Disposable {
     private readonly onStatusChange?: (status: "online" | "offline") => void,
     private readonly getConnection?: () => Promise<Connection>,
     /** Called when a poll found the server accepting requests again (see `shouldRefreshModels`). */
-    private readonly onModelsReachable?: () => void
+    private readonly onModelsReachable?: () => void,
+    /** Reads the key's own usage for the connection a poll resolved (see `statusBarUsageSuffix`). */
+    private readonly fetchPersonalUsage?: (connection: Connection) => Promise<UsageLimitView | null>
   ) {
     this.item = vscode.window.createStatusBarItem(vscode.StatusBarAlignment.Right, 90);
     this.item.name = "OmniRoute";
@@ -100,6 +176,7 @@ export class ConnectionStatusBar implements vscode.Disposable {
   reportActivity(ok: boolean): void {
     if (ok) this.lastFailure = undefined;
     this.setStatus(ok ? "online" : "offline");
+    if (ok) this.refreshUsageIfDue();
   }
 
   /** Why the last check failed, in one sentence; undefined while the server answers. */
@@ -118,6 +195,7 @@ export class ConnectionStatusBar implements vscode.Disposable {
       ? undefined
       : describeProbeFailure(client.baseUrl, result, PROBE_TIMEOUT_MS).summary;
     this.setStatus(result.ok ? "online" : "offline");
+    if (result.ok) this.refreshUsageIfDue();
     const pollOk = result.ok && result.status >= 200 && result.status < 300;
     const previousPollOk = this.lastPollOk;
     this.lastPollOk = pollOk;
@@ -126,6 +204,10 @@ export class ConnectionStatusBar implements vscode.Disposable {
   }
 
   restart(): void {
+    // A changed key, server or setting makes the last reading worthless.
+    this.usageGeneration++;
+    this.usageSample = undefined;
+    this.lastUsageAttemptAt = undefined;
     this.applyVisibility();
     this.scheduleLoop();
     this.pollInBackground();
@@ -150,6 +232,59 @@ export class ConnectionStatusBar implements vscode.Disposable {
     this.checkNow().catch((err: unknown) => this.log.warn(`Connection check failed: ${String(err)}`));
   }
 
+  private usageEnabled(): boolean {
+    return vscode.workspace.getConfiguration("omnicopilot").get<boolean>("statusBarUsage", true);
+  }
+
+  /** Read the key's usage when the setting is on, a key is in effect and the minimum
+   * interval has passed. Nothing waits for it; the status bar redraws when it lands. */
+  private refreshUsageIfDue(): void {
+    if (this.disposed || this.usageInFlight || !this.fetchPersonalUsage || !this.getConnection) return;
+    if (!this.usageEnabled()) {
+      // Off: forget the number, so turning it on again reads at once.
+      this.usageSample = undefined;
+      this.lastUsageAttemptAt = undefined;
+      return;
+    }
+    const now = Date.now();
+    if (!shouldRefreshUsage({ now, lastAttemptAt: this.lastUsageAttemptAt, minIntervalMs: USAGE_MIN_INTERVAL_MS })) {
+      return;
+    }
+    this.usageInFlight = true;
+    const generation = this.usageGeneration;
+    void this.readUsage(now, generation)
+      .catch((err: unknown) => this.log.warn(`Usage refresh failed: ${String(err)}`))
+      .finally(() => {
+        this.usageInFlight = false;
+      });
+  }
+
+  private async readUsage(startedAt: number, generation: number): Promise<void> {
+    const connection = await this.getConnection!();
+    let reading: UsageReading;
+    if (!connection.apiKey || connection.keyWithheld) {
+      // No key in effect: nothing to ask, and nothing to wait out when one is stored.
+      reading = { kind: "none" };
+    } else {
+      this.lastUsageAttemptAt = startedAt;
+      try {
+        const personal = await this.fetchPersonalUsage!(connection);
+        const percentLeft = personal ? exactPercentLeft(personal.dailySpentUsd, personal.dailyLimitUsd) : null;
+        const line = personal ? dailyUsageLine(personal, vscode.l10n.t) : null;
+        reading =
+          personal && percentLeft !== null && line !== null
+            ? { kind: "read", percentLeft, line }
+            : { kind: "none" };
+      } catch (err) {
+        this.log.debug(`Usage refresh failed: ${String(err)}`);
+        reading = { kind: "failed" };
+      }
+    }
+    if (this.disposed || generation !== this.usageGeneration) return;
+    this.usageSample = nextUsageSample(this.usageSample, reading);
+    this.render();
+  }
+
   private setStatus(status: "online" | "offline"): void {
     if (this.disposed) return;
     this.status = applyStatus(this.status, status, (s) => {
@@ -162,13 +297,20 @@ export class ConnectionStatusBar implements vscode.Disposable {
   private render(): void {
     const root = this.root;
     const look = statusPresentation({ status: this.status, keyWithheld: this.keyWithheld });
-    this.item.text = look.text;
+    const suffix = statusBarUsageSuffix({
+      enabled: this.usageEnabled(),
+      online: this.status === "online",
+      keyWithheld: this.keyWithheld,
+      dailyPercentLeft: this.usageSample?.percentLeft ?? null,
+    });
+    this.item.text = look.text + suffix;
     this.item.color = look.color ? new vscode.ThemeColor(look.color) : undefined;
     this.item.backgroundColor = look.background ? new vscode.ThemeColor(look.background) : undefined;
     switch (this.status) {
       case "online":
         this.item.tooltip = this.tooltip(
-          vscode.l10n.t("OmniRoute online — {0}. Click for actions.", root)
+          vscode.l10n.t("OmniRoute online — {0}. Click for actions.", root),
+          suffix ? this.usageSample?.line : undefined
         );
         break;
       case "offline":
