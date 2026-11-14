@@ -28,5 +28,17 @@
   "cfg.defaultReasoningEffort.xhigh": "Bardzo wysoki — obniżany dla modeli bez obsługi",
   "cfg.cliPath": "Ścieżka do interfejsu CLI OmniRoute, używana przez polecenie \"Skonfiguruj interfejs CLI do kodowania\".",
   "cfg.exposeToAgentsWindow": "Eksperymentalne: wyświetla modele OmniRoute także w selektorze modeli okna Agents w Copilot. Wymaga ustawienia VS Code chat.agentHost.byokModels.enabled i ponownego uruchomienia agent hosta; korzysta z proponowanego API VS Code, które może się zmienić.",
-  "cfg.defaultReasoningEffort.max": "Maksymalny — najwyższy poziom. OmniRoute obniża go dla modeli, które go nie oferują."
+  "cfg.defaultReasoningEffort.max": "Maksymalny — najwyższy poziom. OmniRoute obniża go dla modeli, które go nie oferują.",
+  "cfg.statusBarUsage": "Pokaż obok stanu połączenia, ile zostało z dziennego limitu klucza.",
+  "cfg.sendProjectName": "Wysyłaj do OmniRoute nazwę otwartego obszaru roboczego z każdym żądaniem czatu, aby użycie można było grupować według projektów. Domyślnie wyłączone.",
+  "walkthrough.title": "Pierwsze kroki z OmniRoute",
+  "walkthrough.description": "Dodaj modele ze swojej bramy OmniRoute do selektora modeli w Copilot Chat.",
+  "walkthrough.run.title": "Uruchom OmniRoute",
+  "walkthrough.run.description": "OmniRoute to brama, z którą komunikuje się to rozszerzenie. Zainstaluj ją i pozostaw uruchomioną. Domyślnie odpowiada pod adresem http://localhost:20128.\n[Zainstaluj OmniRoute](command:omnicopilot.installOmniRoute)\n[Sprawdź połączenie](command:omnicopilot.checkConnection)",
+  "walkthrough.connect.title": "Połącz",
+  "walkthrough.connect.description": "Otwórz panel połączenia. Jeśli OmniRoute działa na tym komputerze z ustawieniami domyślnymi, nie trzeba niczego wypełniać. Dla serwera w innym miejscu podaj jego adres URL oraz klucz API, jeśli serwer go wymaga.\n[Otwórz panel połączenia](command:omnicopilot.manage)",
+  "walkthrough.pickModel.title": "Wybierz modele",
+  "walkthrough.pickModel.description": "Otwórz \"Zarządzaj modelami\", wybierz OmniRoute i zaznacz modele, które chcesz mieć w selektorze modeli czatu.\n[Zarządzaj modelami](command:workbench.action.chat.manage)",
+  "walkthrough.utility.title": "Użyj OmniRoute do tytułów, komunikatów commitów i czatu w edytorze",
+  "walkthrough.utility.description": "Tytuły czatów, komunikaty commitów i czat w edytorze używają własnych ustawień modelu. Wskaż im model OmniRoute, aby działały także przez Twoją bramę.\n[Otwórz ustawienia](command:workbench.action.openSettings?%5B%22chat.utility%22%5D)"
 }

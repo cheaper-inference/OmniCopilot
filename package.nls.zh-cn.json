@@ -28,5 +28,17 @@
   "cfg.defaultReasoningEffort.xhigh": "超高 — 对不支持的模型自动降级",
   "cfg.cliPath": "OmniRoute CLI 的路径，由“配置编码 CLI”命令使用。",
   "cfg.exposeToAgentsWindow": "实验性：同时在 Copilot Agents 窗口的模型选择器中列出 OmniRoute 模型。需要 VS Code 设置 chat.agentHost.byokModels.enabled 并重启 agent host；使用可能变更的 VS Code 提案 API。",
-  "cfg.defaultReasoningEffort.max": "最大 — 最高档。对不提供该档的模型，OmniRoute 会自动降级。"
+  "cfg.defaultReasoningEffort.max": "最大 — 最高档。对不提供该档的模型，OmniRoute 会自动降级。",
+  "cfg.statusBarUsage": "在连接状态旁显示该密钥当日限额的剩余量。",
+  "cfg.sendProjectName": "在每次聊天请求中，将已打开工作区的名称发送给 OmniRoute，以便按项目汇总用量。默认关闭。",
+  "walkthrough.title": "开始使用 OmniRoute",
+  "walkthrough.description": "将你的 OmniRoute 网关中的模型加入 Copilot Chat 模型选择器。",
+  "walkthrough.run.title": "运行 OmniRoute",
+  "walkthrough.run.description": "OmniRoute 是此扩展所连接的网关。请安装并保持其运行。默认监听地址为 http://localhost:20128。\n[安装 OmniRoute](command:omnicopilot.installOmniRoute)\n[检查连接](command:omnicopilot.checkConnection)",
+  "walkthrough.connect.title": "连接",
+  "walkthrough.connect.description": "打开连接面板。如果 OmniRoute 在本机上以默认设置运行，则无需填写任何内容。对于其他位置的服务器，请输入其 URL；如果它要求，再输入 API 密钥。\n[打开连接面板](command:omnicopilot.manage)",
+  "walkthrough.pickModel.title": "选择模型",
+  "walkthrough.pickModel.description": "打开“管理模型”，选择 OmniRoute，并勾选要在聊天模型选择器中使用的模型。\n[管理模型](command:workbench.action.chat.manage)",
+  "walkthrough.utility.title": "将 OmniRoute 用于聊天标题、提交消息和内联聊天",
+  "walkthrough.utility.description": "聊天标题、提交消息和内联聊天使用各自的模型设置。将它们指向 OmniRoute 模型，即可让这些功能也在你的网关上运行。\n[打开设置](command:workbench.action.openSettings?%5B%22chat.utility%22%5D)"
 }

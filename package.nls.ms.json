@@ -28,5 +28,17 @@
   "cfg.defaultReasoningEffort.xhigh": "Sangat tinggi — diturunkan bagi model tanpa sokongan",
   "cfg.cliPath": "Laluan ke CLI OmniRoute, digunakan oleh perintah \"Konfigurasikan CLI Pengekodan\".",
   "cfg.exposeToAgentsWindow": "Eksperimen: turut memaparkan model OmniRoute dalam pemilih model tetingkap Agents Copilot. Memerlukan tetapan VS Code chat.agentHost.byokModels.enabled dan mula semula agent host; menggunakan API cadangan VS Code yang boleh berubah.",
-  "cfg.defaultReasoningEffort.max": "Maksimum — peringkat teratas. OmniRoute menurunkannya bagi model yang tidak menawarkannya."
+  "cfg.defaultReasoningEffort.max": "Maksimum — peringkat teratas. OmniRoute menurunkannya bagi model yang tidak menawarkannya.",
+  "cfg.statusBarUsage": "Tunjukkan baki had harian kunci di sebelah status sambungan.",
+  "cfg.sendProjectName": "Hantar nama ruang kerja yang dibuka kepada OmniRoute bersama setiap permintaan sembang, supaya penggunaan boleh dikumpulkan mengikut projek. Dimatikan secara lalai.",
+  "walkthrough.title": "Mulakan dengan OmniRoute",
+  "walkthrough.description": "Letakkan model daripada gateway OmniRoute anda dalam pemilih model Copilot Chat.",
+  "walkthrough.run.title": "Jalankan OmniRoute",
+  "walkthrough.run.description": "OmniRoute ialah gateway yang dihubungi oleh ekstensi ini. Pasang dan biarkan ia berjalan. Secara lalai, ia menjawab di http://localhost:20128.\n[Pasang OmniRoute](command:omnicopilot.installOmniRoute)\n[Semak Sambungan](command:omnicopilot.checkConnection)",
+  "walkthrough.connect.title": "Sambung",
+  "walkthrough.connect.description": "Buka panel sambungan. Jika OmniRoute berjalan pada mesin ini dengan tetapan lalai, tiada apa yang perlu diisi. Untuk pelayan di tempat lain, masukkan URL-nya dan, jika diminta, kunci API.\n[Buka panel sambungan](command:omnicopilot.manage)",
+  "walkthrough.pickModel.title": "Pilih model anda",
+  "walkthrough.pickModel.description": "Buka Urus Model, pilih OmniRoute dan tandakan model yang anda mahu dalam pemilih model sembang.\n[Urus Model](command:workbench.action.chat.manage)",
+  "walkthrough.utility.title": "Gunakan OmniRoute untuk tajuk sembang, mesej commit dan sembang sebaris",
+  "walkthrough.utility.description": "Tajuk sembang, mesej commit dan sembang sebaris menggunakan tetapan model masing-masing. Halakan ke model OmniRoute supaya semuanya turut berjalan pada gateway anda.\n[Buka Tetapan](command:workbench.action.openSettings?%5B%22chat.utility%22%5D)"
 }

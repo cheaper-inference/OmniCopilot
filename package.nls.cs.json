@@ -28,5 +28,17 @@
   "cfg.defaultReasoningEffort.xhigh": "Velmi vysoká — u modelů bez podpory se sníží",
   "cfg.cliPath": "Cesta k OmniRoute CLI používaná příkazem \"Configure Coding CLI\".",
   "cfg.exposeToAgentsWindow": "Experimentální: zobrazí modely OmniRoute také ve výběru modelů okna Agents v Copilotu. Vyžaduje nastavení VS Code chat.agentHost.byokModels.enabled a restart agent hostu; používá navrhované API VS Code, které se může změnit.",
-  "cfg.defaultReasoningEffort.max": "Maximální — nejvyšší úroveň. OmniRoute ji u modelů, které ji nenabízejí, sníží."
+  "cfg.defaultReasoningEffort.max": "Maximální — nejvyšší úroveň. OmniRoute ji u modelů, které ji nenabízejí, sníží.",
+  "cfg.statusBarUsage": "Zobrazovat vedle stavu připojení, kolik z denního limitu klíče zbývá.",
+  "cfg.sendProjectName": "Odesílat s každým požadavkem v chatu název otevřeného pracovního prostoru do OmniRoute, aby bylo možné využití seskupovat podle projektu. Ve výchozím nastavení vypnuto.",
+  "walkthrough.title": "Začínáme s OmniRoute",
+  "walkthrough.description": "Přidejte modely ze své brány OmniRoute do výběru modelů v Copilot Chat.",
+  "walkthrough.run.title": "Spustit OmniRoute",
+  "walkthrough.run.description": "OmniRoute je brána, se kterou toto rozšíření komunikuje. Nainstalujte ji a nechte spuštěnou. Ve výchozím nastavení odpovídá na adrese http://localhost:20128.\n[Nainstalovat OmniRoute](command:omnicopilot.installOmniRoute)\n[Zkontrolovat připojení](command:omnicopilot.checkConnection)",
+  "walkthrough.connect.title": "Připojit",
+  "walkthrough.connect.description": "Otevřete panel připojení. Pokud OmniRoute běží na tomto počítači s výchozím nastavením, není co vyplňovat. Pro server jinde zadejte jeho URL adresu a klíč API, pokud ho server vyžaduje.\n[Otevřít panel připojení](command:omnicopilot.manage)",
+  "walkthrough.pickModel.title": "Vybrat modely",
+  "walkthrough.pickModel.description": "Otevřete \"Spravovat modely\", zvolte OmniRoute a zaškrtněte modely, které chcete mít ve výběru modelů v chatu.\n[Spravovat modely](command:workbench.action.chat.manage)",
+  "walkthrough.utility.title": "Používat OmniRoute pro názvy, zprávy commitů a chat v editoru",
+  "walkthrough.utility.description": "Názvy chatů, zprávy commitů a chat v editoru používají vlastní nastavení modelů. Nasměrujte je na model OmniRoute, aby běžely také přes vaši bránu.\n[Otevřít nastavení](command:workbench.action.openSettings?%5B%22chat.utility%22%5D)"
 }

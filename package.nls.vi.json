@@ -28,5 +28,17 @@
   "cfg.defaultReasoningEffort.xhigh": "Rất cao — hạ xuống với mô hình không hỗ trợ",
   "cfg.cliPath": "Đường dẫn đến OmniRoute CLI, được lệnh \"Cấu hình CLI lập trình\" sử dụng.",
   "cfg.exposeToAgentsWindow": "Thử nghiệm: cũng hiển thị các mô hình OmniRoute trong bộ chọn mô hình của cửa sổ Agents của Copilot. Yêu cầu cài đặt VS Code chat.agentHost.byokModels.enabled và khởi động lại agent host; sử dụng API đề xuất của VS Code có thể thay đổi.",
-  "cfg.defaultReasoningEffort.max": "Tối đa — mức cao nhất. OmniRoute sẽ hạ xuống với các mô hình không có mức này."
+  "cfg.defaultReasoningEffort.max": "Tối đa — mức cao nhất. OmniRoute sẽ hạ xuống với các mô hình không có mức này.",
+  "cfg.statusBarUsage": "Hiển thị hạn mức hằng ngày của khóa còn lại bao nhiêu, bên cạnh trạng thái kết nối.",
+  "cfg.sendProjectName": "Gửi tên không gian làm việc đang mở đến OmniRoute cùng với mỗi yêu cầu trò chuyện, để có thể nhóm mức dùng theo dự án. Mặc định là tắt.",
+  "walkthrough.title": "Bắt đầu với OmniRoute",
+  "walkthrough.description": "Đưa các mô hình của gateway OmniRoute vào bộ chọn mô hình của Copilot Chat.",
+  "walkthrough.run.title": "Chạy OmniRoute",
+  "walkthrough.run.description": "OmniRoute là gateway mà tiện ích này kết nối tới. Hãy cài đặt và để nó chạy. Theo mặc định, nó phản hồi tại http://localhost:20128.\n[Cài đặt OmniRoute](command:omnicopilot.installOmniRoute)\n[Kiểm tra kết nối](command:omnicopilot.checkConnection)",
+  "walkthrough.connect.title": "Kết nối",
+  "walkthrough.connect.description": "Mở bảng kết nối. Nếu OmniRoute chạy trên máy này với cài đặt mặc định thì không cần điền gì. Với máy chủ ở nơi khác, hãy nhập URL của nó và, nếu được yêu cầu, nhập khóa API.\n[Mở bảng kết nối](command:omnicopilot.manage)",
+  "walkthrough.pickModel.title": "Chọn mô hình của bạn",
+  "walkthrough.pickModel.description": "Mở Quản lý mô hình, chọn OmniRoute và đánh dấu các mô hình bạn muốn dùng trong bộ chọn mô hình của cuộc trò chuyện.\n[Quản lý mô hình](command:workbench.action.chat.manage)",
+  "walkthrough.utility.title": "Dùng OmniRoute cho tiêu đề cuộc trò chuyện, thông điệp commit và trò chuyện nội tuyến",
+  "walkthrough.utility.description": "Tiêu đề cuộc trò chuyện, thông điệp commit và trò chuyện nội tuyến dùng cài đặt mô hình riêng. Hãy trỏ chúng đến một mô hình OmniRoute để chạy các tác vụ đó trên gateway của bạn.\n[Mở Cài đặt](command:workbench.action.openSettings?%5B%22chat.utility%22%5D)"
 }

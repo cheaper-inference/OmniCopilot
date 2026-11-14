@@ -23,7 +23,6 @@
   "OmniRoute detected! Your models are ready — open the Copilot Chat model picker and choose any OmniRoute model.": "OmniRoute havaittu! Mallisi ovat valmiina — avaa Copilot Chatin mallivalitsin ja valitse mikä tahansa OmniRoute-malli.",
   "OmniRoute is a free, open-source AI router: one endpoint, 340+ providers (90+ free), auto-fallback. Install it with npm and this extension lights up automatically.": "OmniRoute on ilmainen, avoimen lähdekoodin tekoälyreititin: yksi päätepiste, yli 340 palveluntarjoajaa (yli 90 ilmaista), automaattinen varmistus. Asenna se npm:llä, niin tämä laajennus aktivoituu automaattisesti.",
   "OmniRoute is unreachable. Check that it is running (npx omniroute) and that omnicopilot.baseUrl points at it.": "OmniRoutea ei tavoiteta. Tarkista, että se on käynnissä (npx omniroute) ja että omnicopilot.baseUrl osoittaa siihen.",
-  "OmniRoute model list refreshed.": "OmniRouten malliluettelo päivitetty.",
   "OmniRoute on GitHub": "OmniRoute GitHubissa",
   "Extension settings": "Laajennuksen asetukset",
   "My usage": "Käyttöni",
@@ -86,5 +85,19 @@
   "{0}% left": "{0} % jäljellä",
   "{0} left": "{0} jäljellä",
   "unlimited": "rajoittamaton",
-  "Could not read the connection status.": "Yhteyden tilaa ei voitu lukea."
+  "Could not read the connection status.": "Yhteyden tilaa ei voitu lukea.",
+  "Continue": "Jatka",
+  "This workspace's API key will be written to the configuration of {0}, which all your projects share.": "Tämän työtilan API-avain kirjoitetaan työkalun {0} konfiguraatioon, jonka kaikki projektisi jakavat.",
+  "Models listed from {1}: {0}.": "Mallit listattu osoitteesta {1}: {0}.",
+  "API key for this workspace": "Tämän työtilan API-avain",
+  "Free": "Ilmainen",
+  "{0} in · {1} out per 1M": "{0} syöte · {1} tuloste / 1 milj.",
+  "Use this key only in this workspace": "Käytä tätä avainta vain tässä työtilassa",
+  "Using this workspace's key": "Käytössä tämän työtilan avain",
+  "Using your global key": "Käytössä yleinen avaimesi",
+  "Set API key": "Aseta API-avain",
+  "OmniRoute at {0} rejected the API key (HTTP {1}).": "OmniRoute osoitteessa {0} hylkäsi API-avaimen (HTTP {1}).",
+  "OmniRoute at {0} needs an API key (HTTP {1}).": "OmniRoute osoitteessa {0} vaatii API-avaimen (HTTP {1}).",
+  "The model's answer was cut off before the tool call was complete. Raise omnicopilot.maxOutputTokens or ask for smaller steps.": "Mallin vastaus katkesi ennen kuin työkalukutsu oli valmis. Nosta asetusta omnicopilot.maxOutputTokens tai pyydä pienempiä vaiheita.",
+  "The model sent a tool call with invalid arguments.": "Malli lähetti työkalukutsun, jonka argumentit ovat virheellisiä."
 }

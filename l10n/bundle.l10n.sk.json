@@ -23,7 +23,6 @@
   "OmniRoute detected! Your models are ready — open the Copilot Chat model picker and choose any OmniRoute model.": "OmniRoute bol zistený! Vaše modely sú pripravené — otvorte výber modelov v Copilot Chat a vyberte ľubovoľný model OmniRoute.",
   "OmniRoute is a free, open-source AI router: one endpoint, 340+ providers (90+ free), auto-fallback. Install it with npm and this extension lights up automatically.": "OmniRoute je bezplatný open-source AI router: jeden koncový bod, viac než 340 poskytovateľov (viac než 90 bezplatných), automatický fallback. Nainštalujte ho cez npm a toto rozšírenie sa aktivuje automaticky.",
   "OmniRoute is unreachable. Check that it is running (npx omniroute) and that omnicopilot.baseUrl points at it.": "OmniRoute je nedostupný. Skontrolujte, či je spustený (npx omniroute) a či naň ukazuje omnicopilot.baseUrl.",
-  "OmniRoute model list refreshed.": "Zoznam modelov OmniRoute bol obnovený.",
   "OmniRoute on GitHub": "OmniRoute na GitHube",
   "Extension settings": "Nastavenia rozšírenia",
   "My usage": "Moje využitie",
@@ -86,5 +85,19 @@
   "{0}% left": "zostáva {0} %",
   "{0} left": "zostáva {0}",
   "unlimited": "neobmedzené",
-  "Could not read the connection status.": "Stav pripojenia sa nepodarilo načítať."
+  "Could not read the connection status.": "Stav pripojenia sa nepodarilo načítať.",
+  "Continue": "Pokračovať",
+  "This workspace's API key will be written to the configuration of {0}, which all your projects share.": "Kľúč API tohto pracovného priestoru sa zapíše do konfigurácie nástroja {0}, ktorú zdieľajú všetky vaše projekty.",
+  "Models listed from {1}: {0}.": "Modely načítané zo servera {1}: {0}.",
+  "API key for this workspace": "Kľúč API pre tento pracovný priestor",
+  "Free": "Zadarmo",
+  "{0} in · {1} out per 1M": "{0} vstup · {1} výstup / 1M",
+  "Use this key only in this workspace": "Použiť tento kľúč iba v tomto pracovnom priestore",
+  "Using this workspace's key": "Používa sa kľúč tohto pracovného priestoru",
+  "Using your global key": "Používa sa váš globálny kľúč",
+  "Set API key": "Nastaviť kľúč API",
+  "OmniRoute at {0} rejected the API key (HTTP {1}).": "OmniRoute na adrese {0} odmietol kľúč API (HTTP {1}).",
+  "OmniRoute at {0} needs an API key (HTTP {1}).": "OmniRoute na adrese {0} vyžaduje kľúč API (HTTP {1}).",
+  "The model's answer was cut off before the tool call was complete. Raise omnicopilot.maxOutputTokens or ask for smaller steps.": "Odpoveď modelu bola prerušená skôr, než sa dokončilo volanie nástroja. Zvýšte hodnotu omnicopilot.maxOutputTokens alebo požiadajte o menšie kroky.",
+  "The model sent a tool call with invalid arguments.": "Model odoslal volanie nástroja s neplatnými argumentmi."
 }

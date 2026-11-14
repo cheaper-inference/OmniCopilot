@@ -23,7 +23,6 @@
   "OmniRoute detected! Your models are ready — open the Copilot Chat model picker and choose any OmniRoute model.": "OmniRoute شناسایی شد! مدل‌های شما آماده‌اند — انتخابگر مدل Copilot Chat را باز کنید و هر مدل OmniRoute را که خواستید انتخاب کنید.",
   "OmniRoute is a free, open-source AI router: one endpoint, 340+ providers (90+ free), auto-fallback. Install it with npm and this extension lights up automatically.": "OmniRoute یک مسیریاب هوش مصنوعی رایگان و متن‌باز است: یک نقطه پایانی، بیش از 340 ارائه‌دهنده (بیش از 90 رایگان)، جایگزینی خودکار. آن را با npm نصب کنید تا این افزونه به‌طور خودکار فعال شود.",
   "OmniRoute is unreachable. Check that it is running (npx omniroute) and that omnicopilot.baseUrl points at it.": "OmniRoute در دسترس نیست. بررسی کنید که در حال اجرا باشد (npx omniroute) و omnicopilot.baseUrl به آن اشاره کند.",
-  "OmniRoute model list refreshed.": "فهرست مدل‌های OmniRoute نوسازی شد.",
   "OmniRoute on GitHub": "OmniRoute در GitHub",
   "Extension settings": "تنظیمات افزونه",
   "My usage": "مصرف من",
@@ -86,5 +85,19 @@
   "{0}% left": "{0}% باقی مانده",
   "{0} left": "{0} باقی مانده",
   "unlimited": "نامحدود",
-  "Could not read the connection status.": "خواندن وضعیت اتصال ممکن نشد."
+  "Could not read the connection status.": "خواندن وضعیت اتصال ممکن نشد.",
+  "Continue": "ادامه",
+  "This workspace's API key will be written to the configuration of {0}, which all your projects share.": "کلید API این فضای کار در پیکربندی ابزار {0} نوشته خواهد شد؛ این پیکربندی میان همه پروژه‌های شما مشترک است.",
+  "Models listed from {1}: {0}.": "مدل‌های فهرست‌شده از سرور {1}: {0}.",
+  "API key for this workspace": "کلید API برای این فضای کار",
+  "Free": "رایگان",
+  "{0} in · {1} out per 1M": "ورودی {0} · خروجی {1} / 1M",
+  "Use this key only in this workspace": "استفاده از این کلید فقط در این فضای کار",
+  "Using this workspace's key": "از کلید این فضای کار استفاده می‌شود",
+  "Using your global key": "از کلید سراسری شما استفاده می‌شود",
+  "Set API key": "تنظیم کلید API",
+  "OmniRoute at {0} rejected the API key (HTTP {1}).": "سرور OmniRoute در {0} کلید API را نپذیرفت (HTTP {1}).",
+  "OmniRoute at {0} needs an API key (HTTP {1}).": "سرور OmniRoute در {0} به کلید API نیاز دارد (HTTP {1}).",
+  "The model's answer was cut off before the tool call was complete. Raise omnicopilot.maxOutputTokens or ask for smaller steps.": "پاسخ مدل پیش از کامل شدن فراخوانی ابزار قطع شد. مقدار تنظیم omnicopilot.maxOutputTokens را افزایش دهید یا مراحل کوچک‌تری بخواهید.",
+  "The model sent a tool call with invalid arguments.": "مدل یک فراخوانی ابزار با آرگومان‌های نامعتبر ارسال کرد."
 }

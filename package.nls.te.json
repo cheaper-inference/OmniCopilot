@@ -28,5 +28,17 @@
   "cfg.defaultReasoningEffort.xhigh": "చాలా ఎక్కువ — మద్దతు లేని మోడళ్లలో తగ్గించబడుతుంది",
   "cfg.cliPath": "\"కోడింగ్ CLIని కాన్ఫిగర్ చేయండి\" ఆదేశం ఉపయోగించే OmniRoute CLI పాత్.",
   "cfg.exposeToAgentsWindow": "ప్రయోగాత్మకం: Copilot Agents window మోడల్ పికర్‌లో కూడా OmniRoute మోడళ్లను చూపుతుంది. VS Code సెట్టింగ్ chat.agentHost.byokModels.enabled మరియు agent host రీస్టార్ట్ అవసరం; మారవచ్చే ప్రతిపాదిత VS Code API ని ఉపయోగిస్తుంది.",
-  "cfg.defaultReasoningEffort.max": "గరిష్ఠం — అత్యున్నత స్థాయి. దీన్ని అందించని మోడళ్ల కోసం OmniRoute దీన్ని తగ్గిస్తుంది."
+  "cfg.defaultReasoningEffort.max": "గరిష్ఠం — అత్యున్నత స్థాయి. దీన్ని అందించని మోడళ్ల కోసం OmniRoute దీన్ని తగ్గిస్తుంది.",
+  "cfg.statusBarUsage": "కనెక్షన్ స్థితి పక్కన కీ యొక్క రోజువారీ పరిమితిలో ఎంత మిగిలి ఉందో చూపించండి.",
+  "cfg.sendProjectName": "ప్రతి చాట్ అభ్యర్థనతో తెరిచి ఉన్న వర్క్‌స్పేస్ పేరును OmniRoute సర్వర్‌కు పంపండి, తద్వారా వినియోగాన్ని ప్రాజెక్ట్ వారీగా సమూహపరచవచ్చు. డిఫాల్ట్‌గా ఆఫ్‌లో ఉంది.",
+  "walkthrough.title": "OmniRoute తో ప్రారంభించండి",
+  "walkthrough.description": "మీ OmniRoute గేట్‌వే మోడల్స్‌ను Copilot Chat మోడల్ పికర్‌లో చేర్చండి.",
+  "walkthrough.run.title": "OmniRoute ను రన్ చేయండి",
+  "walkthrough.run.description": "ఈ ఎక్స్‌టెన్షన్ మాట్లాడే గేట్‌వే OmniRoute. దాన్ని ఇన్‌స్టాల్ చేసి రన్ అవుతూ ఉండనివ్వండి. డిఫాల్ట్‌గా అది http://localhost:20128 చిరునామా వద్ద స్పందిస్తుంది.\n[OmniRouteను ఇన్‌స్టాల్ చేయండి](command:omnicopilot.installOmniRoute)\n[కనెక్షన్‌ను తనిఖీ చేయండి](command:omnicopilot.checkConnection)",
+  "walkthrough.connect.title": "కనెక్ట్ చేయండి",
+  "walkthrough.connect.description": "కనెక్షన్ ప్యానెల్‌ను తెరవండి. OmniRoute మీ స్వంత కంప్యూటర్‌లో డిఫాల్ట్ సెట్టింగ్‌లతో రన్ అవుతుంటే, ఏమీ నింపాల్సిన అవసరం లేదు. మరెక్కడైనా ఉన్న సర్వర్ కోసం దాని URL, అది అడిగితే API కీ నమోదు చేయండి.\n[కనెక్షన్ ప్యానెల్‌ను తెరవండి](command:omnicopilot.manage)",
+  "walkthrough.pickModel.title": "మీ మోడల్స్‌ను ఎంచుకోండి",
+  "walkthrough.pickModel.description": "\"మోడల్స్‌ను నిర్వహించండి\" తెరిచి, OmniRoute ను ఎంచుకుని, చాట్ మోడల్ పికర్‌లో మీకు కావలసిన మోడల్స్‌ను టిక్ చేయండి.\n[మోడల్స్‌ను నిర్వహించండి](command:workbench.action.chat.manage)",
+  "walkthrough.utility.title": "శీర్షికలు, కమిట్ సందేశాలు మరియు ఇన్‌లైన్ చాట్ కోసం OmniRoute ను ఉపయోగించండి",
+  "walkthrough.utility.description": "చాట్ శీర్షికలు, కమిట్ సందేశాలు మరియు ఇన్‌లైన్ చాట్ తమ సొంత మోడల్ సెట్టింగ్‌లను ఉపయోగిస్తాయి. అవి కూడా మీ గేట్‌వే మీద రన్ అయ్యేలా వాటిని OmniRoute మోడల్‌కు సూచించండి.\n[సెట్టింగ్‌లను తెరవండి](command:workbench.action.openSettings?%5B%22chat.utility%22%5D)"
 }

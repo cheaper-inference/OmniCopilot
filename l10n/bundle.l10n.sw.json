@@ -23,7 +23,6 @@
   "OmniRoute detected! Your models are ready — open the Copilot Chat model picker and choose any OmniRoute model.": "OmniRoute imegunduliwa! Modeli zako ziko tayari — fungua kichaguzi cha modeli cha Copilot Chat na uchague modeli yoyote ya OmniRoute.",
   "OmniRoute is a free, open-source AI router: one endpoint, 340+ providers (90+ free), auto-fallback. Install it with npm and this extension lights up automatically.": "OmniRoute ni kipanga-njia cha AI cha bure na chenye chanzo huria: kituo kimoja, watoa huduma zaidi ya 340 (zaidi ya 90 wa bure), ubadilishaji mbadala kiotomatiki. Isakinishe kwa npm na kiendelezi hiki kitawashwa kiotomatiki.",
   "OmniRoute is unreachable. Check that it is running (npx omniroute) and that omnicopilot.baseUrl points at it.": "OmniRoute haifikiki. Hakikisha inaendeshwa (npx omniroute) na kwamba omnicopilot.baseUrl inaielekeza.",
-  "OmniRoute model list refreshed.": "Orodha ya modeli za OmniRoute imesasishwa.",
   "OmniRoute on GitHub": "OmniRoute kwenye GitHub",
   "Extension settings": "Mipangilio ya kiendelezi",
   "My usage": "Matumizi yangu",
@@ -86,5 +85,19 @@
   "{0}% left": "Imebaki {0}%",
   "{0} left": "Imebaki {0}",
   "unlimited": "bila kikomo",
-  "Could not read the connection status.": "Imeshindwa kusoma hali ya muunganisho."
+  "Could not read the connection status.": "Imeshindwa kusoma hali ya muunganisho.",
+  "Continue": "Endelea",
+  "This workspace's API key will be written to the configuration of {0}, which all your projects share.": "Ufunguo wa API wa eneo la kazi hili utaandikwa kwenye usanidi wa {0}, ambao miradi yako yote hushiriki.",
+  "Models listed from {1}: {0}.": "Modeli {0} zimeorodheshwa kutoka {1}.",
+  "API key for this workspace": "Ufunguo wa API wa eneo la kazi hili",
+  "Free": "Bure",
+  "{0} in · {1} out per 1M": "ingizo {0} · matokeo {1} kwa 1M",
+  "Use this key only in this workspace": "Tumia ufunguo huu katika eneo la kazi hili pekee",
+  "Using this workspace's key": "Inatumia ufunguo wa eneo la kazi hili",
+  "Using your global key": "Inatumia ufunguo wako wa jumla",
+  "Set API key": "Weka Ufunguo wa API",
+  "OmniRoute at {0} rejected the API key (HTTP {1}).": "OmniRoute kwenye {0} imekataa ufunguo wa API (HTTP {1}).",
+  "OmniRoute at {0} needs an API key (HTTP {1}).": "OmniRoute kwenye {0} inahitaji ufunguo wa API (HTTP {1}).",
+  "The model's answer was cut off before the tool call was complete. Raise omnicopilot.maxOutputTokens or ask for smaller steps.": "Jibu la modeli lilikatika kabla ya wito wa zana kukamilika. Ongeza omnicopilot.maxOutputTokens au omba hatua ndogo zaidi.",
+  "The model sent a tool call with invalid arguments.": "Modeli ilituma wito wa zana wenye hoja zisizo sahihi."
 }

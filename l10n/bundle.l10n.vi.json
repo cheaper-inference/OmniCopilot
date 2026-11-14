@@ -23,7 +23,6 @@
   "OmniRoute detected! Your models are ready — open the Copilot Chat model picker and choose any OmniRoute model.": "Đã phát hiện OmniRoute! Các mô hình của bạn đã sẵn sàng — mở bộ chọn mô hình của Copilot Chat và chọn bất kỳ mô hình OmniRoute nào.",
   "OmniRoute is a free, open-source AI router: one endpoint, 340+ providers (90+ free), auto-fallback. Install it with npm and this extension lights up automatically.": "OmniRoute là bộ định tuyến AI miễn phí, mã nguồn mở: một endpoint, hơn 340 nhà cung cấp (hơn 90 miễn phí), tự động chuyển dự phòng. Cài đặt bằng npm và tiện ích mở rộng này sẽ tự động kích hoạt.",
   "OmniRoute is unreachable. Check that it is running (npx omniroute) and that omnicopilot.baseUrl points at it.": "Không thể kết nối tới OmniRoute. Kiểm tra xem nó có đang chạy không (npx omniroute) và omnicopilot.baseUrl có trỏ đến nó không.",
-  "OmniRoute model list refreshed.": "Đã làm mới danh sách mô hình OmniRoute.",
   "OmniRoute on GitHub": "OmniRoute trên GitHub",
   "Extension settings": "Cài đặt tiện ích",
   "My usage": "Mức dùng của tôi",
@@ -86,5 +85,19 @@
   "{0}% left": "Còn {0}%",
   "{0} left": "Còn {0}",
   "unlimited": "không giới hạn",
-  "Could not read the connection status.": "Không thể đọc trạng thái kết nối."
+  "Could not read the connection status.": "Không thể đọc trạng thái kết nối.",
+  "Continue": "Tiếp tục",
+  "This workspace's API key will be written to the configuration of {0}, which all your projects share.": "Khóa API của không gian làm việc này sẽ được ghi vào cấu hình của {0}, được dùng chung cho mọi dự án của bạn.",
+  "Models listed from {1}: {0}.": "Đã tải {0} mô hình từ {1}.",
+  "API key for this workspace": "Khóa API cho không gian làm việc này",
+  "Free": "Miễn phí",
+  "{0} in · {1} out per 1M": "đầu vào {0} · đầu ra {1} / 1M",
+  "Use this key only in this workspace": "Chỉ dùng khóa này trong không gian làm việc này",
+  "Using this workspace's key": "Đang dùng khóa của không gian làm việc này",
+  "Using your global key": "Đang dùng khóa toàn cục của bạn",
+  "Set API key": "Đặt khóa API",
+  "OmniRoute at {0} rejected the API key (HTTP {1}).": "OmniRoute tại {0} đã từ chối khóa API (HTTP {1}).",
+  "OmniRoute at {0} needs an API key (HTTP {1}).": "OmniRoute tại {0} cần khóa API (HTTP {1}).",
+  "The model's answer was cut off before the tool call was complete. Raise omnicopilot.maxOutputTokens or ask for smaller steps.": "Câu trả lời của mô hình bị cắt trước khi lệnh gọi công cụ hoàn tất. Hãy tăng omnicopilot.maxOutputTokens hoặc yêu cầu từng bước nhỏ hơn.",
+  "The model sent a tool call with invalid arguments.": "Mô hình đã gửi một lệnh gọi công cụ có đối số không hợp lệ."
 }

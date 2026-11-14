@@ -23,7 +23,6 @@
   "OmniRoute detected! Your models are ready — open the Copilot Chat model picker and choose any OmniRoute model.": "พบ OmniRoute แล้ว! โมเดลของคุณพร้อมใช้งาน — เปิดตัวเลือกโมเดลของ Copilot Chat แล้วเลือกโมเดล OmniRoute ใดก็ได้",
   "OmniRoute is a free, open-source AI router: one endpoint, 340+ providers (90+ free), auto-fallback. Install it with npm and this extension lights up automatically.": "OmniRoute คือ AI router แบบโอเพนซอร์สที่ใช้งานฟรี: ปลายทางเดียว ผู้ให้บริการกว่า 340 ราย (ฟรีกว่า 90 ราย) สลับสำรองอัตโนมัติ ติดตั้งด้วย npm แล้วส่วนขยายนี้จะทำงานโดยอัตโนมัติ",
   "OmniRoute is unreachable. Check that it is running (npx omniroute) and that omnicopilot.baseUrl points at it.": "ไม่สามารถเข้าถึง OmniRoute ได้ ตรวจสอบว่ากำลังทำงานอยู่ (npx omniroute) และ omnicopilot.baseUrl ชี้ไปที่มัน",
-  "OmniRoute model list refreshed.": "รีเฟรชรายการโมเดล OmniRoute แล้ว",
   "OmniRoute on GitHub": "OmniRoute บน GitHub",
   "Extension settings": "การตั้งค่าส่วนขยาย",
   "My usage": "การใช้งานของฉัน",
@@ -86,5 +85,19 @@
   "{0}% left": "เหลือ {0}%",
   "{0} left": "เหลือ {0}",
   "unlimited": "ไม่จำกัด",
-  "Could not read the connection status.": "ไม่สามารถอ่านสถานะการเชื่อมต่อได้"
+  "Could not read the connection status.": "ไม่สามารถอ่านสถานะการเชื่อมต่อได้",
+  "Continue": "ดำเนินการต่อ",
+  "This workspace's API key will be written to the configuration of {0}, which all your projects share.": "คีย์ API ของพื้นที่ทำงานนี้จะถูกเขียนลงในการกำหนดค่าของ {0} ซึ่งทุกโปรเจกต์ของคุณใช้ร่วมกัน",
+  "Models listed from {1}: {0}.": "รายการโมเดลจาก {1}: {0} รายการ",
+  "API key for this workspace": "คีย์ API สำหรับพื้นที่ทำงานนี้",
+  "Free": "ฟรี",
+  "{0} in · {1} out per 1M": "อินพุต {0} · เอาต์พุต {1} / 1M",
+  "Use this key only in this workspace": "ใช้คีย์นี้เฉพาะในพื้นที่ทำงานนี้",
+  "Using this workspace's key": "กำลังใช้คีย์ของพื้นที่ทำงานนี้",
+  "Using your global key": "กำลังใช้คีย์ส่วนกลางของคุณ",
+  "Set API key": "ตั้งค่าคีย์ API",
+  "OmniRoute at {0} rejected the API key (HTTP {1}).": "OmniRoute ที่ {0} ปฏิเสธคีย์ API (HTTP {1})",
+  "OmniRoute at {0} needs an API key (HTTP {1}).": "OmniRoute ที่ {0} ต้องใช้คีย์ API (HTTP {1})",
+  "The model's answer was cut off before the tool call was complete. Raise omnicopilot.maxOutputTokens or ask for smaller steps.": "คำตอบของโมเดลถูกตัดก่อนที่การเรียกใช้เครื่องมือจะเสร็จสมบูรณ์ เพิ่มค่า omnicopilot.maxOutputTokens หรือขอทีละขั้นตอนย่อย ๆ",
+  "The model sent a tool call with invalid arguments.": "โมเดลส่งการเรียกใช้เครื่องมือที่มีอาร์กิวเมนต์ไม่ถูกต้อง"
 }

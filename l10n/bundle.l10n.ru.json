@@ -23,7 +23,6 @@
   "OmniRoute detected! Your models are ready — open the Copilot Chat model picker and choose any OmniRoute model.": "OmniRoute обнаружен! Модели готовы — откройте список моделей Copilot Chat и выберите любую модель OmniRoute.",
   "OmniRoute is a free, open-source AI router: one endpoint, 340+ providers (90+ free), auto-fallback. Install it with npm and this extension lights up automatically.": "OmniRoute — бесплатный маршрутизатор ИИ с открытым исходным кодом: одна конечная точка, более 340 провайдеров (более 90 бесплатных), автоматический переход на резерв. Установите его через npm — и это расширение включится автоматически.",
   "OmniRoute is unreachable. Check that it is running (npx omniroute) and that omnicopilot.baseUrl points at it.": "OmniRoute недоступен. Убедитесь, что он запущен (npx omniroute) и что omnicopilot.baseUrl указывает на него.",
-  "OmniRoute model list refreshed.": "Список моделей OmniRoute обновлён.",
   "OmniRoute on GitHub": "OmniRoute на GitHub",
   "Extension settings": "Настройки расширения",
   "My usage": "Моё использование",
@@ -86,5 +85,19 @@
   "{0}% left": "остаток: {0}%",
   "{0} left": "остаток: {0}",
   "unlimited": "без ограничений",
-  "Could not read the connection status.": "Не удалось прочитать состояние подключения."
+  "Could not read the connection status.": "Не удалось прочитать состояние подключения.",
+  "Continue": "Продолжить",
+  "This workspace's API key will be written to the configuration of {0}, which all your projects share.": "Ключ API этой рабочей области будет записан в конфигурацию инструмента {0}, общую для всех ваших проектов.",
+  "Models listed from {1}: {0}.": "Модели получены с сервера {1}: {0}.",
+  "API key for this workspace": "Ключ API для этой рабочей области",
+  "Free": "Бесплатно",
+  "{0} in · {1} out per 1M": "{0} вх. · {1} вых. за 1 млн",
+  "Use this key only in this workspace": "Использовать этот ключ только в этой рабочей области",
+  "Using this workspace's key": "Используется ключ этой рабочей области",
+  "Using your global key": "Используется ваш глобальный ключ",
+  "Set API key": "Задать ключ API",
+  "OmniRoute at {0} rejected the API key (HTTP {1}).": "OmniRoute по адресу {0} отклонил ключ API (HTTP {1}).",
+  "OmniRoute at {0} needs an API key (HTTP {1}).": "OmniRoute по адресу {0} требует ключ API (HTTP {1}).",
+  "The model's answer was cut off before the tool call was complete. Raise omnicopilot.maxOutputTokens or ask for smaller steps.": "Ответ модели был прерван до завершения вызова инструмента. Увеличьте значение omnicopilot.maxOutputTokens или задавайте более мелкие шаги.",
+  "The model sent a tool call with invalid arguments.": "Модель отправила вызов инструмента с недопустимыми аргументами."
 }

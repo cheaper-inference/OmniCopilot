@@ -28,5 +28,17 @@
   "cfg.defaultReasoningEffort.xhigh": "مرتفع جدًا — يُخفَّض للنماذج التي لا تدعمه",
   "cfg.cliPath": "مسار OmniRoute CLI، الذي يستخدمه الأمر \"Configure Coding CLI\".",
   "cfg.exposeToAgentsWindow": "تجريبي: يعرض نماذج OmniRoute أيضًا في منتقي النماذج بنافذة Agents في Copilot. يتطلب إعداد VS Code المسمى chat.agentHost.byokModels.enabled وإعادة تشغيل agent host؛ يستخدم واجهة API مقترحة في VS Code وقد تتغير.",
-  "cfg.defaultReasoningEffort.max": "الأقصى — المستوى الأعلى. يخفّضه OmniRoute للنماذج التي لا توفّره."
+  "cfg.defaultReasoningEffort.max": "الأقصى — المستوى الأعلى. يخفّضه OmniRoute للنماذج التي لا توفّره.",
+  "cfg.statusBarUsage": "إظهار المتبقي من الحد اليومي للمفتاح بجوار حالة الاتصال.",
+  "cfg.sendProjectName": "إرسال اسم مساحة العمل المفتوحة إلى OmniRoute مع كل طلب دردشة، حتى يمكن تجميع الاستخدام حسب المشروع. معطّل افتراضيًا.",
+  "walkthrough.title": "ابدأ مع OmniRoute",
+  "walkthrough.description": "اجعل نماذج بوابة OmniRoute متاحة في منتقي النماذج في Copilot Chat.",
+  "walkthrough.run.title": "تشغيل OmniRoute",
+  "walkthrough.run.description": "البوابة التي تتصل بها هذه الإضافة هي OmniRoute. ثبّتها واتركها قيد التشغيل. افتراضيًا تستجيب على العنوان http://localhost:20128.\n[تثبيت OmniRoute](command:omnicopilot.installOmniRoute)\n[التحقق من الاتصال](command:omnicopilot.checkConnection)",
+  "walkthrough.connect.title": "الاتصال",
+  "walkthrough.connect.description": "افتح لوحة الاتصال. إذا كان OmniRoute يعمل على جهاز الكمبيوتر الخاص بك بإعداداته الافتراضية، فلا شيء تحتاج إلى ملئه. أما للخادم الموجود في مكان آخر، فأدخل عنوان URL الخاص به، ومفتاح API إن طلبه.\n[فتح لوحة الاتصال](command:omnicopilot.manage)",
+  "walkthrough.pickModel.title": "اختر نماذجك",
+  "walkthrough.pickModel.description": "افتح إدارة النماذج، واختر OmniRoute، وحدّد النماذج التي تريدها في منتقي نماذج الدردشة.\n[إدارة النماذج](command:workbench.action.chat.manage)",
+  "walkthrough.utility.title": "استخدم OmniRoute للعناوين ورسائل الإيداع والدردشة المضمّنة",
+  "walkthrough.utility.description": "تستخدم عناوين الدردشة ورسائل الإيداع والدردشة المضمّنة إعدادات النماذج الخاصة بها. وجّهها إلى نموذج من OmniRoute لتعمل هي أيضًا على بوابتك.\n[فتح الإعدادات](command:workbench.action.openSettings?%5B%22chat.utility%22%5D)"
 }

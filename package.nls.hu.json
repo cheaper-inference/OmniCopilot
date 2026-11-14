@@ -28,5 +28,17 @@
   "cfg.defaultReasoningEffort.xhigh": "Nagyon magas — az azt nem támogató modelleknél lejjebb kerül",
   "cfg.cliPath": "Az OmniRoute CLI elérési útja, amelyet a \"Kódolási CLI konfigurálása\" parancs használ.",
   "cfg.exposeToAgentsWindow": "Kísérleti: az OmniRoute-modelleket a Copilot Agents ablakának modellválasztójában is megjeleníti. A VS Code chat.agentHost.byokModels.enabled beállítása és az agent host újraindítása szükséges; a VS Code javasolt API-ját használja, amely változhat.",
-  "cfg.defaultReasoningEffort.max": "Maximum — a legfelső szint. Az OmniRoute lejjebb viszi azoknál a modelleknél, amelyek nem kínálják."
+  "cfg.defaultReasoningEffort.max": "Maximum — a legfelső szint. Az OmniRoute lejjebb viszi azoknál a modelleknél, amelyek nem kínálják.",
+  "cfg.statusBarUsage": "A kulcs napi korlátjából hátralévő rész megjelenítése a kapcsolat állapota mellett.",
+  "cfg.sendProjectName": "A megnyitott munkaterület nevének elküldése az OmniRoute-nak minden csevegési kéréssel, hogy a használat projektenként csoportosítható legyen. Alapértelmezés szerint ki van kapcsolva.",
+  "walkthrough.title": "Első lépések az OmniRoute-tal",
+  "walkthrough.description": "Tegye elérhetővé OmniRoute-átjárója modelljeit a Copilot Chat modellválasztójában.",
+  "walkthrough.run.title": "OmniRoute indítása",
+  "walkthrough.run.description": "Az OmniRoute az az átjáró, amellyel ez a bővítmény kommunikál. Telepítse, és hagyja futni. Alapértelmezés szerint a http://localhost:20128 címen válaszol.\n[OmniRoute telepítése](command:omnicopilot.installOmniRoute)\n[Kapcsolat ellenőrzése](command:omnicopilot.checkConnection)",
+  "walkthrough.connect.title": "Csatlakozás",
+  "walkthrough.connect.description": "Nyissa meg a kapcsolati panelt. Ha az OmniRoute ezen a gépen fut az alapértelmezett beállításokkal, nincs mit kitölteni. Más helyen lévő kiszolgálóhoz adja meg annak URL-jét, és ha kéri, egy API-kulcsot.\n[A kapcsolati panel megnyitása](command:omnicopilot.manage)",
+  "walkthrough.pickModel.title": "Modellek kiválasztása",
+  "walkthrough.pickModel.description": "Nyissa meg a \"Modellek kezelése\" nézetet, válassza az OmniRoute-ot, és jelölje be azokat a modelleket, amelyeket a csevegés modellválasztójában látni szeretne.\n[Modellek kezelése](command:workbench.action.chat.manage)",
+  "walkthrough.utility.title": "Az OmniRoute használata címekhez, commit-üzenetekhez és beágyazott csevegéshez",
+  "walkthrough.utility.description": "A csevegések címei, a commit-üzenetek és a beágyazott csevegés saját modellbeállítást használ. Irányítsa őket egy OmniRoute-modellre, hogy ezek is az Ön átjáróján fussanak.\n[Beállítások megnyitása](command:workbench.action.openSettings?%5B%22chat.utility%22%5D)"
 }

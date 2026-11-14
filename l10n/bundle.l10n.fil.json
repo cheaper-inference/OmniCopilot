@@ -23,7 +23,6 @@
   "OmniRoute detected! Your models are ready — open the Copilot Chat model picker and choose any OmniRoute model.": "Natukoy ang OmniRoute! Handa na ang iyong mga model — buksan ang model picker ng Copilot Chat at pumili ng anumang OmniRoute model.",
   "OmniRoute is a free, open-source AI router: one endpoint, 340+ providers (90+ free), auto-fallback. Install it with npm and this extension lights up automatically.": "Ang OmniRoute ay isang libre at open-source na AI router: isang endpoint, 340+ provider (90+ libre), awtomatikong fallback. I-install ito gamit ang npm at awtomatikong magiging aktibo ang extension na ito.",
   "OmniRoute is unreachable. Check that it is running (npx omniroute) and that omnicopilot.baseUrl points at it.": "Hindi maabot ang OmniRoute. Tiyaking tumatakbo ito (npx omniroute) at nakaturo dito ang omnicopilot.baseUrl.",
-  "OmniRoute model list refreshed.": "Na-refresh ang listahan ng mga OmniRoute model.",
   "OmniRoute on GitHub": "OmniRoute sa GitHub",
   "Extension settings": "Mga setting ng extension",
   "My usage": "Aking paggamit",
@@ -86,5 +85,19 @@
   "{0}% left": "{0}% ang natitira",
   "{0} left": "{0} ang natitira",
   "unlimited": "walang limitasyon",
-  "Could not read the connection status.": "Hindi mabasa ang status ng koneksyon."
+  "Could not read the connection status.": "Hindi mabasa ang status ng koneksyon.",
+  "Continue": "Magpatuloy",
+  "This workspace's API key will be written to the configuration of {0}, which all your projects share.": "Isusulat ang API key ng workspace na ito sa configuration ng {0}, na ibinabahagi ng lahat ng iyong proyekto.",
+  "Models listed from {1}: {0}.": "Nakalista ang {0} model mula sa {1}.",
+  "API key for this workspace": "API key para sa workspace na ito",
+  "Free": "Libre",
+  "{0} in · {1} out per 1M": "{0} input · {1} output kada 1M",
+  "Use this key only in this workspace": "Gamitin ang key na ito sa workspace na ito lang",
+  "Using this workspace's key": "Ginagamit ang key ng workspace na ito",
+  "Using your global key": "Ginagamit ang iyong global key",
+  "Set API key": "Itakda ang API Key",
+  "OmniRoute at {0} rejected the API key (HTTP {1}).": "Tinanggihan ng OmniRoute sa {0} ang API key (HTTP {1}).",
+  "OmniRoute at {0} needs an API key (HTTP {1}).": "Nangangailangan ng API key ang OmniRoute sa {0} (HTTP {1}).",
+  "The model's answer was cut off before the tool call was complete. Raise omnicopilot.maxOutputTokens or ask for smaller steps.": "Naputol ang sagot ng model bago makumpleto ang tool call. Taasan ang omnicopilot.maxOutputTokens o humiling ng mas maliliit na hakbang.",
+  "The model sent a tool call with invalid arguments.": "Nagpadala ang model ng tool call na may di-wastong mga argument."
 }

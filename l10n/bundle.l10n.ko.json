@@ -23,7 +23,6 @@
   "OmniRoute detected! Your models are ready — open the Copilot Chat model picker and choose any OmniRoute model.": "OmniRoute가 감지되었습니다! 모델이 준비되었습니다 — Copilot Chat 모델 선택기를 열고 원하는 OmniRoute 모델을 선택하세요.",
   "OmniRoute is a free, open-source AI router: one endpoint, 340+ providers (90+ free), auto-fallback. Install it with npm and this extension lights up automatically.": "OmniRoute는 무료 오픈 소스 AI 라우터입니다. 하나의 엔드포인트, 340개 이상의 공급자(90개 이상 무료), 자동 대체 기능을 제공합니다. npm으로 설치하면 이 확장이 자동으로 활성화됩니다.",
   "OmniRoute is unreachable. Check that it is running (npx omniroute) and that omnicopilot.baseUrl points at it.": "OmniRoute에 연결할 수 없습니다. 실행 중인지(npx omniroute), omnicopilot.baseUrl이 해당 서버를 가리키는지 확인하세요.",
-  "OmniRoute model list refreshed.": "OmniRoute 모델 목록을 새로 고쳤습니다.",
   "OmniRoute on GitHub": "GitHub의 OmniRoute",
   "Extension settings": "확장 설정",
   "My usage": "내 사용량",
@@ -86,5 +85,19 @@
   "{0}% left": "{0}% 남음",
   "{0} left": "{0} 남음",
   "unlimited": "무제한",
-  "Could not read the connection status.": "연결 상태를 읽을 수 없습니다."
+  "Could not read the connection status.": "연결 상태를 읽을 수 없습니다.",
+  "Continue": "계속",
+  "This workspace's API key will be written to the configuration of {0}, which all your projects share.": "이 작업 영역의 API 키가 모든 프로젝트에서 공유하는 {0}의 구성에 기록됩니다.",
+  "Models listed from {1}: {0}.": "{1}에서 불러온 모델: {0}개.",
+  "API key for this workspace": "이 작업 영역의 API 키",
+  "Free": "무료",
+  "{0} in · {1} out per 1M": "입력 {0} · 출력 {1} / 1M",
+  "Use this key only in this workspace": "이 작업 영역에서만 이 키 사용",
+  "Using this workspace's key": "이 작업 영역의 키 사용 중",
+  "Using your global key": "전역 키 사용 중",
+  "Set API key": "API 키 설정",
+  "OmniRoute at {0} rejected the API key (HTTP {1}).": "{0}의 OmniRoute가 API 키를 거부했습니다(HTTP {1}).",
+  "OmniRoute at {0} needs an API key (HTTP {1}).": "{0}의 OmniRoute에 API 키가 필요합니다(HTTP {1}).",
+  "The model's answer was cut off before the tool call was complete. Raise omnicopilot.maxOutputTokens or ask for smaller steps.": "모델의 응답이 도구 호출이 완료되기 전에 끊겼습니다. omnicopilot.maxOutputTokens 값을 높이거나 더 작은 단계로 요청하세요.",
+  "The model sent a tool call with invalid arguments.": "모델이 잘못된 인수가 담긴 도구 호출을 보냈습니다."
 }

@@ -28,5 +28,17 @@
   "cfg.defaultReasoningEffort.xhigh": "Molto alto — ridotto per i modelli che non lo supportano",
   "cfg.cliPath": "Percorso della CLI di OmniRoute, usato dal comando \"Configura CLI di coding\".",
   "cfg.exposeToAgentsWindow": "Sperimentale: mostra i modelli OmniRoute anche nel selettore modelli della finestra Agents di Copilot. Richiede l'impostazione di VS Code chat.agentHost.byokModels.enabled e il riavvio dell'agent host; usa un'API proposta di VS Code che può cambiare.",
-  "cfg.defaultReasoningEffort.max": "Massimo — il livello più alto. OmniRoute lo riduce per i modelli che non lo offrono."
+  "cfg.defaultReasoningEffort.max": "Massimo — il livello più alto. OmniRoute lo riduce per i modelli che non lo offrono.",
+  "cfg.statusBarUsage": "Mostra quanto resta del limite giornaliero della chiave accanto allo stato della connessione.",
+  "cfg.sendProjectName": "Invia a OmniRoute il nome dell'area di lavoro aperta a ogni richiesta di chat, così l'utilizzo può essere raggruppato per progetto. Disattivato per impostazione predefinita.",
+  "walkthrough.title": "Per iniziare con OmniRoute",
+  "walkthrough.description": "Aggiungi i modelli del tuo gateway OmniRoute al selettore dei modelli di Copilot Chat.",
+  "walkthrough.run.title": "Avvia OmniRoute",
+  "walkthrough.run.description": "OmniRoute è il gateway con cui comunica questa estensione. Installalo e lascialo in esecuzione. Per impostazione predefinita risponde su http://localhost:20128.\n[Installa OmniRoute](command:omnicopilot.installOmniRoute)\n[Verifica connessione](command:omnicopilot.checkConnection)",
+  "walkthrough.connect.title": "Connetti",
+  "walkthrough.connect.description": "Apri il pannello di connessione. Se OmniRoute è in esecuzione su questo computer con le impostazioni predefinite, non c'è nulla da compilare. Per un server altrove, inserisci il suo URL e, se la richiede, una chiave API.\n[Apri pannello di connessione](command:omnicopilot.manage)",
+  "walkthrough.pickModel.title": "Scegli i tuoi modelli",
+  "walkthrough.pickModel.description": "Apri \"Gestisci modelli\", scegli OmniRoute e seleziona i modelli che vuoi nel selettore dei modelli della chat.\n[Gestisci modelli](command:workbench.action.chat.manage)",
+  "walkthrough.utility.title": "Usa OmniRoute per titoli, messaggi di commit e chat inline",
+  "walkthrough.utility.description": "I titoli delle chat, i messaggi di commit e la chat inline usano impostazioni del modello proprie. Puntali a un modello OmniRoute per eseguirli anche sul tuo gateway.\n[Apri impostazioni](command:workbench.action.openSettings?%5B%22chat.utility%22%5D)"
 }

@@ -28,5 +28,17 @@
   "cfg.defaultReasoningEffort.xhigh": "અતિ ઊંચું — ટેકો ન હોય તેવા મોડેલો માટે ઘટાડાય છે",
   "cfg.cliPath": "OmniRoute CLI નો પાથ, જે \"Configure Coding CLI\" કમાન્ડ દ્વારા વપરાય છે.",
   "cfg.exposeToAgentsWindow": "પ્રાયોગિક: Copilot ની Agents window ના મોડેલ પિકરમાં પણ OmniRoute મોડેલો બતાવે છે. VS Code સેટિંગ chat.agentHost.byokModels.enabled અને agent host રીસ્ટાર્ટ જરૂરી છે; સૂચિત VS Code API વાપરે છે જે બદલાઈ શકે છે.",
-  "cfg.defaultReasoningEffort.max": "મહત્તમ — સર્વોચ્ચ સ્તર. જે મોડેલો તેને ઓફર કરતા નથી તેમના માટે OmniRoute તેને ઘટાડે છે."
+  "cfg.defaultReasoningEffort.max": "મહત્તમ — સર્વોચ્ચ સ્તર. જે મોડેલો તેને ઓફર કરતા નથી તેમના માટે OmniRoute તેને ઘટાડે છે.",
+  "cfg.statusBarUsage": "કનેક્શન સ્ટેટસની બાજુમાં કીની દૈનિક મર્યાદામાંથી કેટલી બાકી છે તે બતાવો.",
+  "cfg.sendProjectName": "દરેક ચેટ વિનંતી સાથે ખુલ્લા વર્કસ્પેસનું નામ OmniRoute ને મોકલો, જેથી વપરાશને પ્રોજેક્ટ મુજબ જૂથબદ્ધ કરી શકાય. ડિફૉલ્ટ રૂપે બંધ છે.",
+  "walkthrough.title": "OmniRoute સાથે શરૂઆત કરો",
+  "walkthrough.description": "તમારા OmniRoute ગેટવેના મોડેલ્સને Copilot Chat મોડેલ પિકરમાં ઉમેરો.",
+  "walkthrough.run.title": "OmniRoute ચલાવો",
+  "walkthrough.run.description": "OmniRoute એ ગેટવે છે જેની સાથે આ એક્સ્ટેન્શન વાત કરે છે. તેને ઇન્સ્ટોલ કરો અને ચાલુ રહેવા દો. ડિફૉલ્ટ રૂપે તે http://localhost:20128 સરનામે જવાબ આપે છે.\n[OmniRoute ઇન્સ્ટોલ કરો](command:omnicopilot.installOmniRoute)\n[કનેક્શન તપાસો](command:omnicopilot.checkConnection)",
+  "walkthrough.connect.title": "કનેક્ટ કરો",
+  "walkthrough.connect.description": "કનેક્શન પેનલ ખોલો. જો OmniRoute તમારા પોતાના કમ્પ્યુટર પર ડિફૉલ્ટ સેટિંગ્સ સાથે ચાલતું હોય, તો કંઈ ભરવાની જરૂર નથી. બીજે ક્યાંક રહેલા સર્વર માટે તેનું URL અને, જો તે માગે, તો API કી દાખલ કરો.\n[કનેક્શન પેનલ ખોલો](command:omnicopilot.manage)",
+  "walkthrough.pickModel.title": "તમારા મોડેલ્સ પસંદ કરો",
+  "walkthrough.pickModel.description": "\"મોડેલ્સ મેનેજ કરો\" ખોલો, OmniRoute પસંદ કરો અને ચેટ મોડેલ પિકરમાં જે મોડેલ્સ જોઈએ તેના પર ટિક કરો.\n[મોડેલ્સ મેનેજ કરો](command:workbench.action.chat.manage)",
+  "walkthrough.utility.title": "ટાઇટલ, કમિટ સંદેશા અને ઇનલાઇન ચેટ માટે OmniRoute વાપરો",
+  "walkthrough.utility.description": "ચેટ ટાઇટલ, કમિટ સંદેશા અને ઇનલાઇન ચેટ પોતાના અલગ મોડેલ સેટિંગ્સ વાપરે છે. તેમને OmniRoute મોડેલ તરફ પોઇન્ટ કરો, જેથી તે પણ તમારા ગેટવે પર ચાલે.\n[સેટિંગ્સ ખોલો](command:workbench.action.openSettings?%5B%22chat.utility%22%5D)"
 }

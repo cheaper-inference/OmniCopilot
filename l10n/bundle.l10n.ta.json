@@ -23,7 +23,6 @@
   "OmniRoute detected! Your models are ready — open the Copilot Chat model picker and choose any OmniRoute model.": "OmniRoute கண்டறியப்பட்டது! உங்கள் மாடல்கள் தயார் — Copilot Chat மாடல் தேர்வியைத் திறந்து எந்த OmniRoute மாடலையும் தேர்ந்தெடுக்கவும்.",
   "OmniRoute is a free, open-source AI router: one endpoint, 340+ providers (90+ free), auto-fallback. Install it with npm and this extension lights up automatically.": "OmniRoute ஒரு இலவச, திறந்த மூல AI ரூட்டர்: ஒரே எண்ட்பாயிண்ட், 340+ வழங்குநர்கள் (90+ இலவசம்), தானியங்கி ஃபால்பேக். npm மூலம் நிறுவினால் இந்த நீட்டிப்பு தானாகவே செயல்படத் தொடங்கும்.",
   "OmniRoute is unreachable. Check that it is running (npx omniroute) and that omnicopilot.baseUrl points at it.": "OmniRoute ஐ அணுக முடியவில்லை. அது இயங்குகிறதா என்பதையும் (npx omniroute), omnicopilot.baseUrl அதைச் சுட்டுகிறதா என்பதையும் சரிபார்க்கவும்.",
-  "OmniRoute model list refreshed.": "OmniRoute மாடல் பட்டியல் புதுப்பிக்கப்பட்டது.",
   "OmniRoute on GitHub": "GitHub இல் OmniRoute",
   "Extension settings": "நீட்டிப்பு அமைப்புகள்",
   "My usage": "எனது பயன்பாடு",
@@ -86,5 +85,19 @@
   "{0}% left": "{0}% மீதம்",
   "{0} left": "{0} மீதம்",
   "unlimited": "வரம்பற்றது",
-  "Could not read the connection status.": "இணைப்பின் நிலையைப் படிக்க முடியவில்லை."
+  "Could not read the connection status.": "இணைப்பின் நிலையைப் படிக்க முடியவில்லை.",
+  "Continue": "தொடரவும்",
+  "This workspace's API key will be written to the configuration of {0}, which all your projects share.": "இந்தப் பணியிடத்தின் API விசை {0} கருவியின் உள்ளமைவில் எழுதப்படும்; இதை உங்கள் எல்லாத் திட்டங்களும் பகிர்ந்துகொள்கின்றன.",
+  "Models listed from {1}: {0}.": "{1} சேவையகத்திலிருந்து பட்டியலிடப்பட்ட மாடல்கள்: {0}.",
+  "API key for this workspace": "இந்தப் பணியிடத்துக்கான API விசை",
+  "Free": "இலவசம்",
+  "{0} in · {1} out per 1M": "{0} உள்ளீடு · {1} வெளியீடு / 1M",
+  "Use this key only in this workspace": "இந்த விசையை இந்தப் பணியிடத்தில் மட்டும் பயன்படுத்து",
+  "Using this workspace's key": "இந்தப் பணியிடத்தின் விசை பயன்பாட்டில் உள்ளது",
+  "Using your global key": "உங்கள் உலகளாவிய விசை பயன்பாட்டில் உள்ளது",
+  "Set API key": "API விசையை அமை",
+  "OmniRoute at {0} rejected the API key (HTTP {1}).": "{0} முகவரியில் உள்ள OmniRoute சேவையகம் API விசையை நிராகரித்தது (HTTP {1}).",
+  "OmniRoute at {0} needs an API key (HTTP {1}).": "{0} முகவரியில் உள்ள OmniRoute சேவையகத்துக்கு API விசை தேவை (HTTP {1}).",
+  "The model's answer was cut off before the tool call was complete. Raise omnicopilot.maxOutputTokens or ask for smaller steps.": "கருவி அழைப்பு முடிவதற்கு முன்பே மாடலின் பதில் துண்டிக்கப்பட்டது. omnicopilot.maxOutputTokens அமைப்பின் மதிப்பை உயர்த்தவும் அல்லது சிறிய படிகளைக் கேட்கவும்.",
+  "The model sent a tool call with invalid arguments.": "மாடல் செல்லாத ஆர்குமென்ட்களுடன் ஒரு கருவி அழைப்பை அனுப்பியது."
 }

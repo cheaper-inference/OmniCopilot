@@ -28,5 +28,17 @@
   "cfg.defaultReasoningEffort.xhigh": "Erittäin korkea — lasketaan malleille, jotka eivät tue sitä",
   "cfg.cliPath": "OmniRoute CLI:n polku, jota \"Configure Coding CLI\" -komento käyttää.",
   "cfg.exposeToAgentsWindow": "Kokeellinen: näyttää OmniRoute-mallit myös Copilotin Agents-ikkunan mallivalitsimessa. Vaatii VS Coden asetuksen chat.agentHost.byokModels.enabled ja agent hostin uudelleenkäynnistyksen; käyttää ehdotettua VS Code -API:a, joka voi muuttua.",
-  "cfg.defaultReasoningEffort.max": "Maksimi — korkein taso. OmniRoute laskee sen malleille, jotka eivät tarjoa sitä."
+  "cfg.defaultReasoningEffort.max": "Maksimi — korkein taso. OmniRoute laskee sen malleille, jotka eivät tarjoa sitä.",
+  "cfg.statusBarUsage": "Näytä, kuinka paljon avaimen päivittäisestä rajasta on jäljellä, yhteyden tilan vieressä.",
+  "cfg.sendProjectName": "Lähetä avoimen työtilan nimi OmniRouteen jokaisen chat-pyynnön mukana, jotta käyttö voidaan ryhmitellä projektin mukaan. Oletuksena pois päältä.",
+  "walkthrough.title": "Aloita OmniRouten käyttö",
+  "walkthrough.description": "Tuo OmniRoute-yhdyskäytävän mallit Copilot Chatin mallivalitsimeen.",
+  "walkthrough.run.title": "Käynnistä OmniRoute",
+  "walkthrough.run.description": "OmniRoute on yhdyskäytävä, jonka kanssa tämä laajennus kommunikoi. Asenna se ja jätä se käyntiin. Oletuksena se vastaa osoitteessa http://localhost:20128.\n[Asenna OmniRoute](command:omnicopilot.installOmniRoute)\n[Tarkista yhteys](command:omnicopilot.checkConnection)",
+  "walkthrough.connect.title": "Yhdistä",
+  "walkthrough.connect.description": "Avaa yhteyspaneeli. Jos OmniRoute toimii tällä koneella oletusasetuksilla, mitään ei tarvitse täyttää. Jos palvelin on muualla, anna sen URL ja, jos se pyytää sellaista, API-avain.\n[Avaa yhteyspaneeli](command:omnicopilot.manage)",
+  "walkthrough.pickModel.title": "Valitse mallisi",
+  "walkthrough.pickModel.description": "Avaa \"Hallitse malleja\", valitse OmniRoute ja rastita mallit, jotka haluat chatin mallivalitsimeen.\n[Hallitse malleja](command:workbench.action.chat.manage)",
+  "walkthrough.utility.title": "Käytä OmniRoutea otsikoihin, commit-viesteihin ja inline-chattiin",
+  "walkthrough.utility.description": "Chatin otsikot, commit-viestit ja inline-chat käyttävät omia mallin asetuksiaan. Osoita ne OmniRoute-malliin, niin ne toimivat myös yhdyskäytävässäsi.\n[Avaa asetukset](command:workbench.action.openSettings?%5B%22chat.utility%22%5D)"
 }

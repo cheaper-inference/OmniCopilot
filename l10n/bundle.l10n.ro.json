@@ -23,7 +23,6 @@
   "OmniRoute detected! Your models are ready — open the Copilot Chat model picker and choose any OmniRoute model.": "OmniRoute detectat! Modelele dvs. sunt gata — deschideți selectorul de modele din Copilot Chat și alegeți orice model OmniRoute.",
   "OmniRoute is a free, open-source AI router: one endpoint, 340+ providers (90+ free), auto-fallback. Install it with npm and this extension lights up automatically.": "OmniRoute este un router AI gratuit, open source: un singur endpoint, peste 340 de furnizori (peste 90 gratuiți), fallback automat. Instalați-l cu npm și această extensie se activează automat.",
   "OmniRoute is unreachable. Check that it is running (npx omniroute) and that omnicopilot.baseUrl points at it.": "OmniRoute nu poate fi contactat. Verificați că rulează (npx omniroute) și că omnicopilot.baseUrl indică spre el.",
-  "OmniRoute model list refreshed.": "Lista de modele OmniRoute a fost reîmprospătată.",
   "OmniRoute on GitHub": "OmniRoute pe GitHub",
   "Extension settings": "Setările extensiei",
   "My usage": "Utilizarea mea",
@@ -86,5 +85,19 @@
   "{0}% left": "rămas: {0}%",
   "{0} left": "rămas: {0}",
   "unlimited": "nelimitat",
-  "Could not read the connection status.": "Starea conexiunii nu a putut fi citită."
+  "Could not read the connection status.": "Starea conexiunii nu a putut fi citită.",
+  "Continue": "Continuare",
+  "This workspace's API key will be written to the configuration of {0}, which all your projects share.": "Cheia API a acestui spațiu de lucru va fi scrisă în configurația instrumentului {0}, partajată de toate proiectele dvs.",
+  "Models listed from {1}: {0}.": "Modele listate de pe serverul {1}: {0}.",
+  "API key for this workspace": "Cheie API pentru acest spațiu de lucru",
+  "Free": "Gratuit",
+  "{0} in · {1} out per 1M": "{0} intrare · {1} ieșire / 1M",
+  "Use this key only in this workspace": "Folosiți această cheie doar în acest spațiu de lucru",
+  "Using this workspace's key": "Se folosește cheia acestui spațiu de lucru",
+  "Using your global key": "Se folosește cheia dvs. globală",
+  "Set API key": "Setare cheie API",
+  "OmniRoute at {0} rejected the API key (HTTP {1}).": "OmniRoute de la {0} a respins cheia API (HTTP {1}).",
+  "OmniRoute at {0} needs an API key (HTTP {1}).": "OmniRoute de la {0} necesită o cheie API (HTTP {1}).",
+  "The model's answer was cut off before the tool call was complete. Raise omnicopilot.maxOutputTokens or ask for smaller steps.": "Răspunsul modelului a fost întrerupt înainte ca apelul instrumentului să fie complet. Măriți valoarea omnicopilot.maxOutputTokens sau cereți pași mai mici.",
+  "The model sent a tool call with invalid arguments.": "Modelul a trimis un apel de instrument cu argumente nevalide."
 }

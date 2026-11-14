@@ -23,7 +23,6 @@
   "OmniRoute detected! Your models are ready — open the Copilot Chat model picker and choose any OmniRoute model.": "OmniRoute gedetecteerd! Uw modellen zijn klaar — open de modelkiezer van Copilot Chat en kies een willekeurig OmniRoute-model.",
   "OmniRoute is a free, open-source AI router: one endpoint, 340+ providers (90+ free), auto-fallback. Install it with npm and this extension lights up automatically.": "OmniRoute is een gratis, open-source AI-router: één eindpunt, 340+ providers (waarvan 90+ gratis), automatische fallback. Installeer het met npm en deze extensie wordt automatisch actief.",
   "OmniRoute is unreachable. Check that it is running (npx omniroute) and that omnicopilot.baseUrl points at it.": "OmniRoute is niet bereikbaar. Controleer of het actief is (npx omniroute) en of omnicopilot.baseUrl ernaar verwijst.",
-  "OmniRoute model list refreshed.": "OmniRoute-modellenlijst vernieuwd.",
   "OmniRoute on GitHub": "OmniRoute op GitHub",
   "Extension settings": "Extensie-instellingen",
   "My usage": "Mijn gebruik",
@@ -86,5 +85,19 @@
   "{0}% left": "{0}% resterend",
   "{0} left": "{0} resterend",
   "unlimited": "onbeperkt",
-  "Could not read the connection status.": "De verbindingsstatus kon niet worden gelezen."
+  "Could not read the connection status.": "De verbindingsstatus kon niet worden gelezen.",
+  "Continue": "Doorgaan",
+  "This workspace's API key will be written to the configuration of {0}, which all your projects share.": "De API-sleutel van deze werkruimte wordt weggeschreven naar de configuratie van {0}, die al uw projecten delen.",
+  "Models listed from {1}: {0}.": "Modellen weergegeven van {1}: {0}.",
+  "API key for this workspace": "API-sleutel voor deze werkruimte",
+  "Free": "Gratis",
+  "{0} in · {1} out per 1M": "{0} invoer · {1} uitvoer per 1 mln.",
+  "Use this key only in this workspace": "Deze sleutel alleen in deze werkruimte gebruiken",
+  "Using this workspace's key": "De sleutel van deze werkruimte wordt gebruikt",
+  "Using your global key": "Uw algemene sleutel wordt gebruikt",
+  "Set API key": "API-sleutel instellen",
+  "OmniRoute at {0} rejected the API key (HTTP {1}).": "OmniRoute op {0} heeft de API-sleutel geweigerd (HTTP {1}).",
+  "OmniRoute at {0} needs an API key (HTTP {1}).": "OmniRoute op {0} heeft een API-sleutel nodig (HTTP {1}).",
+  "The model's answer was cut off before the tool call was complete. Raise omnicopilot.maxOutputTokens or ask for smaller steps.": "Het antwoord van het model werd afgekapt voordat de aanroep van het hulpprogramma voltooid was. Verhoog omnicopilot.maxOutputTokens of vraag om kleinere stappen.",
+  "The model sent a tool call with invalid arguments.": "Het model heeft een aanroep van een hulpprogramma met ongeldige argumenten verzonden."
 }

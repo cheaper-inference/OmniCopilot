@@ -23,7 +23,6 @@
   "OmniRoute detected! Your models are ready — open the Copilot Chat model picker and choose any OmniRoute model.": "OmniRoute dikesan! Model anda sudah sedia — buka pemilih model Copilot Chat dan pilih mana-mana model OmniRoute.",
   "OmniRoute is a free, open-source AI router: one endpoint, 340+ providers (90+ free), auto-fallback. Install it with npm and this extension lights up automatically.": "OmniRoute ialah penghala AI percuma dan sumber terbuka: satu titik akhir, 340+ penyedia (90+ percuma), fallback automatik. Pasang dengan npm dan peluasan ini aktif secara automatik.",
   "OmniRoute is unreachable. Check that it is running (npx omniroute) and that omnicopilot.baseUrl points at it.": "OmniRoute tidak dapat dicapai. Pastikan ia sedang berjalan (npx omniroute) dan omnicopilot.baseUrl menunjuk kepadanya.",
-  "OmniRoute model list refreshed.": "Senarai model OmniRoute disegarkan semula.",
   "OmniRoute on GitHub": "OmniRoute di GitHub",
   "Extension settings": "Tetapan sambungan",
   "My usage": "Penggunaan saya",
@@ -86,5 +85,19 @@
   "{0}% left": "{0}% berbaki",
   "{0} left": "{0} berbaki",
   "unlimited": "tanpa had",
-  "Could not read the connection status.": "Tidak dapat membaca status sambungan."
+  "Could not read the connection status.": "Tidak dapat membaca status sambungan.",
+  "Continue": "Teruskan",
+  "This workspace's API key will be written to the configuration of {0}, which all your projects share.": "Kunci API ruang kerja ini akan ditulis ke konfigurasi {0}, yang dikongsi oleh semua projek anda.",
+  "Models listed from {1}: {0}.": "{0} model disenaraikan daripada {1}.",
+  "API key for this workspace": "Kunci API untuk ruang kerja ini",
+  "Free": "Percuma",
+  "{0} in · {1} out per 1M": "input {0} · output {1} / 1M",
+  "Use this key only in this workspace": "Gunakan kunci ini dalam ruang kerja ini sahaja",
+  "Using this workspace's key": "Menggunakan kunci ruang kerja ini",
+  "Using your global key": "Menggunakan kunci global anda",
+  "Set API key": "Tetapkan Kunci API",
+  "OmniRoute at {0} rejected the API key (HTTP {1}).": "OmniRoute di {0} menolak kunci API (HTTP {1}).",
+  "OmniRoute at {0} needs an API key (HTTP {1}).": "OmniRoute di {0} memerlukan kunci API (HTTP {1}).",
+  "The model's answer was cut off before the tool call was complete. Raise omnicopilot.maxOutputTokens or ask for smaller steps.": "Jawapan model terpotong sebelum panggilan alat selesai. Tingkatkan omnicopilot.maxOutputTokens atau minta langkah yang lebih kecil.",
+  "The model sent a tool call with invalid arguments.": "Model menghantar panggilan alat dengan argumen yang tidak sah."
 }

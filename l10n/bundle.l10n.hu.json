@@ -23,7 +23,6 @@
   "OmniRoute detected! Your models are ready — open the Copilot Chat model picker and choose any OmniRoute model.": "OmniRoute észlelve! A modellek készen állnak — nyissa meg a Copilot Chat modellválasztóját, és válasszon bármely OmniRoute-modellt.",
   "OmniRoute is a free, open-source AI router: one endpoint, 340+ providers (90+ free), auto-fallback. Install it with npm and this extension lights up automatically.": "Az OmniRoute egy ingyenes, nyílt forráskódú AI-router: egyetlen végpont, 340+ szolgáltató (90+ ingyenes), automatikus tartalékátállás. Telepítse npm-mel, és ez a bővítmény automatikusan aktiválódik.",
   "OmniRoute is unreachable. Check that it is running (npx omniroute) and that omnicopilot.baseUrl points at it.": "Az OmniRoute nem érhető el. Ellenőrizze, hogy fut-e (npx omniroute), és hogy az omnicopilot.baseUrl rá mutat-e.",
-  "OmniRoute model list refreshed.": "Az OmniRoute-modellek listája frissítve.",
   "OmniRoute on GitHub": "OmniRoute a GitHubon",
   "Extension settings": "Bővítmény beállításai",
   "My usage": "Saját használat",
@@ -86,5 +85,19 @@
   "{0}% left": "{0}% maradt",
   "{0} left": "{0} maradt",
   "unlimited": "korlátlan",
-  "Could not read the connection status.": "A kapcsolat állapotát nem sikerült beolvasni."
+  "Could not read the connection status.": "A kapcsolat állapotát nem sikerült beolvasni.",
+  "Continue": "Folytatás",
+  "This workspace's API key will be written to the configuration of {0}, which all your projects share.": "A munkaterület API-kulcsa a(z) {0} konfigurációjába lesz írva, amelyen az összes projektje osztozik.",
+  "Models listed from {1}: {0}.": "A(z) {1} kiszolgálóról listázott modellek: {0}.",
+  "API key for this workspace": "API-kulcs ehhez a munkaterülethez",
+  "Free": "Ingyenes",
+  "{0} in · {1} out per 1M": "{0} be · {1} ki / 1M",
+  "Use this key only in this workspace": "A kulcs használata csak ebben a munkaterületen",
+  "Using this workspace's key": "A munkaterület kulcsa van használatban",
+  "Using your global key": "A globális kulcs van használatban",
+  "Set API key": "API-kulcs beállítása",
+  "OmniRoute at {0} rejected the API key (HTTP {1}).": "A(z) {0} címen lévő OmniRoute elutasította az API-kulcsot (HTTP {1}).",
+  "OmniRoute at {0} needs an API key (HTTP {1}).": "A(z) {0} címen lévő OmniRoute API-kulcsot igényel (HTTP {1}).",
+  "The model's answer was cut off before the tool call was complete. Raise omnicopilot.maxOutputTokens or ask for smaller steps.": "A modell válasza megszakadt, mielőtt az eszközhívás befejeződött volna. Növelje az omnicopilot.maxOutputTokens értékét, vagy kérjen kisebb lépéseket.",
+  "The model sent a tool call with invalid arguments.": "A modell érvénytelen argumentumokkal küldött eszközhívást."
 }

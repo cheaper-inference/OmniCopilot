@@ -28,5 +28,17 @@
   "cfg.defaultReasoningEffort.xhigh": "Mycket hög — sänks för modeller utan stöd",
   "cfg.cliPath": "Sökväg till OmniRoute-CLI:t, som används av kommandot \"Konfigurera kodnings-CLI\".",
   "cfg.exposeToAgentsWindow": "Experimentell: visar även OmniRoute-modeller i modellväljaren i Copilots Agents-fönster. Kräver VS Code-inställningen chat.agentHost.byokModels.enabled och omstart av agent host; använder ett föreslaget VS Code-API som kan ändras.",
-  "cfg.defaultReasoningEffort.max": "Maximal — den högsta nivån. OmniRoute sänker den för modeller som inte erbjuder den."
+  "cfg.defaultReasoningEffort.max": "Maximal — den högsta nivån. OmniRoute sänker den för modeller som inte erbjuder den.",
+  "cfg.statusBarUsage": "Visa hur mycket som återstår av nyckelns dagliga gräns bredvid anslutningsstatusen.",
+  "cfg.sendProjectName": "Skicka namnet på den öppna arbetsytan till OmniRoute med varje chattbegäran, så att användningen kan grupperas per projekt. Av som standard.",
+  "walkthrough.title": "Kom igång med OmniRoute",
+  "walkthrough.description": "Lägg till modellerna från din OmniRoute-gateway i modellväljaren i Copilot Chat.",
+  "walkthrough.run.title": "Kör OmniRoute",
+  "walkthrough.run.description": "OmniRoute är den gateway som det här tillägget kommunicerar med. Installera den och låt den vara igång. Som standard svarar den på http://localhost:20128.\n[Installera OmniRoute](command:omnicopilot.installOmniRoute)\n[Kontrollera anslutning](command:omnicopilot.checkConnection)",
+  "walkthrough.connect.title": "Anslut",
+  "walkthrough.connect.description": "Öppna anslutningspanelen. Om OmniRoute körs på den här datorn med standardinställningarna behöver du inte fylla i något. För en server någon annanstans anger du dess URL och, om den ber om en, en API-nyckel.\n[Öppna anslutningspanelen](command:omnicopilot.manage)",
+  "walkthrough.pickModel.title": "Välj dina modeller",
+  "walkthrough.pickModel.description": "Öppna \"Hantera modeller\", välj OmniRoute och bocka för de modeller du vill ha i chattens modellväljare.\n[Hantera modeller](command:workbench.action.chat.manage)",
+  "walkthrough.utility.title": "Använd OmniRoute för titlar, commit-meddelanden och inline-chatt",
+  "walkthrough.utility.description": "Titlar för chattar, commit-meddelanden och inline-chatt använder egna modellinställningar. Peka dem mot en OmniRoute-modell för att köra dem på din gateway också.\n[Öppna inställningar](command:workbench.action.openSettings?%5B%22chat.utility%22%5D)"
 }

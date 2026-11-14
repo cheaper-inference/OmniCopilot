@@ -28,5 +28,17 @@
   "cfg.defaultReasoningEffort.xhigh": "بہت زیادہ — حمایت نہ رکھنے والے ماڈلز میں کم کر دیا جاتا ہے",
   "cfg.cliPath": "OmniRoute CLI کا راستہ، جو \"کوڈنگ CLI کنفیگر کریں\" کمانڈ استعمال کرتی ہے۔",
   "cfg.exposeToAgentsWindow": "تجرباتی: Copilot کی Agents window کے ماڈل پکر میں بھی OmniRoute ماڈلز دکھاتا ہے۔ VS Code کی ترتیب chat.agentHost.byokModels.enabled اور agent host کا دوبارہ آغاز درکار ہے؛ ایک مجوزہ VS Code API استعمال کرتا ہے جو تبدیل ہو سکتا ہے۔",
-  "cfg.defaultReasoningEffort.max": "زیادہ سے زیادہ — سب سے اونچا درجہ۔ OmniRoute اسے ان ماڈلز کے لیے کم کر دیتا ہے جو اسے پیش نہیں کرتے۔"
+  "cfg.defaultReasoningEffort.max": "زیادہ سے زیادہ — سب سے اونچا درجہ۔ OmniRoute اسے ان ماڈلز کے لیے کم کر دیتا ہے جو اسے پیش نہیں کرتے۔",
+  "cfg.statusBarUsage": "کلید کی روزانہ حد میں سے کتنی باقی ہے، یہ کنکشن اسٹیٹس کے ساتھ دکھائیں۔",
+  "cfg.sendProjectName": "کھلے ورک اسپیس کا نام ہر چیٹ درخواست کے ساتھ OmniRoute کو بھیجیں، تاکہ استعمال کو پروجیکٹ کے لحاظ سے گروپ کیا جا سکے۔ بطور ڈیفالٹ بند ہے۔",
+  "walkthrough.title": "OmniRoute کے ساتھ شروعات کریں",
+  "walkthrough.description": "اپنے OmniRoute گیٹ وے کے ماڈلز کو Copilot Chat کے ماڈل پکر میں شامل کریں۔",
+  "walkthrough.run.title": "OmniRoute چلائیں",
+  "walkthrough.run.description": "یہ ایکسٹینشن جس گیٹ وے سے بات کرتی ہے، وہ OmniRoute ہے۔ اسے انسٹال کریں اور چلتا رہنے دیں۔ بطور ڈیفالٹ یہ ایڈریس http://localhost:20128 پر جواب دیتا ہے۔\n[OmniRoute انسٹال کریں](command:omnicopilot.installOmniRoute)\n[کنکشن چیک کریں](command:omnicopilot.checkConnection)",
+  "walkthrough.connect.title": "کنکشن بنائیں",
+  "walkthrough.connect.description": "کنکشن پینل کھولیں۔ اگر OmniRoute آپ کے اپنے کمپیوٹر پر ڈیفالٹ ترتیبات کے ساتھ چل رہا ہے تو کچھ بھرنے کی ضرورت نہیں۔ کسی اور جگہ موجود سرور کے لیے اس کا URL درج کریں اور، اگر وہ مانگے تو، API کلید بھی۔\n[کنکشن پینل کھولیں](command:omnicopilot.manage)",
+  "walkthrough.pickModel.title": "اپنے ماڈلز منتخب کریں",
+  "walkthrough.pickModel.description": "\"ماڈلز کا نظم کریں\" کھولیں، OmniRoute منتخب کریں اور چیٹ ماڈل پکر میں جو ماڈلز چاہیں ان پر نشان لگائیں۔\n[ماڈلز کا نظم کریں](command:workbench.action.chat.manage)",
+  "walkthrough.utility.title": "عنوانات، کمٹ پیغامات اور ان لائن چیٹ کے لیے OmniRoute استعمال کریں",
+  "walkthrough.utility.description": "چیٹ کے عنوانات، کمٹ پیغامات اور ان لائن چیٹ اپنی الگ ماڈل ترتیبات استعمال کرتے ہیں۔ انہیں OmniRoute ماڈل کی طرف پوائنٹ کریں تاکہ یہ بھی آپ کے گیٹ وے پر چلیں۔\n[ترتیبات کھولیں](command:workbench.action.openSettings?%5B%22chat.utility%22%5D)"
 }

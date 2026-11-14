@@ -28,5 +28,17 @@
   "cfg.defaultReasoningEffort.xhigh": "超高 — 非対応モデルでは引き下げ",
   "cfg.cliPath": "「コーディングCLIの構成」コマンドで使用するOmniRoute CLIのパス。",
   "cfg.exposeToAgentsWindow": "実験的: Copilot の Agents ウィンドウのモデルピッカーにも OmniRoute のモデルを表示します。VS Code の設定 chat.agentHost.byokModels.enabled と agent host の再起動が必要です。変更される可能性のある VS Code の提案中 API を使用します。",
-  "cfg.defaultReasoningEffort.max": "最大 — 最上位の段階。非対応のモデルではOmniRouteが引き下げます。"
+  "cfg.defaultReasoningEffort.max": "最大 — 最上位の段階。非対応のモデルではOmniRouteが引き下げます。",
+  "cfg.statusBarUsage": "キーの1日あたりの上限の残りを、接続ステータスの横に表示します。",
+  "cfg.sendProjectName": "チャットリクエストのたびに、開いているワークスペースの名前をOmniRouteに送信し、プロジェクトごとに使用量を集計できるようにします。既定ではオフです。",
+  "walkthrough.title": "OmniRouteをはじめよう",
+  "walkthrough.description": "OmniRouteゲートウェイのモデルを、Copilot Chatのモデルピッカーに追加します。",
+  "walkthrough.run.title": "OmniRouteを実行",
+  "walkthrough.run.description": "OmniRouteは、この拡張機能が通信するゲートウェイです。インストールして、実行したままにしてください。既定では http://localhost:20128 で応答します。\n[OmniRouteをインストール](command:omnicopilot.installOmniRoute)\n[接続の確認](command:omnicopilot.checkConnection)",
+  "walkthrough.connect.title": "接続",
+  "walkthrough.connect.description": "接続パネルを開きます。OmniRouteがこのマシン上で既定の設定で動作している場合、入力する項目はありません。別の場所にあるサーバーの場合は、そのURLを入力し、求められた場合はAPIキーも入力してください。\n[接続パネルを開く](command:omnicopilot.manage)",
+  "walkthrough.pickModel.title": "モデルを選ぶ",
+  "walkthrough.pickModel.description": "「モデルの管理」を開き、OmniRouteを選択して、チャットのモデルピッカーに表示したいモデルにチェックを入れます。\n[モデルの管理](command:workbench.action.chat.manage)",
+  "walkthrough.utility.title": "チャットのタイトル、コミット メッセージ、インライン チャットにOmniRouteを使う",
+  "walkthrough.utility.description": "チャットのタイトル、コミット メッセージ、インライン チャットは、それぞれ専用のモデル設定を使用します。これらもゲートウェイ上で実行するには、OmniRouteのモデルを指定してください。\n[設定を開く](command:workbench.action.openSettings?%5B%22chat.utility%22%5D)"
 }

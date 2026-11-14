@@ -28,5 +28,17 @@
   "cfg.defaultReasoningEffort.xhigh": "Sangat tinggi — diturunkan untuk model yang tidak mendukung",
   "cfg.cliPath": "Jalur ke CLI OmniRoute, digunakan oleh perintah \"Konfigurasikan CLI Pengodean\".",
   "cfg.exposeToAgentsWindow": "Eksperimental: juga menampilkan model OmniRoute di pemilih model jendela Agents Copilot. Memerlukan setelan VS Code chat.agentHost.byokModels.enabled dan mulai ulang agent host; menggunakan API usulan VS Code yang dapat berubah.",
-  "cfg.defaultReasoningEffort.max": "Maksimum — tingkat teratas. OmniRoute menurunkannya untuk model yang tidak menawarkannya."
+  "cfg.defaultReasoningEffort.max": "Maksimum — tingkat teratas. OmniRoute menurunkannya untuk model yang tidak menawarkannya.",
+  "cfg.statusBarUsage": "Tampilkan sisa batas harian kunci di samping status koneksi.",
+  "cfg.sendProjectName": "Kirim nama ruang kerja yang terbuka ke OmniRoute pada setiap permintaan obrolan, sehingga penggunaan dapat dikelompokkan per proyek. Nonaktif secara default.",
+  "walkthrough.title": "Mulai menggunakan OmniRoute",
+  "walkthrough.description": "Tampilkan model dari gateway OmniRoute Anda di pemilih model Copilot Chat.",
+  "walkthrough.run.title": "Jalankan OmniRoute",
+  "walkthrough.run.description": "OmniRoute adalah gateway yang dihubungi oleh ekstensi ini. Instal dan biarkan tetap berjalan. Secara default, gateway ini merespons di http://localhost:20128.\n[Instal OmniRoute](command:omnicopilot.installOmniRoute)\n[Periksa Koneksi](command:omnicopilot.checkConnection)",
+  "walkthrough.connect.title": "Hubungkan",
+  "walkthrough.connect.description": "Buka panel koneksi. Jika OmniRoute berjalan di komputer ini dengan pengaturan default, tidak ada yang perlu diisi. Untuk server di tempat lain, masukkan URL-nya dan, jika diminta, kunci API.\n[Buka panel koneksi](command:omnicopilot.manage)",
+  "walkthrough.pickModel.title": "Pilih model Anda",
+  "walkthrough.pickModel.description": "Buka Kelola Model, pilih OmniRoute, lalu centang model yang Anda inginkan di pemilih model obrolan.\n[Kelola Model](command:workbench.action.chat.manage)",
+  "walkthrough.utility.title": "Gunakan OmniRoute untuk judul obrolan, pesan commit, dan obrolan inline",
+  "walkthrough.utility.description": "Judul obrolan, pesan commit, dan obrolan inline memakai pengaturan model masing-masing. Arahkan ke model OmniRoute agar semuanya juga berjalan di gateway Anda.\n[Buka Pengaturan](command:workbench.action.openSettings?%5B%22chat.utility%22%5D)"
 }

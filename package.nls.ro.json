@@ -28,5 +28,17 @@
   "cfg.defaultReasoningEffort.xhigh": "Foarte ridicat — redus la modelele fără suport",
   "cfg.cliPath": "Calea către CLI-ul OmniRoute, folosită de comanda \"Configurare CLI de codare\".",
   "cfg.exposeToAgentsWindow": "Experimental: afișează modelele OmniRoute și în selectorul de modele al ferestrei Agents din Copilot. Necesită setarea VS Code chat.agentHost.byokModels.enabled și repornirea agent host-ului; folosește un API propus al VS Code care se poate schimba.",
-  "cfg.defaultReasoningEffort.max": "Maxim — cel mai înalt nivel. OmniRoute îl reduce pentru modelele care nu îl oferă."
+  "cfg.defaultReasoningEffort.max": "Maxim — cel mai înalt nivel. OmniRoute îl reduce pentru modelele care nu îl oferă.",
+  "cfg.statusBarUsage": "Afișează, lângă starea conexiunii, cât din limita zilnică a cheii a mai rămas.",
+  "cfg.sendProjectName": "Trimite la OmniRoute numele spațiului de lucru deschis cu fiecare cerere de chat, pentru ca utilizarea să poată fi grupată pe proiecte. Dezactivat în mod implicit.",
+  "walkthrough.title": "Primii pași cu OmniRoute",
+  "walkthrough.description": "Adăugați modelele gateway-ului dvs. OmniRoute în selectorul de modele din Copilot Chat.",
+  "walkthrough.run.title": "Pornire OmniRoute",
+  "walkthrough.run.description": "OmniRoute este gateway-ul cu care comunică această extensie. Instalați-l și lăsați-l pornit. Implicit, răspunde la adresa http://localhost:20128.\n[Instalare OmniRoute](command:omnicopilot.installOmniRoute)\n[Verificare conexiune](command:omnicopilot.checkConnection)",
+  "walkthrough.connect.title": "Conectare",
+  "walkthrough.connect.description": "Deschideți panoul de conexiune. Dacă OmniRoute rulează pe acest calculator cu setările implicite, nu aveți nimic de completat. Pentru un server aflat în altă parte, introduceți URL-ul lui și o cheie API, dacă serverul o cere.\n[Deschidere panou de conexiune](command:omnicopilot.manage)",
+  "walkthrough.pickModel.title": "Alegerea modelelor",
+  "walkthrough.pickModel.description": "Deschideți \"Gestionare modele\", alegeți OmniRoute și bifați modelele dorite în selectorul de modele din chat.\n[Gestionare modele](command:workbench.action.chat.manage)",
+  "walkthrough.utility.title": "Folosirea OmniRoute pentru titluri, mesaje de commit și chatul din editor",
+  "walkthrough.utility.description": "Titlurile chaturilor, mesajele de commit și chatul din editor folosesc propriile setări de model. Îndreptați-le către un model OmniRoute pentru ca și acestea să ruleze prin gateway-ul dvs.\n[Deschidere setări](command:workbench.action.openSettings?%5B%22chat.utility%22%5D)"
 }
