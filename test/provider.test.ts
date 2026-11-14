@@ -425,6 +425,32 @@ describe("provider cut-off answers", () => {
     expect(calls.map((call) => [call.name, call.input])).toEqual([["read_file", { path: "a" }]]);
   });
 
+  const LIMIT_SPENT_ON_REASONING =
+    "The model used its whole output limit before it wrote an answer. Raise omnicopilot.maxOutputTokens or lower the thinking effort.";
+  const reasoningChunk = { choices: [{ delta: { reasoning_content: "thinking it over" } }] };
+
+  it("fails, and says why, when reasoning used up the output limit before any answer", async () => {
+    fetchMock.mockResolvedValue(sseResponse([reasoningChunk, finishChunk("length")]));
+    const ctx = makeProvider();
+    await expect(ask(ctx)).rejects.toThrow(LIMIT_SPENT_ON_REASONING);
+    expect(thinkingParts(ctx.reported)).toHaveLength(1);
+    expect(fetchMock).toHaveBeenCalledTimes(1);
+  });
+
+  it("fails the same way, once, on a host without thinking parts (nothing was shown)", async () => {
+    setThinkingPartAvailable(false);
+    try {
+      fetchMock.mockResolvedValue(sseResponse([reasoningChunk, finishChunk("length")]));
+      const ctx = makeProvider();
+      await expect(ask(ctx)).rejects.toThrow(LIMIT_SPENT_ON_REASONING);
+      expect(ctx.reported).toHaveLength(0);
+      // The same request would spend the limit the same way: it is not sent again.
+      expect(fetchMock).toHaveBeenCalledTimes(1);
+    } finally {
+      setThinkingPartAvailable(true);
+    }
+  });
+
   it("reports a call whose arguments were complete even though the answer stopped at the limit", async () => {
     fetchMock.mockResolvedValue(sseResponse([toolCallChunk('{"path":"a"}'), finishChunk("length")]));
     const ctx = makeProvider();
