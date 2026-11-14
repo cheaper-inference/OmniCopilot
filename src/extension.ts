@@ -9,11 +9,12 @@ import {
   showIgnoredWorkspaceUrlNotice,
   createWithheldKeyWatcher,
   displayUrl,
+  keyWithheldMessage,
   plainNotificationText,
   storeApiKey,
 } from "./connection";
 import { OmniPanelProvider } from "./panel";
-import { OmniRouteChatProvider } from "./provider";
+import { OmniRouteChatProvider, isKeyRejection, type ModelListing } from "./provider";
 import { ConnectionStatusBar } from "./statusBar";
 import { fetchPersonalUsage } from "./usage";
 
@@ -115,17 +116,34 @@ function registerCommands(context: vscode.ExtensionContext, log: vscode.LogOutpu
   register("omnicopilot.setApiKey", () => setApiKey(context, log));
 
   register("omnicopilot.refreshModels", async () => {
-    await provider?.refresh();
-    void vscode.window.showInformationMessage(vscode.l10n.t("OmniRoute model list refreshed."));
+    if (!provider) return;
+    // A real listing, so the result below is what the server answered. The
+    // provider tells the user why when it fails; the picker is told to list
+    // again either way.
+    const listing = await provider.listModels({ silent: false });
+    void provider.refresh();
+    if (listing.ok) {
+      void vscode.window.showInformationMessage(
+        vscode.l10n.t("{0} models listed from {1}.", listing.count, displayUrl(listing.serverUrl))
+      );
+    } else {
+      await explainWithheldKey(context, listing);
+    }
   });
 
   register("omnicopilot.checkConnection", async () => {
     const ok = await statusBar?.checkNow();
     if (ok) {
-      const client = await makeClient(context);
-      void vscode.window.showInformationMessage(
-        vscode.l10n.t("Connected to OmniRoute at {0}.", displayUrl(client.baseUrl))
-      );
+      // The probe is answered without a key; only a listing proves the key works.
+      const listing = await provider?.listModels({ silent: false });
+      if (listing?.ok) {
+        const client = await makeClient(context);
+        void vscode.window.showInformationMessage(
+          vscode.l10n.t("Connected to OmniRoute at {0}.", displayUrl(client.baseUrl))
+        );
+      } else if (listing) {
+        await explainWithheldKey(context, listing);
+      }
     } else {
       const summary = statusBar?.failureSummary;
       void vscode.window.showWarningMessage(
@@ -195,6 +213,18 @@ function registerCommands(context: vscode.ExtensionContext, log: vscode.LogOutpu
   register("omnicopilot.quickActions", () => quickActions(context));
 }
 
+
+/** A listing failed. The provider has already said so, except when the server
+ * answered 401/403 to a request that went out without the stored key: that is the
+ * expected answer, and the reason is the withheld key. */
+async function explainWithheldKey(
+  context: vscode.ExtensionContext,
+  listing: ModelListing
+): Promise<void> {
+  if (!listing.keyWithheld || !isKeyRejection(listing.failure?.status)) return;
+  const message = keyWithheldMessage(await resolveConnection(context));
+  if (message) void vscode.window.showWarningMessage(plainNotificationText(message));
+}
 
 /** Explain once why `dashboardOpen: "editor"` fell back to the browser. The flag
  * is compiled into the OmniRoute build, so this cannot be fixed from the client. */
