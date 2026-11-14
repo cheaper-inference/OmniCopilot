@@ -210,7 +210,31 @@ export const window = {
   showWarningMessage: async (..._args: unknown[]): Promise<undefined> => undefined,
   showInformationMessage: async (..._args: unknown[]): Promise<undefined> => undefined,
   showErrorMessage: async (..._args: unknown[]): Promise<undefined> => undefined,
+  showInputBox: async (..._args: unknown[]): Promise<string | undefined> => undefined,
+  showQuickPick: async (..._args: unknown[]): Promise<undefined> => undefined,
+  terminals: [] as Array<{ name: string; dispose(): void }>,
+  createTerminal: (options: { name: string; env?: Record<string, string> }) => {
+    const terminal = {
+      name: options.name,
+      env: options.env,
+      sent: [] as string[],
+      show() {},
+      sendText(text: string) {
+        this.sent.push(text);
+      },
+      dispose() {},
+    };
+    createdTerminals.push(terminal);
+    return terminal;
+  },
 };
+
+/** Every terminal `window.createTerminal` made, in order. */
+export const createdTerminals: Array<{
+  name: string;
+  env?: Record<string, string>;
+  sent: string[];
+}> = [];
 
 /** Handlers registered through `commands.registerCommand`, by command id. */
 export const registeredCommands = new Map<string, (...args: unknown[]) => unknown>();
