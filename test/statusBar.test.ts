@@ -701,3 +701,246 @@ describe("ConnectionStatusBar daily quota through the real usage read", () => {
     statusBar.dispose();
   });
 });
+
+describe("ConnectionStatusBar polls and key changes", () => {
+  let now = 1_900_000_000_000;
+
+  afterEach(() => {
+    vi.restoreAllMocks();
+    setMockConfig({});
+  });
+
+  /** 10% of the daily limit left for sk-1, 90% for sk-2. */
+  const viewFor = (key: string | undefined): UsageLimitView => {
+    const view = toUsageView({
+      allowed: true,
+      provider: null,
+      personal: {
+        enabled: true,
+        dailyLimitUsd: 10,
+        weeklyLimitUsd: null,
+        dailySpentUsd: key === "sk-1" ? 9 : 1,
+        weeklySpentUsd: 0,
+        dailyResetAtIso: "2999-01-01T00:00:00Z",
+        weeklyResetAtIso: null,
+        dailyExceeded: false,
+        weeklyExceeded: false,
+      },
+    });
+    if (view.kind !== "ready" || !view.personal) throw new Error("expected a personal view");
+    return view.personal;
+  };
+
+  /** Probes stay out until the test settles them; each connection read hands out a fresh copy. */
+  function setUp(options: { heldUsage?: (key: string | undefined) => boolean } = {}) {
+    vi.spyOn(Date, "now").mockImplementation(() => now);
+    const probes: Array<{ ok: (status?: number) => void; fail: () => void }> = [];
+    const client = {
+      baseUrl: "http://gateway.test/v1",
+      probe: () =>
+        new Promise<ProbeResult>((resolve, reject) => {
+          probes.push({
+            ok: (status = 200) => resolve({ ok: true, status }),
+            fail: () => reject(new Error("probe lost")),
+          });
+        }),
+    };
+    let key: string | undefined = "sk-1";
+    const current = (): Connection =>
+      ({
+        baseUrl: "http://gateway.test/v1",
+        origin: "http://gateway.test",
+        approvedOrigins: ["http://gateway.test"],
+        apiKey: key,
+        hasStoredKey: key !== undefined,
+        keyWithheld: false,
+        keyScope: key ? "global" : "none",
+      }) as Connection;
+    const usageKeys: Array<string | undefined> = [];
+    const releases: Array<() => void> = [];
+    const fetchPersonal = vi.fn((connection: Connection) => {
+      usageKeys.push(connection.apiKey);
+      if (options.heldUsage?.(connection.apiKey)) {
+        return new Promise<UsageLimitView | null>((resolve) => {
+          releases.push(() => resolve(viewFor(connection.apiKey)));
+        });
+      }
+      return Promise.resolve(viewFor(connection.apiKey));
+    });
+    const log = { info: vi.fn(), warn: vi.fn(), debug: vi.fn(), error: vi.fn() };
+    const statusBar = new ConnectionStatusBar(
+      async () => client as unknown as OmniRouteClient,
+      log as unknown as vscode.LogOutputChannel,
+      undefined,
+      async () => current(),
+      undefined,
+      fetchPersonal
+    );
+    const item = statusBar as unknown as { item: { text: string; tooltip: string } };
+    const writes: string[] = [];
+    let text = "";
+    Object.defineProperty(item.item, "text", {
+      get: () => text,
+      set: (value: string) => {
+        text = value;
+        writes.push(value);
+      },
+    });
+    const flush = async () => {
+      for (let i = 0; i < 10; i++) await Promise.resolve();
+    };
+    return {
+      statusBar,
+      probes,
+      usageKeys,
+      releases,
+      fetchPersonal,
+      writes,
+      text: () => text,
+      setKey: (next: string | undefined) => void (key = next),
+      flush,
+    };
+  }
+
+  it("does not send the old key, nor show its number, when a poll that began before a key change finishes last", async () => {
+    const t = setUp();
+    const pollA = t.statusBar.checkNow(); // begins under sk-1
+    await vi.waitFor(() => expect(t.probes).toHaveLength(1));
+
+    t.setKey("sk-2");
+    t.statusBar.restart(); // poll B begins under sk-2
+    await vi.waitFor(() => expect(t.probes).toHaveLength(2));
+    t.probes[1]?.ok();
+    await vi.waitFor(() => expect(t.text()).toBe("$(circle-filled) OmniRoute · 90%"));
+    expect(t.usageKeys).toEqual(["sk-2"]);
+
+    t.probes[0]?.ok(); // poll A's probe, late
+    await pollA;
+    await t.flush();
+
+    expect(t.usageKeys).toEqual(["sk-2"]); // sk-1 was not sent again
+    expect(t.text()).toBe("$(circle-filled) OmniRoute · 90%");
+    expect(t.writes.some((text) => text.includes("10%"))).toBe(false);
+    t.statusBar.dispose();
+  });
+
+  it("keeps poll B's status and number when poll A's probe is lost late", async () => {
+    const t = setUp();
+    const pollA = t.statusBar.checkNow();
+    await vi.waitFor(() => expect(t.probes).toHaveLength(1));
+
+    t.setKey("sk-2");
+    t.statusBar.restart();
+    await vi.waitFor(() => expect(t.probes).toHaveLength(2));
+    t.probes[1]?.ok();
+    await vi.waitFor(() => expect(t.text()).toBe("$(circle-filled) OmniRoute · 90%"));
+
+    t.probes[0]?.fail();
+    await expect(pollA).rejects.toThrow("probe lost");
+    await t.flush();
+
+    expect(t.text()).toBe("$(circle-filled) OmniRoute · 90%");
+    expect(t.usageKeys).toEqual(["sk-2"]);
+    t.statusBar.dispose();
+  });
+
+  it("applies nothing of a stale poll: not its status, not its model refill", async () => {
+    const onModelsReachable = vi.fn();
+    const t = setUp();
+    (t.statusBar as unknown as { onModelsReachable: unknown }).onModelsReachable = onModelsReachable;
+    const pollA = t.statusBar.checkNow();
+    await vi.waitFor(() => expect(t.probes).toHaveLength(1));
+    t.statusBar.restart();
+    await vi.waitFor(() => expect(t.probes).toHaveLength(2));
+    t.probes[1]?.ok(401); // the new poll: there, but the listing would be refused
+    await vi.waitFor(() => expect(t.text()).toContain("OmniRoute"));
+
+    t.probes[0]?.ok(200); // the old poll would read as "accepted after not accepted"
+    await pollA;
+    await t.flush();
+    expect(onModelsReachable).not.toHaveBeenCalled();
+    t.statusBar.dispose();
+  });
+
+  it("does not let a poll that resolved its connection before a key change adopt it afterwards", async () => {
+    const t = setUp();
+    const stale = {
+      baseUrl: "http://gateway.test/v1",
+      origin: "http://gateway.test",
+      approvedOrigins: ["http://gateway.test"],
+      apiKey: "sk-1",
+      hasStoredKey: true,
+      keyWithheld: false,
+      keyScope: "global",
+    } as Connection;
+    let releaseStale: ((connection: Connection) => void) | undefined;
+    const original = (t.statusBar as unknown as { getConnection: () => Promise<Connection> }).getConnection;
+    (t.statusBar as unknown as { getConnection: unknown }).getConnection = vi
+      .fn<() => Promise<Connection>>()
+      .mockImplementationOnce(() => new Promise<Connection>((resolve) => void (releaseStale = resolve)))
+      .mockImplementation(original);
+
+    const pollA = t.statusBar.checkNow(); // waiting for its connection
+    await vi.waitFor(() => expect(releaseStale).toBeDefined());
+    t.setKey("sk-2");
+    t.statusBar.restart(); // poll B resolves sk-2 and adopts it
+    await vi.waitFor(() => expect(t.probes).toHaveLength(1));
+    const fingerprintNow = (t.statusBar as unknown as { usageFingerprint: string }).usageFingerprint;
+
+    releaseStale?.(stale); // poll A's old answer arrives
+    await t.flush();
+
+    expect((t.statusBar as unknown as { usageFingerprint: string }).usageFingerprint).toBe(fingerprintNow);
+    expect(fingerprintNow).toBe(
+      connectionFingerprint({ ...stale, apiKey: "sk-2" } as Connection)
+    );
+    t.probes[0]?.ok();
+    void pollA;
+    t.statusBar.dispose();
+  });
+
+  describe("a render between a key change and the next read", () => {
+    it("never draws the old key's number when the status changes on chat activity", async () => {
+      const t = setUp({ heldUsage: (key) => key === "sk-2" });
+      const poll = t.statusBar.checkNow();
+      await vi.waitFor(() => expect(t.probes).toHaveLength(1));
+      t.probes[0]?.ok();
+      await poll;
+      await vi.waitFor(() => expect(t.text()).toContain("10%"));
+      t.statusBar.reportActivity(false); // the server stopped answering: offline, number hidden
+      expect(t.text()).toBe("$(circle-outline) OmniRoute");
+
+      t.setKey("sk-2"); // changed behind the extension's back, no restart()
+      t.writes.length = 0;
+      t.statusBar.reportActivity(true); // a chat response finished: status back to online
+      await vi.waitFor(() => expect(t.usageKeys).toEqual(["sk-1", "sk-2"]));
+      await t.flush();
+
+      expect(t.writes.some((text) => text.includes("10%"))).toBe(false);
+      expect(t.text()).toBe("$(circle-filled) OmniRoute");
+      t.releases[0]?.();
+      await vi.waitFor(() => expect(t.text()).toBe("$(circle-filled) OmniRoute · 90%"));
+      t.statusBar.dispose();
+    });
+
+    it("does not redraw at all when chat activity leaves the status as it was", async () => {
+      const t = setUp({ heldUsage: (key) => key === "sk-2" });
+      const poll = t.statusBar.checkNow();
+      await vi.waitFor(() => expect(t.probes).toHaveLength(1));
+      t.probes[0]?.ok();
+      await poll;
+      await vi.waitFor(() => expect(t.text()).toContain("10%"));
+
+      t.setKey("sk-2");
+      t.writes.length = 0;
+      t.statusBar.reportActivity(true);
+      // The old number is on screen until the new connection is known; nothing wrote it again,
+      // and once the connection is resolved it goes.
+      await vi.waitFor(() => expect(t.usageKeys).toEqual(["sk-1", "sk-2"]));
+      await t.flush();
+      expect(t.writes.every((text) => !text.includes("10%"))).toBe(true);
+      expect(t.text()).toBe("$(circle-filled) OmniRoute");
+      t.statusBar.dispose();
+    });
+  });
+});

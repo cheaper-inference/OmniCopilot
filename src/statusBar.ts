@@ -166,6 +166,12 @@ export class ConnectionStatusBar implements vscode.Disposable {
   private usageGeneration = 0;
   /** Fingerprint of the connection the sample (and the floor) belong to. */
   private usageFingerprint: string | undefined;
+  /** Bumped when the connection changed (`restart`, or a poll that resolved another key or
+   * server), so a poll that began before is abandoned: it applies nothing and reads nothing. */
+  private connectionGeneration = 0;
+  /** Chat activity may have outlived a key change: the sample is not drawn until the read
+   * that follows has resolved the connection and compared it. */
+  private usageUnverified = false;
 
   constructor(
     private readonly getClient: () => Promise<OmniRouteClient>,
@@ -192,7 +198,14 @@ export class ConnectionStatusBar implements vscode.Disposable {
   /** Feed request outcomes from the provider so the dot reacts instantly. */
   reportActivity(ok: boolean): void {
     if (ok) this.lastFailure = undefined;
-    this.setStatus(ok ? "online" : "offline");
+    const next = ok ? "online" : "offline";
+    // A request outlives nothing but the connection it began with: until the usage read
+    // that follows has compared the connection in effect, a draw must not show the number.
+    if (ok && this.usageSample && this.fetchPersonalUsage && this.getConnection) {
+      this.usageUnverified = true;
+    }
+    // An unchanged status has nothing new to draw.
+    if (next !== this.status || !ok) this.setStatus(next);
     if (ok) this.refreshUsageIfDue();
   }
 
@@ -202,19 +215,26 @@ export class ConnectionStatusBar implements vscode.Disposable {
   }
 
   async checkNow(): Promise<boolean> {
+    // A poll is one generation from start to finish: once the connection changed under
+    // it, nothing it resolved or measured is applied, and it starts no usage read.
+    let generation = this.connectionGeneration;
     const client = await this.getClient();
-    this.root = serverRootUrl(client.baseUrl);
+    if (generation !== this.connectionGeneration) return this.checkNow();
     const connection = await this.getConnection?.();
+    if (generation !== this.connectionGeneration) return this.checkNow();
+    this.root = serverRootUrl(client.baseUrl);
     // Before anything is drawn: a number read for another key or server goes at once.
-    if (connection) this.adoptUsageConnection(connection);
+    if (connection && this.adoptUsageConnection(connection)) generation = this.connectionGeneration;
     this.keyNote = connection ? keyWithheldMessage(connection) : undefined;
     this.keyWithheld = connection?.keyWithheld ?? false;
     const result: ProbeResult = await client.probe(PROBE_TIMEOUT_MS);
+    if (generation !== this.connectionGeneration) return result.ok;
     this.lastFailure = result.ok
       ? undefined
       : describeProbeFailure(client.baseUrl, result, PROBE_TIMEOUT_MS).summary;
     this.setStatus(result.ok ? "online" : "offline");
-    if (result.ok) this.refreshUsageIfDue(connection);
+    // The usage read resolves the connection again: the one captured before the probe may be old.
+    if (result.ok) this.refreshUsageIfDue();
     const pollOk = result.ok && result.status >= 200 && result.status < 300;
     const previousPollOk = this.lastPollOk;
     this.lastPollOk = pollOk;
@@ -223,7 +243,9 @@ export class ConnectionStatusBar implements vscode.Disposable {
   }
 
   restart(): void {
-    // A changed key, server or setting makes the last reading worthless.
+    // A changed key, server or setting makes the last reading worthless, and any poll
+    // that began before it stale.
+    this.connectionGeneration++;
     this.dropUsage();
     this.applyVisibility();
     this.scheduleLoop();
@@ -237,6 +259,7 @@ export class ConnectionStatusBar implements vscode.Disposable {
     this.usageSample = undefined;
     this.lastUsageAttemptAt = undefined;
     this.usageFingerprint = undefined;
+    this.usageUnverified = false;
   }
 
   /** Tie the sample to the connection in effect: when another key or server is in
@@ -245,7 +268,10 @@ export class ConnectionStatusBar implements vscode.Disposable {
   private adoptUsageConnection(connection: Connection): boolean {
     const fingerprint = connectionFingerprint(connection);
     const changed = this.usageFingerprint !== undefined && this.usageFingerprint !== fingerprint;
-    if (changed) this.dropUsage();
+    if (changed) {
+      this.connectionGeneration++;
+      this.dropUsage();
+    }
     this.usageFingerprint = fingerprint;
     return changed;
   }
@@ -275,8 +301,9 @@ export class ConnectionStatusBar implements vscode.Disposable {
 
   /** Read the key's usage when the setting is on, a key is in effect and the minimum
    * interval has passed. Nothing waits for it; the status bar redraws when it lands.
-   * `known` is the connection a poll just resolved; without it the connection is resolved here. */
-  private refreshUsageIfDue(known?: Connection): void {
+   * The connection is resolved here, at the moment of the read, never reused from an
+   * earlier step. */
+  private refreshUsageIfDue(): void {
     if (this.disposed || !this.fetchPersonalUsage || !this.getConnection) return;
     if (!this.usageEnabled()) {
       // Off: forget the number, so turning it on again reads at once.
@@ -284,16 +311,26 @@ export class ConnectionStatusBar implements vscode.Disposable {
       return;
     }
     const generation = this.usageGeneration;
-    void this.readUsage(known, generation).catch((err: unknown) =>
-      this.log.warn(`Usage refresh failed: ${String(err)}`)
-    );
+    void this.readUsage(generation)
+      .catch((err: unknown) => this.log.warn(`Usage refresh failed: ${String(err)}`))
+      .finally(() => {
+        // Whatever ended the read, the number is not held back as "unverified" for good.
+        if (this.usageUnverified && generation === this.usageGeneration) {
+          this.usageUnverified = false;
+          this.render();
+        }
+      });
   }
 
-  private async readUsage(known: Connection | undefined, generation: number): Promise<void> {
-    const connection = known ?? (await this.getConnection!());
+  private async readUsage(generation: number): Promise<void> {
+    const connection = await this.getConnection!();
     // Anything that changed while the connection was being resolved wins over this read.
     if (this.disposed || generation !== this.usageGeneration) return;
-    if (this.adoptUsageConnection(connection)) this.render();
+    const changed = this.adoptUsageConnection(connection);
+    if (changed || this.usageUnverified) {
+      this.usageUnverified = false;
+      this.render();
+    }
     const current = this.usageGeneration;
     if (this.usageInFlightGeneration === current) return;
     const now = Date.now();
@@ -345,7 +382,7 @@ export class ConnectionStatusBar implements vscode.Disposable {
       enabled: this.usageEnabled(),
       online: this.status === "online",
       keyWithheld: this.keyWithheld,
-      dailyPercentLeft: this.usageSample?.percentLeft ?? null,
+      dailyPercentLeft: this.usageUnverified ? null : (this.usageSample?.percentLeft ?? null),
     });
     this.item.text = look.text + suffix;
     this.item.color = look.color ? new vscode.ThemeColor(look.color) : undefined;
