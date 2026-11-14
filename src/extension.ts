@@ -198,9 +198,9 @@ function registerCommands(context: vscode.ExtensionContext, log: vscode.LogOutpu
       // The probe is answered without a key; only a listing proves the key works.
       const listing = await provider?.listModels({ silent: false });
       if (listing?.ok) {
-        const client = await makeClient(context);
+        // Named like "Models listed from …": the root of the server the listing went to.
         void vscode.window.showInformationMessage(
-          vscode.l10n.t("Connected to OmniRoute at {0}.", displayUrl(client.baseUrl))
+          vscode.l10n.t("Connected to OmniRoute at {0}.", displayUrl(listing.serverUrl))
         );
       } else if (listing) {
         await explainWithheldKey(context, listing);

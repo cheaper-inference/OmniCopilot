@@ -4,6 +4,7 @@ import type { ChatRequest } from "./types";
 export type RequestParams = Pick<
   ChatRequest,
   | "max_tokens"
+  | "temperature"
   | "top_p"
   | "stop"
   | "seed"
@@ -33,6 +34,7 @@ function firstValid<T>(
 
 const isPositiveInteger = (value: unknown): value is number =>
   typeof value === "number" && Number.isInteger(value) && value > 0;
+const isTemperature = (value: unknown): value is number => isNumber(value) && value >= 0 && value <= 2;
 const isTopP = (value: unknown): value is number => isNumber(value) && value > 0 && value <= 1;
 const isPenalty = (value: unknown): value is number =>
   isNumber(value) && value >= -2 && value <= 2;
@@ -71,6 +73,8 @@ export function requestParamsFromModelOptions(
     const cap = limits.maxOutputTokens;
     params.max_tokens = isPositiveInteger(cap) ? Math.min(maxTokens, cap) : maxTokens;
   }
+
+  if (isTemperature(modelOptions.temperature)) params.temperature = modelOptions.temperature;
 
   const topP = firstValid(modelOptions, ["top_p", "topP"], isTopP);
   if (topP !== undefined) params.top_p = topP;

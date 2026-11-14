@@ -541,6 +541,14 @@ describe("provider request parameters", () => {
     });
   });
 
+  it("sends a valid temperature, as before", async () => {
+    expect((await bodyFor({ temperature: 0.7 })).temperature).toBe(0.7);
+  });
+
+  it("does not send a temperature that is not a number (NaN would go out as null)", async () => {
+    expect(await bodyFor({ temperature: Number.NaN })).not.toHaveProperty("temperature");
+  });
+
   it("caps max_tokens at the output limit the model was listed with", async () => {
     expect((await bodyFor({ max_tokens: 5000 }, 1000)).max_tokens).toBe(1000);
   });

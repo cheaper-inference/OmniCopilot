@@ -17,7 +17,7 @@ describe("requestParamsFromModelOptions", () => {
 
   it("forwards nothing but the listed parameters", () => {
     expect(
-      from({ temperature: 0.2, reasoning_effort: "high", tool_choice: "none", foo: 1, model: "x" })
+      from({ reasoning_effort: "high", tool_choice: "none", foo: 1, model: "x" })
     ).toEqual({});
   });
 
@@ -47,6 +47,16 @@ describe("requestParamsFromModelOptions", () => {
 
     it.each([0, -5, 1.5, NaN, Infinity, "200", null, true, {}])("drops %j", (value) => {
       expect(from({ max_tokens: value })).toEqual({});
+    });
+  });
+
+  describe("temperature", () => {
+    it.each([0, 0.7, 2])("accepts %s", (value) => {
+      expect(from({ temperature: value })).toEqual({ temperature: value });
+    });
+
+    it.each([Number.NaN, "0.5", -0.1, 2.1, Number.POSITIVE_INFINITY])("drops %s", (value) => {
+      expect(from({ temperature: value })).toEqual({});
     });
   });
 
