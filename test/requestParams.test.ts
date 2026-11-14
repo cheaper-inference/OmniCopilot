@@ -94,7 +94,12 @@ describe("requestParamsFromModelOptions", () => {
       expect(from({ seed: value })).toEqual({ seed: value });
     });
 
-    it.each([1.5, NaN, Infinity, "42", null, true])("drops %j", (value) => {
+    it("accepts the largest and smallest safe integers", () => {
+      expect(from({ seed: Number.MAX_SAFE_INTEGER })).toEqual({ seed: Number.MAX_SAFE_INTEGER });
+      expect(from({ seed: Number.MIN_SAFE_INTEGER })).toEqual({ seed: Number.MIN_SAFE_INTEGER });
+    });
+
+    it.each([1.5, NaN, Infinity, "42", null, true, 2 ** 53, -(2 ** 53), 1e21])("drops %j", (value) => {
       expect(from({ seed: value })).toEqual({});
     });
   });

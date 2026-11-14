@@ -36,8 +36,9 @@ const isPositiveInteger = (value: unknown): value is number =>
 const isTopP = (value: unknown): value is number => isNumber(value) && value > 0 && value <= 1;
 const isPenalty = (value: unknown): value is number =>
   isNumber(value) && value >= -2 && value <= 2;
-const isInteger = (value: unknown): value is number =>
-  typeof value === "number" && Number.isInteger(value);
+/** Beyond the safe range a number no longer round-trips through JSON as an integer (`1e21`). */
+const isSeed = (value: unknown): value is number =>
+  typeof value === "number" && Number.isSafeInteger(value);
 const isStop = (value: unknown): value is string | string[] =>
   (typeof value === "string" && value.length > 0) ||
   (Array.isArray(value) &&
@@ -75,7 +76,7 @@ export function requestParamsFromModelOptions(
   if (topP !== undefined) params.top_p = topP;
 
   if (isStop(modelOptions.stop)) params.stop = modelOptions.stop;
-  if (isInteger(modelOptions.seed)) params.seed = modelOptions.seed;
+  if (isSeed(modelOptions.seed)) params.seed = modelOptions.seed;
   if (isPenalty(modelOptions.presence_penalty)) {
     params.presence_penalty = modelOptions.presence_penalty;
   }
