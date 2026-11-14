@@ -101,6 +101,25 @@ export function remoteUrlArgument(root: string): string | undefined {
   return hasShellSyntax(serialised) ? undefined : serialised;
 }
 
+/** Whether `root` is the default server in any spelling: the URL parser's scheme and
+ * host (case-insensitive), a trailing slash or `/v1` suffix, and nothing else (no
+ * other path, credentials, query or fragment). */
+function isDefaultRoot(root: string): boolean {
+  try {
+    const url = new URL(serverRootUrl(root));
+    return (
+      url.origin === new URL(DEFAULT_BASE_URL).origin &&
+      url.pathname === "/" &&
+      url.username === "" &&
+      url.password === "" &&
+      url.search === "" &&
+      url.hash === ""
+    );
+  } catch {
+    return false;
+  }
+}
+
 /** What the CLI is told about the server: nothing (it assumes `http://localhost:20128`
  * itself), the root to pass as `--remote`, or that the root cannot be passed. */
 export type CliRemoteDecision =
@@ -109,14 +128,14 @@ export type CliRemoteDecision =
   | { kind: "refused" };
 
 /**
- * `--remote` is left out only for exactly the default root, the one address the
+ * `--remote` is left out only for the default root (however it is written), the one address the
  * CLI resolves on its own. Any other root, local or not (`http://localhost:3000`,
  * `https://localhost:20128`, `http://127.0.0.1:20128`), is passed through the same
  * safety check as every `--remote` argument, so the tool is configured for the
  * server the extension uses and not for the CLI's own guess.
  */
 export function cliRemoteDecision(root: string): CliRemoteDecision {
-  if (root === DEFAULT_BASE_URL) return { kind: "default" };
+  if (isDefaultRoot(root)) return { kind: "default" };
   const remote = remoteUrlArgument(root);
   return remote === undefined ? { kind: "refused" } : { kind: "remote", remote };
 }

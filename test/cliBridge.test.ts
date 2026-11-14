@@ -252,6 +252,24 @@ describe("the server address handed to the CLI", () => {
   });
 
   it.each([
+    ["HTTP://LOCALHOST:20128"],
+    ["http://localhost:20128/"],
+    ["http://localhost:20128/v1"],
+    ["http://localhost:20128/v1/"],
+    [" http://Localhost:20128/V1/ "],
+  ])("recognises the default server written as %j", (root) => {
+    expect(cliRemoteDecision(root)).toEqual({ kind: "default" });
+  });
+
+  it.each([
+    ["http://localhost:20128/other", "http://localhost:20128/other"],
+    ["http://user@localhost:20128", "http://user@localhost:20128"],
+    ["http://localhost:20128?x=1", "http://localhost:20128/?x=1"],
+  ])("does not take %s for the default server", (root, remote) => {
+    expect(cliRemoteDecision(root)).toEqual({ kind: "remote", remote });
+  });
+
+  it.each([
     ["http://localhost:3000", "http://localhost:3000"],
     ["https://localhost:20128", "https://localhost:20128"],
     ["http://127.0.0.1:20128", "http://127.0.0.1:20128"],
