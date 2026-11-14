@@ -1,6 +1,6 @@
 import { describe, expect, it } from "vitest";
-import { describeModel } from "../src/modelInfo";
-import type { OmniRouteModel } from "../src/types";
+import { comboSummary, comboSummaryMarkdown, describeModel, priceLabel } from "../src/modelInfo";
+import type { OmniRouteCombo, OmniRouteModel } from "../src/types";
 
 const cfg = { maxOutputTokens: 16_384, defaultContextLength: 128_000 };
 
@@ -109,5 +109,116 @@ describe("describeModel", () => {
     const d = describeModel({ id: "x/y", context_length: 1 }, cfg);
     expect(d.maxOutputTokens).toBe(1);
     expect(d.maxInputTokens).toBe(1_024);
+  });
+});
+
+describe("priceLabel", () => {
+  const priced = (input: number, output: number, extra: Partial<OmniRouteModel> = {}): OmniRouteModel => ({
+    id: "m",
+    pricing: { input, output },
+    ...extra,
+  });
+
+  it("shows both prices per 1M tokens with at most four significant digits", () => {
+    expect(priceLabel(priced(1.25, 10))).toBe("$1.25 in · $10 out per 1M");
+    expect(priceLabel(priced(0.075, 0.3))).toBe("$0.075 in · $0.3 out per 1M");
+    expect(priceLabel(priced(2.5, 1234.5678))).toBe("$2.5 in · $1235 out per 1M");
+    expect(priceLabel(priced(0.00000015, 2))).toBe("$0.00000015 in · $2 out per 1M");
+  });
+
+  it("prints a zero side as $0 when the other side is not free", () => {
+    expect(priceLabel(priced(0, 5))).toBe("$0 in · $5 out per 1M");
+  });
+
+  it("calls a model Free when the server says so", () => {
+    expect(priceLabel(priced(0, 0, { free: true }))).toBe("Free");
+    expect(priceLabel({ id: "m", pricing: { input: 0, output: 0, prompt: "0", completion: "0" } })).toBe("Free");
+    expect(priceLabel({ id: "m", pricing: { prompt: "0", completion: "0", input: 0 } })).toBe("Free");
+  });
+
+  it("does not call zero numbers Free without proof (per-request providers)", () => {
+    expect(priceLabel(priced(0, 0))).toBeUndefined();
+    expect(priceLabel({ id: "m", pricing: { input: 0, output: 0, prompt: "0.000001", completion: "0" } })).toBeUndefined();
+  });
+
+  it("returns undefined when there is nothing usable to show", () => {
+    expect(priceLabel({ id: "m" })).toBeUndefined();
+    expect(priceLabel({ id: "m", pricing: {} })).toBeUndefined();
+    expect(priceLabel({ id: "m", pricing: { cached: 1 } })).toBeUndefined();
+    expect(priceLabel({ id: "m", free: true })).toBeUndefined();
+  });
+
+  it("ignores values that are not finite numbers >= 0", () => {
+    expect(priceLabel(priced(-1, 10))).toBeUndefined();
+    expect(priceLabel(priced(Number.NaN, 10))).toBeUndefined();
+    expect(priceLabel({ id: "m", pricing: { input: "1", output: 2 } as never })).toBeUndefined();
+    expect(priceLabel(priced(Infinity, 10))).toBeUndefined();
+  });
+
+  it("localises through the function it is given", () => {
+    const t = (message: string, ...args: string[]) => `<${message}|${args.join(",")}>`;
+    expect(priceLabel(priced(0, 0, { free: true }), t)).toBe("<Free|>");
+    expect(priceLabel(priced(1.25, 10), t)).toBe("<{0} in · {1} out per 1M|$1.25,$10>");
+  });
+});
+
+describe("comboSummary", () => {
+  const combo = (over: Partial<OmniRouteCombo> = {}): OmniRouteCombo => ({
+    name: "c",
+    strategy: "priority",
+    models: [
+      { kind: "model", model: "cx/gpt-test" },
+      { kind: "model", model: "free/tiny" },
+    ],
+    ...over,
+  });
+
+  it("joins the strategy and the steps", () => {
+    expect(comboSummary(combo())).toBe("priority · cx/gpt-test → free/tiny");
+  });
+
+  it("shows the name of a combo-ref step", () => {
+    expect(
+      comboSummary(combo({ models: [{ kind: "combo-ref", comboName: "inner" }, { kind: "model", model: "a/b" }] }))
+    ).toBe("priority · inner → a/b");
+  });
+
+  it("stops after six steps with an ellipsis", () => {
+    const models = Array.from({ length: 8 }, (_, i) => ({ kind: "model" as const, model: `m${i + 1}` }));
+    expect(comboSummary(combo({ models }))).toBe("priority · m1 → m2 → m3 → m4 → m5 → m6 → …");
+    expect(comboSummary(combo({ models: models.slice(0, 6) }))).toBe("priority · m1 → m2 → m3 → m4 → m5 → m6");
+  });
+
+  it("skips a step with no name and survives a bad strategy", () => {
+    expect(
+      comboSummary(combo({ models: [{ kind: "model" }, { kind: "model", model: "a/b" }] }))
+    ).toBe("priority · a/b");
+    expect(comboSummary(combo({ models: [{ kind: "combo-ref" }] }))).toBe("priority");
+    expect(comboSummary(combo({ models: [] }))).toBe("priority");
+    expect(comboSummary(combo({ strategy: undefined as never }))).toBe("combo · cx/gpt-test → free/tiny");
+    expect(comboSummary(combo({ strategy: 3 as never, models: undefined as never }))).toBe("combo");
+  });
+});
+
+describe("comboSummaryMarkdown", () => {
+  it("puts every step in inline code and escapes the strategy", () => {
+    expect(
+      comboSummaryMarkdown({
+        name: "c",
+        strategy: "round_robin*",
+        models: [
+          { kind: "model", model: "cx/gpt_test*" },
+          { kind: "combo-ref", comboName: "in`ner" },
+        ],
+      })
+    ).toBe("round\\_robin\\* · `cx/gpt_test*` → `inner`");
+  });
+
+  it("keeps the ellipsis outside the code spans and handles an empty combo", () => {
+    const models = Array.from({ length: 7 }, (_, i) => ({ kind: "model" as const, model: `m${i}` }));
+    expect(comboSummaryMarkdown({ name: "c", strategy: "p", models })).toBe(
+      "p · `m0` → `m1` → `m2` → `m3` → `m4` → `m5` → …"
+    );
+    expect(comboSummaryMarkdown({ name: "c", strategy: "p", models: [] })).toBe("p");
   });
 });

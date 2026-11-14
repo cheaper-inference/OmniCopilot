@@ -5,6 +5,7 @@ import { parseRetryAfter, retryDelayFromMessage } from "./retry";
 import type {
   ChatRequest,
   ModelsResponse,
+  OmniRouteCombo,
   OmniRouteModel,
   StreamChunk,
   StreamDelta,
@@ -194,6 +195,49 @@ export class OmniRouteClient {
         throw err;
       }
       return Array.isArray(body.data) ? body.data : [];
+    } finally {
+      clearTimeout(timer);
+    }
+  }
+
+  /**
+   * GET /v1/combos: what each combo is made of, for the model picker.
+   *
+   * The picker works without it, so this never throws: a 401/403/404 (an
+   * older server, or a key that may not read combos), a network error, the
+   * time limit and a body of the wrong shape all give `[]`.
+   */
+  async listCombos(token?: { isCancellationRequested?: boolean }): Promise<OmniRouteCombo[]> {
+    const ctrl = new AbortController();
+    const timer = setTimeout(() => ctrl.abort(), MODELS_TIMEOUT_MS);
+    try {
+      const res = await fetch(`${this.baseUrl}/combos`, {
+        headers: headers(this.opts.apiKey, false),
+        signal: ctrl.signal,
+      });
+      if (!res.ok) {
+        void res.body?.cancel().catch(() => undefined);
+        return [];
+      }
+      const body: unknown = await res.json();
+      if (token?.isCancellationRequested) return [];
+      const data = (body as { data?: unknown } | null)?.data;
+      if (!Array.isArray(data)) return [];
+      const combos: OmniRouteCombo[] = [];
+      for (const entry of data) {
+        if (typeof entry !== "object" || entry === null) continue;
+        const raw = entry as Partial<OmniRouteCombo>;
+        if (typeof raw.name !== "string") continue;
+        combos.push({
+          ...raw,
+          name: raw.name,
+          strategy: typeof raw.strategy === "string" ? raw.strategy : "",
+          models: Array.isArray(raw.models) ? raw.models : [],
+        });
+      }
+      return combos;
+    } catch {
+      return [];
     } finally {
       clearTimeout(timer);
     }

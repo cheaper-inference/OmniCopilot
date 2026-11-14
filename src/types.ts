@@ -1,5 +1,20 @@
 /** Shapes exchanged with the OmniRoute OpenAI-compatible API. */
 
+/** The `pricing` object of a priced `/v1/models` entry. The numbers are US
+ * dollars per 1M tokens; `prompt` and `completion` (current servers only) are
+ * dollars per token, as decimal strings. A provider that bills per request
+ * keeps the numbers but has no strings, and its numbers can be zero without
+ * the model being free. */
+export interface OmniRoutePricing {
+  input?: number;
+  output?: number;
+  cached?: number;
+  cache_creation?: number;
+  reasoning?: number;
+  prompt?: string;
+  completion?: string;
+}
+
 /** One entry of GET /v1/models. OmniRoute enriches the OpenAI shape with
  * capabilities and context metadata; every extra field is optional so the
  * extension also works against vanilla OpenAI-compatible servers. */
@@ -28,6 +43,10 @@ export interface OmniRouteModel {
   /** Set on a duplicate id that mirrors another entry in the same response
    * (OmniRoute `dual` prefix mode). Points at the primary id. */
   parent?: string | null;
+  /** Absent when the server does not know the price. */
+  pricing?: OmniRoutePricing;
+  /** Set by the server on a model it lists as free. */
+  free?: boolean;
   capabilities?: {
     tool_calling?: boolean;
     vision?: boolean;
@@ -44,6 +63,25 @@ export interface OmniRouteModel {
 export interface ModelsResponse {
   object: string;
   data: OmniRouteModel[];
+}
+
+/** One step of a combo, as GET /v1/combos lists it. */
+export interface OmniRouteComboStep {
+  kind: "model" | "combo-ref";
+  model?: string;
+  comboName?: string;
+  providerId?: string;
+  accountPinned?: boolean;
+  supportsVision?: boolean | null;
+}
+
+/** One entry of GET /v1/combos. A combo also appears in /v1/models, as a row
+ * whose `id` is the combo `name`. */
+export interface OmniRouteCombo {
+  name: string;
+  strategy: string;
+  description?: string;
+  models: OmniRouteComboStep[];
 }
 
 /** OpenAI Chat Completions request/stream shapes (subset we use). */

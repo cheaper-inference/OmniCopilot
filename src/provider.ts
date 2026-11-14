@@ -4,7 +4,7 @@ import { selectChatModels } from "./catalogFilter";
 import { OmniRouteClient, OmniRouteRequestError, serverRootUrl } from "./client";
 import { SECRET_API_KEY, displayUrl, resolveConnection } from "./connection";
 import { estimateTokens, toOpenAiMessages, toOpenAiTools } from "./convert";
-import { describeModel } from "./modelInfo";
+import { comboSummary, comboSummaryMarkdown, describeModel, priceLabel } from "./modelInfo";
 import {
   buildEffortSchema,
   effortTiersFor,
@@ -14,7 +14,7 @@ import {
 } from "./reasoning";
 import { DEFAULT_RETRY_POLICY, nextRetryDelay } from "./retry";
 import { createToolNameAliases } from "./toolNames";
-import type { ChatRequest, OmniRouteModel, StreamUsage } from "./types";
+import type { ChatRequest, OmniRouteCombo, OmniRouteModel, StreamUsage } from "./types";
 import { USAGE_MIME_TYPE, buildUsagePayload } from "./usage";
 
 export { SECRET_API_KEY };
@@ -29,6 +29,14 @@ interface OmniModelInfo extends vscode.LanguageModelChatInformation {
    * an `enum` becomes a submenu in the model picker, and the choice comes back
    * in `options.modelConfiguration`. Not in the stable typings. */
   configurationSchema?: EffortSchema;
+  /** Proposed-API fields read by the host the same way. The window is the
+   * total one (input plus output); `pricing` is a free-form label; `infoText`
+   * maps a category to a MARKDOWN string shown as a banner in the picker
+   * hover. `isBYOK` is derived by the host, and `inputCost`/`outputCost` are in
+   * Copilot credits, not dollars: none of those three is ever set here. */
+  maxContextWindowTokens?: number;
+  pricing?: string;
+  infoText?: Record<string, string>;
 }
 
 /** Choices the host hands back for the picker declared in `configurationSchema`
@@ -121,6 +129,7 @@ export class OmniRouteChatProvider
   readonly onDidChangeLanguageModelChatInformation = this._onDidChange.event;
 
   private cachedModels: OmniRouteModel[] = [];
+  private cachedCombos: OmniRouteCombo[] = [];
   /** Ids the catalog marks as reasoning/thinking-capable, refreshed with the
    * catalog. Chat requests consult it before applying the configured default
    * effort — the request itself carries no capability information. */
@@ -137,6 +146,7 @@ export class OmniRouteChatProvider
   /** Re-query the catalog and tell VS Code the model list changed. */
   async refresh(): Promise<void> {
     this.cachedModels = [];
+    this.cachedCombos = [];
     this.reasoningModelIds.clear();
     this.effortTiersById.clear();
     this._onDidChange.fire();
@@ -156,7 +166,11 @@ export class OmniRouteChatProvider
     const client = await this.makeClient();
 
     try {
-      this.cachedModels = await client.listModels(token);
+      // The combos only add detail to the picker, so they are fetched at the
+      // same time and a failure there (listCombos never throws) costs nothing.
+      const [models, combos] = await Promise.all([client.listModels(token), client.listCombos(token)]);
+      this.cachedModels = models;
+      this.cachedCombos = combos;
       this.deps.onActivity?.(true);
     } catch (err) {
       // An HTTP error (a 401, say) means the server answered: still reachable.
@@ -170,12 +184,12 @@ export class OmniRouteChatProvider
       return [];
     }
 
-    const infos = this.toModelInfos(this.cachedModels);
+    const infos = this.toModelInfos(this.cachedModels, this.cachedCombos);
     this.deps.log.info(`Listed ${infos.length} models from ${client.baseUrl}`);
     return infos;
   }
 
-  private toModelInfos(models: OmniRouteModel[]): OmniModelInfo[] {
+  private toModelInfos(models: OmniRouteModel[], combos: OmniRouteCombo[] = []): OmniModelInfo[] {
     const cfg = getConfig();
     const maxOutput = cfg.get<number>("maxOutputTokens", 16384);
     const defaultContext = cfg.get<number>("defaultContextLength", 128000);
@@ -193,6 +207,8 @@ export class OmniRouteChatProvider
     }
 
     const configuredEffort = cfg.get<string>("defaultReasoningEffort", "");
+    // A combo is listed in /v1/models under its own name.
+    const combosByName = new Map(combos.map((combo) => [combo.name, combo]));
     const infos: OmniModelInfo[] = [];
     this.reasoningModelIds.clear();
     this.effortTiersById.clear();
@@ -206,17 +222,29 @@ export class OmniRouteChatProvider
       });
       if (described.effortTiers) this.effortTiersById.set(model.id, described.effortTiers);
       const caps = model.capabilities ?? {};
-      const isCombo = model.owned_by === "combo";
+      const combo = model.owned_by === "combo" ? combosByName.get(model.id) : undefined;
+      const price = priceLabel(model, (message, ...args) => vscode.l10n.t(message, ...args));
+      const tooltip = [
+        `OmniRoute · ${model.id}`,
+        ...(combo ? [comboSummary(combo)] : []),
+        ...(isReasoningModel(model) ? ["extended thinking"] : []),
+      ].join(" · ");
 
       infos.push({
         id: model.id,
         name: described.name,
         family: model.owned_by || "omniroute",
         version: "1.0.0",
-        detail: isCombo ? "combo" : model.owned_by,
-        tooltip: isReasoningModel(model)
-          ? `OmniRoute · ${model.id} · extended thinking`
-          : `OmniRoute · ${model.id}`,
+        detail:
+          model.owned_by === "combo"
+            ? combo?.strategy
+              ? `combo · ${combo.strategy}`
+              : "combo"
+            : model.owned_by,
+        tooltip,
+        ...(combo ? { infoText: { combo: comboSummaryMarkdown(combo) } } : {}),
+        ...(price ? { pricing: price } : {}),
+        maxContextWindowTokens: described.contextLength,
         maxInputTokens: described.maxInputTokens,
         maxOutputTokens: described.maxOutputTokens,
         capabilities: {

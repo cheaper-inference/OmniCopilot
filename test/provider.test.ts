@@ -336,12 +336,16 @@ describe("provider catalog", () => {
   });
 
   it("sends max as its own tier and honours tiers the model advertises", async () => {
-    fetchMock.mockResolvedValueOnce(
-      catalog([{ id: "r", capabilities: { reasoning: true, effort_tiers: ["low", "high", "max"] } }])
+    // The catalog listing also asks for /combos, so answer by URL, not by call order.
+    fetchMock.mockImplementation(async (url: string) =>
+      String(url).endsWith("/chat/completions")
+        ? sseResponse([{ choices: [{ delta: { content: "ok" } }] }])
+        : String(url).endsWith("/combos")
+          ? catalog([])
+          : catalog([{ id: "r", capabilities: { reasoning: true, effort_tiers: ["low", "high", "max"] } }])
     );
     const { provider, progress, token } = makeProvider({ config: { defaultReasoningEffort: "max" } });
     await provider.provideLanguageModelChatInformation({ silent: true }, token);
-    fetchMock.mockResolvedValueOnce(sseResponse([{ choices: [{ delta: { content: "ok" } }] }]));
     await provider.provideLanguageModelChatResponse(
       { ...(modelInfo(false) as object), id: "r", omniModelId: "r" } as never,
       [
@@ -354,8 +358,169 @@ describe("provider catalog", () => {
       progress,
       token
     );
-    const init = fetchMock.mock.calls[1][1] as RequestInit;
+    const chatCall = fetchMock.mock.calls.find(([url]) => String(url).endsWith("/chat/completions"));
+    const init = chatCall?.[1] as RequestInit;
     expect(JSON.parse(init.body as string).reasoning_effort).toBe("max");
+  });
+});
+
+describe("provider picker metadata", () => {
+  let fetchMock: ReturnType<typeof vi.fn>;
+
+  beforeEach(() => {
+    fetchMock = vi.fn();
+    vi.stubGlobal("fetch", fetchMock);
+  });
+  afterEach(() => vi.unstubAllGlobals());
+
+  const json = (body: unknown, status = 200) =>
+    new Response(JSON.stringify(body), { status, headers: { "content-type": "application/json" } });
+
+  /** Answer /models and /combos separately, as the server does. */
+  function serve(models: unknown[], combos: Response | (() => Response) = () => json({ object: "list", data: [] })) {
+    fetchMock.mockImplementation(async (url: string) =>
+      String(url).includes("/combos")
+        ? typeof combos === "function"
+          ? combos()
+          : combos
+        : json({ object: "list", data: models })
+    );
+  }
+
+  type Picked = {
+    id: string;
+    detail?: string;
+    tooltip?: string;
+    pricing?: string;
+    maxContextWindowTokens?: number;
+    infoText?: Record<string, string>;
+    isBYOK?: boolean;
+    inputCost?: number;
+    outputCost?: number;
+  };
+  async function list(config: Record<string, unknown> = {}) {
+    const { provider, token } = makeProvider({ config });
+    const infos = (await provider.provideLanguageModelChatInformation(
+      { silent: true },
+      token
+    )) as unknown as Picked[];
+    return new Map(infos.map((i) => [i.id, i]));
+  }
+
+  it("shows the price label and the total context window", async () => {
+    serve([
+      { id: "paid", context_length: 200_000, pricing: { input: 1.25, output: 10, prompt: "0.00000125", completion: "0.00001" } },
+      { id: "free", context_length: 8_192, free: true, pricing: { input: 0, output: 0, prompt: "0", completion: "0" } },
+      { id: "unknown" },
+    ]);
+    const byId = await list({ defaultContextLength: 64_000 });
+    expect(byId.get("paid")?.pricing).toBe("$1.25 in · $10 out per 1M");
+    expect(byId.get("paid")?.maxContextWindowTokens).toBe(200_000);
+    expect(byId.get("free")?.pricing).toBe("Free");
+    expect(byId.get("free")?.maxContextWindowTokens).toBe(8_192);
+    expect(byId.get("unknown")).not.toHaveProperty("pricing");
+    expect(byId.get("unknown")?.maxContextWindowTokens).toBe(64_000);
+  });
+
+  it("never sets the credit-based costs or the BYOK flag", async () => {
+    serve([{ id: "paid", pricing: { input: 1, output: 2 } }]);
+    const info = (await list()).get("paid") as Picked;
+    expect(info).not.toHaveProperty("inputCost");
+    expect(info).not.toHaveProperty("outputCost");
+    expect(info).not.toHaveProperty("isBYOK");
+  });
+
+  it("describes a combo in the detail, the tooltip and the info banner", async () => {
+    serve(
+      [{ id: "smart", owned_by: "combo" }, { id: "x/y", owned_by: "x" }],
+      json({
+        object: "list",
+        data: [
+          {
+            name: "smart",
+            strategy: "round_robin",
+            models: [{ kind: "model", model: "cx/gpt_test" }, { kind: "combo-ref", comboName: "inner" }],
+          },
+          { name: "unrelated", strategy: "priority", models: [] },
+        ],
+      })
+    );
+    const byId = await list();
+    const smart = byId.get("smart");
+    expect(smart?.detail).toBe("combo · round_robin");
+    expect(smart?.tooltip).toBe("OmniRoute · smart · round_robin · cx/gpt_test → inner");
+    expect(smart?.infoText).toEqual({ combo: "round\\_robin · `cx/gpt_test` → `inner`" });
+    expect(byId.get("x/y")?.detail).toBe("x");
+    expect(byId.get("x/y")).not.toHaveProperty("infoText");
+  });
+
+  it("keeps a plain combo row when /v1/combos has no entry for it", async () => {
+    serve([{ id: "smart", owned_by: "combo" }]);
+    const smart = (await list()).get("smart");
+    expect(smart?.detail).toBe("combo");
+    expect(smart?.tooltip).toBe("OmniRoute · smart");
+    expect(smart).not.toHaveProperty("infoText");
+  });
+
+  it.each([
+    ["a 404", () => new Response("nope", { status: 404 })],
+    ["a 401", () => new Response("nope", { status: 401 })],
+    ["a broken body", () => new Response("not json", { status: 200 })],
+  ])("still lists the models when /v1/combos answers with %s", async (_label, answer) => {
+    serve([{ id: "smart", owned_by: "combo" }, { id: "x/y" }], answer);
+    const byId = await list();
+    expect([...byId.keys()]).toEqual(["smart", "x/y"]);
+    expect(byId.get("smart")?.detail).toBe("combo");
+  });
+
+  it("still lists the models when /v1/combos cannot be reached", async () => {
+    fetchMock.mockImplementation(async (url: string) => {
+      if (String(url).includes("/combos")) throw new TypeError("fetch failed");
+      return json({ object: "list", data: [{ id: "x/y" }] });
+    });
+    expect([...(await list()).keys()]).toEqual(["x/y"]);
+  });
+
+  it("asks for the models and the combos at the same time", async () => {
+    const started: string[] = [];
+    const release: Array<() => void> = [];
+    fetchMock.mockImplementation(
+      (url: string) =>
+        new Promise<Response>((resolve) => {
+          started.push(String(url));
+          release.push(() => resolve(json({ object: "list", data: [] })));
+        })
+    );
+    const { provider, token } = makeProvider();
+    const pending = provider.provideLanguageModelChatInformation({ silent: true }, token);
+    // Neither answer has arrived, yet both requests are already out.
+    await vi.waitFor(() => expect(started).toHaveLength(2));
+    expect(started.some((u) => u.includes("/models"))).toBe(true);
+    expect(started.some((u) => u.endsWith("/combos"))).toBe(true);
+    release.forEach((r) => r());
+    await pending;
+  });
+
+  it("gives the Agents-window clones the same price and context window", async () => {
+    serve([{ id: "paid", context_length: 100_000, pricing: { input: 1, output: 2 } }]);
+    const { provider, token } = makeProvider({ config: { exposeToAgentsWindow: true } });
+    const infos = (await provider.provideLanguageModelChatInformation(
+      { silent: true },
+      token
+    )) as unknown as Picked[];
+    expect(infos).toHaveLength(2);
+    for (const info of infos) {
+      expect(info.pricing).toBe("$1 in · $2 out per 1M");
+      expect(info.maxContextWindowTokens).toBe(100_000);
+    }
+  });
+
+  it("does not request combos nor list models when the model call fails", async () => {
+    fetchMock.mockImplementation(async (url: string) =>
+      String(url).includes("/combos") ? json({ object: "list", data: [] }) : new Response("no", { status: 500 })
+    );
+    const { provider, token } = makeProvider();
+    expect(await provider.provideLanguageModelChatInformation({ silent: true }, token)).toEqual([]);
   });
 });
 
