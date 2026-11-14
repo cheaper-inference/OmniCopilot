@@ -804,3 +804,101 @@ describe("fetchPersonalUsage", () => {
     await expect(fetchPersonalUsage("http://gateway.test", "sk-test")).rejects.toThrow("fetch failed");
   });
 });
+
+describe("fetchPersonalUsage: a failed read is told apart from nothing to show", () => {
+  afterEach(() => vi.unstubAllGlobals());
+  const json = (body: unknown, status = 200) =>
+    new Response(JSON.stringify(body), { status, headers: { "content-type": "application/json" } });
+  const refusal = { allowed: false };
+  const read = () => fetchPersonalUsage("http://gateway.test", "sk-test", undefined, 50);
+
+  it.each([
+    ["a 502 from a proxy, HTML", () => new Response("<html>Bad gateway</html>", { status: 502, headers: { "content-type": "text/html" } })],
+    ["a 503 with a text body", () => new Response("unavailable", { status: 503, headers: { "content-type": "text/plain" } })],
+    ["a 500 with a JSON body", () => json({ error: "boom" }, 500)],
+    ["a 200 page that is not the server's (HTML)", () => new Response("<html>login</html>", { headers: { "content-type": "text/html" } })],
+    ["a 200 JSON body that is not an object", () => json([1, 2])],
+    ["a 200 JSON object without allowed", () => json({ hello: "world" })],
+  ])("throws on the first call: %s", async (_name, answer) => {
+    vi.stubGlobal("fetch", vi.fn().mockResolvedValueOnce(answer()));
+    await expect(read()).rejects.toThrow();
+  });
+
+  it("throws when the first call times out", async () => {
+    vi.stubGlobal(
+      "fetch",
+      vi.fn(
+        (_url: string, init: RequestInit) =>
+          new Promise((_resolve, reject) => {
+            init.signal?.addEventListener("abort", () => reject(new Error("aborted")));
+          })
+      )
+    );
+    await expect(read()).rejects.toThrow("aborted");
+  });
+
+  it.each([
+    ["a 500", () => Promise.resolve(json({ error: "boom" }, 500))],
+    ["a 502 from a proxy", () => Promise.resolve(new Response("<html>", { status: 502, headers: { "content-type": "text/html" } }))],
+    ["a network error", () => Promise.reject(new TypeError("fetch failed"))],
+    ["a page that is not JSON", () => Promise.resolve(new Response("<html>", { status: 200 }))],
+    ["a JSON body that is not an object", () => Promise.resolve(json("nope"))],
+  ])("throws when the second call meets %s", async (_name, answer) => {
+    vi.stubGlobal("fetch", vi.fn().mockResolvedValueOnce(json(refusal)).mockImplementationOnce(answer));
+    await expect(read()).rejects.toThrow();
+  });
+
+  it("throws when the second call times out", async () => {
+    vi.stubGlobal(
+      "fetch",
+      vi
+        .fn()
+        .mockResolvedValueOnce(json(refusal))
+        .mockImplementationOnce(
+          (_url: string, init: RequestInit) =>
+            new Promise((_resolve, reject) => {
+              init.signal?.addEventListener("abort", () => reject(new Error("aborted")));
+            })
+        )
+    );
+    await expect(read()).rejects.toThrow();
+  });
+
+  it.each([401, 403, 404])("answers nothing to show on a %i from the second call", async (status) => {
+    vi.stubGlobal(
+      "fetch",
+      vi.fn().mockResolvedValueOnce(json(refusal)).mockResolvedValueOnce(json({ error: "no" }, status))
+    );
+    await expect(read()).resolves.toBeNull();
+  });
+
+  it("answers nothing to show for an older server that answers plain text", async () => {
+    vi.stubGlobal(
+      "fetch",
+      vi.fn().mockResolvedValueOnce(new Response("usage", { headers: { "content-type": "text/plain" } }))
+    );
+    await expect(read()).resolves.toBeNull();
+  });
+
+  it("answers nothing to show for a key without a daily limit or usage, as the server says it", async () => {
+    vi.stubGlobal(
+      "fetch",
+      vi.fn().mockResolvedValueOnce(json(refusal)).mockResolvedValueOnce(json({ limits: [], usage: {} }))
+    );
+    await expect(read()).resolves.toBeNull();
+  });
+});
+
+describe("fetchUsage keeps the panel's rule for a failed second call", () => {
+  afterEach(() => vi.unstubAllGlobals());
+
+  it("shows not enabled when only the second call failed", async () => {
+    const json = (body: unknown, status = 200) =>
+      new Response(JSON.stringify(body), { status, headers: { "content-type": "application/json" } });
+    vi.stubGlobal(
+      "fetch",
+      vi.fn().mockResolvedValueOnce(json({ allowed: false })).mockResolvedValueOnce(json({}, 500))
+    );
+    expect((await fetchUsage("http://gateway.test", "sk-test")).kind).toBe("disabled");
+  });
+});

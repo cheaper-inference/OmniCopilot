@@ -239,22 +239,29 @@ export function toUsageView(
   return { kind: "ready", personal, providers };
 }
 
-/** GET the usage endpoint. Throws `UsageUnsupportedError` when the server
- * answered text — an OmniRoute that predates ?format=json — so the caller
- * hides the section instead of surfacing a parse failure. */
+/** The usage endpoint cannot be read right now (an unreachable server, a time-out,
+ * a 5xx, a proxy answering in the server's place, a body that is not the expected
+ * JSON): a failure to try again, not an answer about the key. */
+export class UsageReadError extends Error {}
+
+/** Thrown for a server that answered text — an OmniRoute that predates
+ * ?format=json — so the caller hides the section instead of surfacing a parse
+ * failure. */
 export class UsageUnsupportedError extends Error {}
 
 const usageRoot = (baseUrl: string): string => baseUrl.replace(/\/+$/, "").replace(/\/v1$/i, "");
 
 /** GET the key's own status (`/v1/me/status`), which any key with the
- * self-service scope may read. Never throws: a refusal (401, 403, 404 on an
- * older server), a network error, a timeout or a body of the wrong shape all
- * answer null, and the caller keeps the "not enabled" state. */
+ * self-service scope may read. Never throws. `none` is an answer: the key cannot
+ * read it (401, 403, 404 on an older server, any other 4xx) or has nothing to
+ * report. `failed` is not: a network error, a time-out, a 5xx, a body that is not
+ * a JSON object. The panel treats both as "not enabled"; the status bar keeps
+ * its last number through a failure. */
 async function fetchSelfStatus(
   root: string,
   apiKey: string,
   timeoutMs: number
-): Promise<UsageLimitStatus | null> {
+): Promise<{ kind: "ok"; personal: UsageLimitStatus } | { kind: "none" } | { kind: "failed" }> {
   const ctrl = new AbortController();
   const timer = setTimeout(() => ctrl.abort(), timeoutMs);
   try {
@@ -262,21 +269,28 @@ async function fetchSelfStatus(
       headers: { Authorization: `Bearer ${apiKey}` },
       signal: ctrl.signal,
     });
-    if (!res.ok) return null;
-    return personalFromSelfStatus(await res.json());
+    if (res.status >= 500) return { kind: "failed" };
+    if (!res.ok) return { kind: "none" };
+    const body: unknown = await res.json();
+    if (!isRecord(body)) return { kind: "failed" };
+    const personal = personalFromSelfStatus(body);
+    return personal ? { kind: "ok", personal } : { kind: "none" };
   } catch {
-    return null;
+    return { kind: "failed" };
   } finally {
     clearTimeout(timer);
   }
 }
 
-export async function fetchUsage(
+/** The view, and whether the key's own status could not be read after the
+ * usage command refused (so a caller that must tell a failure from "not
+ * enabled" can). */
+async function loadUsage(
   baseUrl: string,
   apiKey: string | undefined,
-  t: Translate = untranslated,
-  timeoutMs = 6000
-): Promise<UsageView> {
+  t: Translate,
+  timeoutMs: number
+): Promise<{ view: UsageView; selfStatusFailed: boolean }> {
   const ctrl = new AbortController();
   const timer = setTimeout(() => ctrl.abort(), timeoutMs);
   const root = usageRoot(baseUrl);
@@ -286,27 +300,53 @@ export async function fetchUsage(
       headers: apiKey ? { Authorization: `Bearer ${apiKey}` } : {},
       signal: ctrl.signal,
     });
+    if (res.status >= 500) throw new UsageReadError(`usage endpoint answered ${res.status}`);
     const contentType = res.headers.get("content-type") ?? "";
     if (!contentType.includes("application/json")) {
-      // Older OmniRoute (or a refusal on an old server) answers text/plain.
+      // Plain text, or a 4xx page: an OmniRoute that predates ?format=json. A 2xx
+      // page of another kind is not the server's answer at all.
+      if (res.ok && !contentType.includes("text/plain")) {
+        throw new UsageReadError("the usage endpoint did not answer JSON");
+      }
       throw new UsageUnsupportedError("server predates ?format=json");
     }
-    body = (await res.json()) as UsageResponse;
+    const parsed: unknown = await res.json();
+    if (!isRecord(parsed) || (res.ok && typeof parsed.allowed !== "boolean")) {
+      throw new UsageReadError("the usage endpoint answered an unexpected body");
+    }
+    body = parsed as unknown as UsageResponse;
   } finally {
     clearTimeout(timer);
   }
   if (body.allowed === false && apiKey) {
     // The per-key usage command is off: the key can still read its own numbers.
-    const personal = await fetchSelfStatus(root, apiKey, timeoutMs);
-    if (personal) return toUsageView({ allowed: true, personal, provider: null }, Date.now(), t);
+    const own = await fetchSelfStatus(root, apiKey, timeoutMs);
+    if (own.kind === "ok") {
+      const view = toUsageView({ allowed: true, personal: own.personal, provider: null }, Date.now(), t);
+      return { view, selfStatusFailed: false };
+    }
+    return { view: toUsageView(body, Date.now(), t), selfStatusFailed: own.kind === "failed" };
   }
-  return toUsageView(body, Date.now(), t);
+  return { view: toUsageView(body, Date.now(), t), selfStatusFailed: false };
+}
+
+/** The usage view for the panel. Throws `UsageUnsupportedError` for a server
+ * that predates ?format=json, and anything else when the endpoint cannot be read. */
+export async function fetchUsage(
+  baseUrl: string,
+  apiKey: string | undefined,
+  t: Translate = untranslated,
+  timeoutMs = 6000
+): Promise<UsageView> {
+  return (await loadUsage(baseUrl, apiKey, t, timeoutMs)).view;
 }
 
 /** The key's personal view alone, for callers that do not draw the panel (the
- * status bar). Null when there is none: usage not enabled for the key, a server
- * that predates ?format=json, or no limits and no spend. Throws when the usage
- * endpoint cannot be reached. */
+ * status bar). Null is an answer: usage is not available for the key (not
+ * enabled, a refusal from the self-service call, a server that predates
+ * ?format=json) or the key has no limits and no spend. Throws when the read
+ * failed: an unreachable server, a time-out, a 5xx on either call, a proxy
+ * answering in the server's place, a body that is not the expected JSON. */
 export async function fetchPersonalUsage(
   baseUrl: string,
   apiKey: string | undefined,
@@ -314,7 +354,8 @@ export async function fetchPersonalUsage(
   timeoutMs = 6000
 ): Promise<UsageLimitView | null> {
   try {
-    const view = await fetchUsage(baseUrl, apiKey, t, timeoutMs);
+    const { view, selfStatusFailed } = await loadUsage(baseUrl, apiKey, t, timeoutMs);
+    if (selfStatusFailed) throw new UsageReadError("the key's own status could not be read");
     return view.kind === "ready" ? view.personal : null;
   } catch (err) {
     if (err instanceof UsageUnsupportedError) return null;

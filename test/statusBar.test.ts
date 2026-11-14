@@ -4,7 +4,7 @@ import type { OmniRouteClient } from "../src/client";
 import type { Connection } from "../src/connection";
 import type { ProbeResult } from "../src/diagnostics";
 import { setMockConfig } from "./vscode.mock";
-import { toUsageView } from "../src/usage";
+import { fetchPersonalUsage, toUsageView } from "../src/usage";
 import type { UsageLimitView } from "../src/usage";
 import {
   ConnectionStatusBar,
@@ -573,5 +573,115 @@ describe("connectionFingerprint", () => {
 
   it("never contains the key", () => {
     expect(connectionFingerprint(base)).not.toContain("sk-secret-key");
+  });
+});
+
+describe("ConnectionStatusBar daily quota through the real usage read", () => {
+  const WINDOW = 5 * 60_000;
+  let now = 1_800_000_000_000;
+
+  afterEach(() => {
+    vi.restoreAllMocks();
+    vi.unstubAllGlobals();
+    setMockConfig({});
+  });
+
+  const json = (body: unknown, status = 200) =>
+    new Response(JSON.stringify(body), { status, headers: { "content-type": "application/json" } });
+  const allowed = () =>
+    json({
+      allowed: true,
+      provider: null,
+      personal: {
+        enabled: true,
+        dailyLimitUsd: 5,
+        weeklyLimitUsd: null,
+        dailySpentUsd: 1.2,
+        weeklySpentUsd: 1.2,
+        dailyResetAtIso: "2999-01-01T00:00:00Z",
+        weeklyResetAtIso: null,
+        dailyExceeded: false,
+        weeklyExceeded: false,
+      },
+    });
+
+  /** `script[n]` answers the n-th usage request (om-usage or me/status), in order. */
+  function setUp(script: Array<() => Promise<Response> | Response>) {
+    vi.spyOn(Date, "now").mockImplementation(() => now);
+    const calls: string[] = [];
+    let n = 0;
+    vi.stubGlobal(
+      "fetch",
+      vi.fn(async (url: string) => {
+        calls.push(String(url));
+        const answer = script[n++];
+        if (!answer) throw new Error(`no answer left for ${url}`);
+        return answer();
+      })
+    );
+    const client = {
+      baseUrl: "http://gateway.test/v1",
+      probe: async () => ({ ok: true, status: 200 }) as ProbeResult,
+    };
+    const connection = {
+      baseUrl: "http://gateway.test/v1",
+      origin: "http://gateway.test",
+      approvedOrigins: ["http://gateway.test"],
+      apiKey: "sk-test",
+      hasStoredKey: true,
+      keyWithheld: false,
+      keyScope: "global",
+    } as Connection;
+    const log = { info: vi.fn(), warn: vi.fn(), debug: vi.fn(), error: vi.fn() };
+    const statusBar = new ConnectionStatusBar(
+      async () => client as unknown as OmniRouteClient,
+      log as unknown as vscode.LogOutputChannel,
+      undefined,
+      async () => connection,
+      undefined,
+      (c) => fetchPersonalUsage(c.baseUrl, c.apiKey)
+    );
+    const item = () => (statusBar as unknown as { item: { text: string } }).item;
+    /** One poll a whole window after the last one, then let its usage read settle. */
+    const nextWindow = async (expectedCalls: number) => {
+      now += WINDOW;
+      await statusBar.checkNow();
+      await vi.waitFor(() => expect(calls.length).toBe(expectedCalls));
+      for (let i = 0; i < 10; i++) await Promise.resolve();
+    };
+    return { statusBar, item, calls, nextWindow };
+  }
+
+  it.each([
+    ["a 502 from a proxy on the first call", [() => new Response("<html>", { status: 502, headers: { "content-type": "text/html" } })]],
+    ["a 500 JSON body on the first call", [() => json({ error: "boom" }, 500)]],
+    ["a 500 on the second call", [() => json({ allowed: false }), () => json({ error: "boom" }, 500)]],
+    ["a network error on the second call", [() => json({ allowed: false }), () => Promise.reject(new TypeError("fetch failed"))]],
+  ])("keeps the number for one window and drops it after the second failure: %s", async (_name, failing) => {
+    const failure = failing as Array<() => Promise<Response> | Response>;
+    const { statusBar, item, nextWindow } = setUp([allowed, ...failure, ...failure]);
+    await statusBar.checkNow();
+    await vi.waitFor(() => expect(item().text).toContain("76%"));
+
+    await nextWindow(1 + failure.length); // first failed read: the number stays
+    expect(item().text).toContain("76%");
+
+    await nextWindow(1 + 2 * failure.length); // second in a row: it goes
+    expect(item().text).toBe("$(circle-filled) OmniRoute");
+    statusBar.dispose();
+  });
+
+  it("clears the number at once when the self-service call answers 403", async () => {
+    const { statusBar, item, nextWindow } = setUp([
+      allowed,
+      () => json({ allowed: false }),
+      () => json({ error: "Forbidden" }, 403),
+    ]);
+    await statusBar.checkNow();
+    await vi.waitFor(() => expect(item().text).toContain("76%"));
+
+    await nextWindow(3);
+    expect(item().text).toBe("$(circle-filled) OmniRoute");
+    statusBar.dispose();
   });
 });
