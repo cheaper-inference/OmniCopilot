@@ -32,9 +32,20 @@ export const CLI_TOOLS: CliTool[] = [
 
 const TERMINAL_NAME = "OmniRoute Setup";
 
-function shellQuote(value: string, platform: NodeJS.Platform = process.platform): string {
+/**
+ * `value` as one quoted word for the terminal's shell, or undefined when it cannot be
+ * quoted safely. On Windows the word is wrapped in double quotes and nothing inside is
+ * escaped: cmd.exe and PowerShell disagree on how to escape a double quote, and a
+ * trailing backslash would swallow the closing quote for the program that reads the
+ * argument, so a value with either is refused. Callers validate first; this is the
+ * last check, not the only one.
+ */
+export function shellQuote(
+  value: string,
+  platform: NodeJS.Platform = process.platform
+): string | undefined {
   if (platform === "win32") {
-    return `"${value.replace(/"/g, '\\"')}"`;
+    return value.includes('"') || value.endsWith("\\") ? undefined : `"${value}"`;
   }
   return `'${value.replace(/'/g, `'\\''`)}'`;
 }
@@ -63,6 +74,7 @@ export function resolveCliCommand(
     const path = value.slice(1, -1);
     if (!QUOTED_EXECUTABLE_PATH.test(path)) return { ok: false };
     const quoted = shellQuote(path, shell.platform);
+    if (quoted === undefined) return { ok: false };
     // PowerShell runs a quoted path only with the call operator; cmd.exe must not get it.
     const shellName = (shell.shellPath ?? "").split(/[\\/]/).pop() ?? "";
     const needsCallOperator = shell.platform === "win32" && POWERSHELL.test(shellName);
@@ -185,7 +197,8 @@ export async function configureCliTool(
 
   const args = [tool.subcommand];
   const decision = cliRemoteDecision(root);
-  if (decision.kind === "refused") {
+  const remoteArgument = decision.kind === "remote" ? shellQuote(decision.remote) : undefined;
+  if (decision.kind === "refused" || (decision.kind === "remote" && remoteArgument === undefined)) {
     log.warn("omnicopilot.baseUrl rejected for the CLI: it contains characters that are not allowed");
     void vscode.window.showErrorMessage(
       vscode.l10n.t(
@@ -194,7 +207,7 @@ export async function configureCliTool(
     );
     return;
   }
-  if (decision.kind === "remote") args.push("--remote", shellQuote(decision.remote));
+  if (remoteArgument !== undefined) args.push("--remote", remoteArgument);
 
   // `omniroute setup-<tool>` configures the tool at user level, for every project on
   // this machine, and hands it the key (some tools store it, some only reference the

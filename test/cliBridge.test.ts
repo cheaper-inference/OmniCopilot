@@ -9,6 +9,7 @@ import {
   isSafeRemoteUrl,
   remoteUrlArgument,
   resolveCliCommand,
+  shellQuote,
 } from "../src/cliBridge";
 
 const linux = { platform: "linux" as const };
@@ -91,6 +92,47 @@ describe("resolveCliCommand", () => {
 
   it("rejects a value with mismatched quotes", () => {
     expect(resolveCliCommand(`"/opt/omniroute'`, linux)).toEqual({ ok: false });
+  });
+});
+
+describe("shellQuote", () => {
+  it("wraps a value in double quotes for a Windows shell and leaves it as it is", () => {
+    expect(shellQuote(winPath, "win32")).toBe(`"${winPath}"`);
+    expect(shellQuote("https://a.example:20128", "win32")).toBe('"https://a.example:20128"');
+  });
+
+  it.each([
+    ['a double quote', 'C:\\tools\\omni"route.cmd'],
+    ['a double quote after a backslash', 'C:\\tools\\" & calc & "'],
+    ['a trailing backslash', "C:\\tools\\"],
+  ])("refuses a value with %s on Windows: no escape is right for both cmd.exe and PowerShell", (_what, value) => {
+    expect(shellQuote(value, "win32")).toBeUndefined();
+  });
+
+  it("single-quotes for a POSIX shell, where a quote inside is closed, escaped and reopened", () => {
+    expect(shellQuote("/opt/my tools/omniroute", "linux")).toBe("'/opt/my tools/omniroute'");
+    expect(shellQuote("it's", "linux")).toBe("'it'\\''s'");
+    // Inside single quotes a backslash is an ordinary character, a trailing one included.
+    expect(shellQuote("/opt/dir\\", "linux")).toBe("'/opt/dir\\'");
+  });
+});
+
+describe("resolveCliCommand and a path that cannot be quoted", () => {
+  it("refuses a quoted Windows path that ends in a backslash (it would swallow the closing quote)", () => {
+    expect(resolveCliCommand('"C:\\Program Files\\omni\\"', cmdExe)).toEqual({ ok: false });
+    expect(
+      resolveCliCommand('"C:\\Program Files\\omni\\"', {
+        platform: "win32",
+        shellPath: "C:\\Program Files\\PowerShell\\7\\pwsh.exe",
+      })
+    ).toEqual({ ok: false });
+  });
+
+  it("still takes the same kind of path on linux, where single quotes keep the backslash literal", () => {
+    expect(resolveCliCommand("'/opt/my tools/dir\\'", linux)).toEqual({
+      ok: true,
+      command: "'/opt/my tools/dir\\'",
+    });
   });
 });
 
