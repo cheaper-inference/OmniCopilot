@@ -13,9 +13,17 @@ function panelHtml(): string {
   return (panel as unknown as { html(): string }).html();
 }
 
-/** The document without its style sheet and its script: what the HTML parser reads as markup. */
+/** `text` without the stretch from the first `open` to the last `close`. */
+function without(text: string, open: string, close: string): string {
+  const start = text.indexOf(open);
+  const end = text.lastIndexOf(close);
+  return start < 0 || end < start ? text : text.slice(0, start) + text.slice(end + close.length);
+}
+
+/** The document without its style sheet and its script element: what the HTML parser
+ * reads as markup. The panel has one of each, and the script comes last. */
 function markupOf(html: string): string {
-  return html.replace(/<style>[\s\S]*?<\/style>/, "").replace(/<script[\s\S]*?<\/script>/, "");
+  return without(without(html, "<style>", "</style>"), "<script nonce=", "</script>");
 }
 
 const unescapeHtml = (text: string) =>
