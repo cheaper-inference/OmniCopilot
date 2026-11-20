@@ -103,6 +103,25 @@ export function embeddedNextCheckboxValue(): string {
   return nextCheckboxValue.toString();
 }
 
+const HTML_ENTITIES: Record<string, string> = {
+  "&": "&amp;",
+  "<": "&lt;",
+  ">": "&gt;",
+  '"': "&quot;",
+  "'": "&#39;",
+};
+
+/** Text for the panel's markup: safe as element text and inside a quoted attribute value. */
+export function escapeHtml(text: string): string {
+  return text.replace(/[&<>"']/g, (char) => HTML_ENTITIES[char]);
+}
+
+/** JSON for the panel's inline script. `<` is written as an escape, so no string can
+ * end the script element or open a comment in it. */
+function scriptJson(value: unknown): string {
+  return JSON.stringify(value).replace(/</g, "\\u003c");
+}
+
 /** Sidebar webview: connection status, server URL and API key form,
  * plus the extension's quick actions — the visual home of the extension. */
 export class OmniPanelProvider implements vscode.WebviewViewProvider {
@@ -325,6 +344,11 @@ export class OmniPanelProvider implements vscode.WebviewViewProvider {
       footLicense: t("MIT License"),
       footCreated: t("Created by {0}"),
     };
+    // The same strings for the markup below. They come from the translation bundles,
+    // and the markup must not depend on what a translation contains.
+    const H = Object.fromEntries(
+      Object.entries(S).map(([key, text]) => [key, escapeHtml(text)])
+    ) as typeof S;
     return /* html */ `<!DOCTYPE html>
 <html lang="en">
 <head>
@@ -409,22 +433,22 @@ export class OmniPanelProvider implements vscode.WebviewViewProvider {
     </svg>
     <div class="brand-text"><span class="brand-name">OmniRoute</span><span class="brand-by">by Cheaper Inference</span></div>
   </header>
-  <h3><span id="dot" class="dot"></span><span id="statusText">${S.checking}</span></h3>
+  <h3><span id="dot" class="dot"></span><span id="statusText">${H.checking}</span></h3>
   <div class="muted" id="urlText"></div>
 
-  <label for="url">${S.serverUrl}</label>
+  <label for="url">${H.serverUrl}</label>
   <input id="url" type="text" placeholder="${DEFAULT_BASE_URL}" />
   <div class="keyhint" id="urlNote" style="display:none"></div>
 
-  <label for="key">${S.apiKey}</label>
-  <input id="key" type="password" placeholder="${S.keyPlaceholder}" />
+  <label for="key">${H.apiKey}</label>
+  <input id="key" type="password" placeholder="${H.keyPlaceholder}" />
   <label class="check" id="wsRow" for="useWs" style="display:none"><input id="useWs" type="checkbox" /><span id="useWsText"></span></label>
   <div class="keyhint" id="keyHint"></div>
   <div class="keyhint" id="keyScope"></div>
 
   <div class="row">
-    <button id="save">${S.saveTest.replace("&", "&amp;")}</button>
-    <button id="clearKey" class="secondary" title="${S.clearKeyTitle}">${S.clearKey}</button>
+    <button id="save">${H.saveTest}</button>
+    <button id="clearKey" class="secondary" title="${H.clearKeyTitle}">${H.clearKey}</button>
   </div>
   <div class="warn" id="detail" style="display:none"></div>
 
@@ -434,18 +458,18 @@ export class OmniPanelProvider implements vscode.WebviewViewProvider {
   </div>
 
   <div class="links">
-    <button type="button" class="link" data-cmd="omnicopilot.refreshModels">↻ ${S.linkRefresh}</button>
-    <button type="button" class="link" data-cmd="omnicopilot.openDashboard">▤ ${S.linkDashboard}</button>
-    <button type="button" class="link" data-cmd="omnicopilot.configureCliTool">⌨ ${S.linkCli}</button>
-    <button type="button" class="link" data-cmd="omnicopilot.installOmniRoute">⇩ ${S.linkInstall}</button>
-    <button type="button" class="link" data-cmd="omnicopilot.openGitHub">★ ${S.linkGitHub}</button>
-    <button type="button" class="link" data-cmd="omnicopilot.openSettings">⚙ ${S.linkSettings}</button>
+    <button type="button" class="link" data-cmd="omnicopilot.refreshModels">↻ ${H.linkRefresh}</button>
+    <button type="button" class="link" data-cmd="omnicopilot.openDashboard">▤ ${H.linkDashboard}</button>
+    <button type="button" class="link" data-cmd="omnicopilot.configureCliTool">⌨ ${H.linkCli}</button>
+    <button type="button" class="link" data-cmd="omnicopilot.installOmniRoute">⇩ ${H.linkInstall}</button>
+    <button type="button" class="link" data-cmd="omnicopilot.openGitHub">★ ${H.linkGitHub}</button>
+    <button type="button" class="link" data-cmd="omnicopilot.openSettings">⚙ ${H.linkSettings}</button>
   </div>
 
   <footer class="foot" id="foot"></footer>
 
   <script nonce="${nonce}">
-    const S = ${JSON.stringify(S)};
+    const S = ${scriptJson(S)};
     const vscodeApi = acquireVsCodeApi();
     const $ = (id) => document.getElementById(id);
     const nextUrlFieldValue = ${embeddedNextUrlFieldValue()};
