@@ -22,12 +22,20 @@ function activated(initialSecrets: Record<string, string> = {}) {
     update: async (key: string, value: unknown) => void store.set(key, value),
   });
   const secretListeners = new Set<(event: { key: string }) => void>();
+  /** Set by `failReadsAfterNextWrite`: the error every read throws once a write has happened. */
+  let readFailure: { message: string; armed: boolean } | undefined;
   const context = {
     subscriptions: [] as Array<{ dispose(): void }>,
     extension: { packageJSON: { version: "test" } },
     secrets: {
-      get: async (key: string) => secrets.get(key),
-      store: async (key: string, value: string) => void secrets.set(key, value),
+      get: async (key: string) => {
+        if (readFailure?.armed) throw new Error(readFailure.message);
+        return secrets.get(key);
+      },
+      store: async (key: string, value: string) => {
+        secrets.set(key, value);
+        if (readFailure) readFailure.armed = true;
+      },
       delete: async (key: string) => void secrets.delete(key),
       onDidChange: (listener: (event: { key: string }) => void) => {
         secretListeners.add(listener);
@@ -49,6 +57,8 @@ function activated(initialSecrets: Record<string, string> = {}) {
       for (const listener of [...secretListeners]) listener({ key });
     },
     secretListenerCount: () => secretListeners.size,
+    /** SecretStorage starts failing every read once the next write has been made. */
+    failReadsAfterNextWrite: (message: string) => void (readFailure = { message, armed: false }),
     dispose: () => {
       for (const item of context.subscriptions) item.dispose();
       deactivate();
@@ -250,6 +260,77 @@ describe("Set API Key", () => {
     expect(ext.secrets.has("omnicopilot.apiKey")).toBe(false);
     expect(ext.secrets.has("omnicopilot.apiKeyOrigins")).toBe(false);
     expect(ext.secrets.get(WS_KEY)).toBe("sk-ws");
+    ext.dispose();
+  });
+
+  it("still refreshes the status bar, the picker and the panel when the connection cannot be read afterwards", async () => {
+    vi.stubGlobal("fetch", vi.fn(async () => new Response(JSON.stringify({ data: [] }), { status: 200 })));
+    setMockConfig({ baseUrl: "https://a.example" });
+    const warnings: string[] = [];
+    vi.spyOn(vscode.window, "createOutputChannel").mockImplementation((() => ({
+      info() {},
+      warn: (message: string) => void warnings.push(message),
+      error: (message: string) => void warnings.push(message),
+      debug() {},
+      trace() {},
+      dispose() {},
+    })) as never);
+    let shows = 0;
+    const createItem = vscode.window.createStatusBarItem as (...args: unknown[]) => { show(): void };
+    vi.spyOn(vscode.window, "createStatusBarItem").mockImplementation(((...args: unknown[]) => {
+      const item = createItem(...args);
+      const show = item.show.bind(item);
+      item.show = () => {
+        shows += 1;
+        show();
+      };
+      return item;
+    }) as never);
+    let pickerEvents = 0;
+    vi.spyOn(vscode.lm, "registerLanguageModelChatProvider").mockImplementation(((_vendor: string, p: unknown) => {
+      (p as { onDidChangeLanguageModelChatInformation(listener: () => void): void }).onDidChangeLanguageModelChatInformation(
+        () => void (pickerEvents += 1)
+      );
+      return { dispose() {} };
+    }) as never);
+    let panelProvider: { resolveWebviewView(view: unknown): void } | undefined;
+    vi.spyOn(vscode.window, "registerWebviewViewProvider").mockImplementation(((_id: string, p: unknown) => {
+      panelProvider = p as typeof panelProvider;
+      return { dispose() {} };
+    }) as never);
+    const notifications = [
+      vi.spyOn(vscode.window, "showErrorMessage"),
+      vi.spyOn(vscode.window, "showWarningMessage"),
+      vi.spyOn(vscode.window, "showInformationMessage"),
+    ];
+    const ext = activated({ "omnicopilot.apiKey": "sk-global", "omnicopilot.apiKeyOrigins": JSON.stringify(["https://a.example"]) });
+    const posted: Array<Record<string, unknown>> = [];
+    panelProvider?.resolveWebviewView({
+      visible: true,
+      webview: {
+        options: {},
+        html: "",
+        onDidReceiveMessage: () => ({ dispose() {} }),
+        postMessage: async (message: Record<string, unknown>) => void posted.push(message),
+      },
+      onDidChangeVisibility: () => ({ dispose() {} }),
+    });
+    await vi.waitFor(() => expect(posted.length).toBeGreaterThan(0));
+    const before = { shows, pickerEvents, posted: posted.length };
+
+    // SecretStorage fails from the moment the new key has been written.
+    ext.failReadsAfterNextWrite("SecretStorage unavailable [x](command:y)");
+    vi.spyOn(vscode.window, "showInputBox").mockResolvedValue("sk-new");
+    await ext.run("omnicopilot.setApiKey");
+    await vi.waitFor(() => expect(posted.length).toBeGreaterThan(before.posted));
+
+    expect(shows).toBeGreaterThan(before.shows); // the status bar restarted
+    expect(pickerEvents).toBe(before.pickerEvents + 1);
+    expect(posted.at(-1)).toMatchObject({ type: "statusError" });
+    expect(warnings.some((line) => line.includes("SecretStorage unavailable"))).toBe(true);
+    for (const spy of notifications) {
+      for (const call of spy.mock.calls) expect(String(call[0])).not.toContain("](");
+    }
     ext.dispose();
   });
 
