@@ -548,9 +548,17 @@ async function warnIfInsecure(context: vscode.ExtensionContext, origin: string):
 /** The sentence that tells the user why requests leave without their key; undefined when the key is sent. */
 export function keyWithheldMessage(connection: Connection): string | undefined {
   if (!connection.keyWithheld) return undefined;
+  const savedFor = connection.approvedOrigins.at(-1);
+  // An empty list (damaged, or read between the writes of a Save) names no server.
+  if (!savedFor) {
+    return vscode.l10n.t(
+      "The stored API key is not approved for {0} and is not being sent to it. Press Save & Test to use it here.",
+      connection.origin
+    );
+  }
   return vscode.l10n.t(
     "The stored API key was saved for {0} and is not being sent to {1}. Press Save & Test to use it here.",
-    connection.approvedOrigins.at(-1) ?? "",
+    savedFor,
     connection.origin
   );
 }
