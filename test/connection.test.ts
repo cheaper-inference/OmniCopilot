@@ -353,6 +353,31 @@ describe("key binding in SecretStorage", () => {
     );
   });
 
+  it("names no server the key was saved for when its list of approved servers is empty", async () => {
+    setMockConfig({ baseUrl: B });
+    const context = fakeContext();
+    context.secretMap.set(SECRET_API_KEY, "sk-1");
+    context.secretMap.set(SECRET_API_KEY_ORIGINS, "[]");
+
+    const connection = await resolveConnection(context);
+
+    expect(connection).toMatchObject({ keyWithheld: true, approvedOrigins: [] });
+    expect(keyWithheldMessage(connection)).toBe(
+      `The stored API key is not approved for ${B} and is not being sent to it. Press Save & Test to use it here.`
+    );
+  });
+
+  it("keeps a link out of the empty-list sentence once it is made a notification", () => {
+    const message = keyWithheldMessage({
+      keyWithheld: true,
+      approvedOrigins: [],
+      origin: "[x](command:y)",
+    } as never);
+
+    expect(message).toContain("not approved for");
+    expect(plainNotificationText(message!)).not.toContain("](");
+  });
+
   it("treats a malformed origins secret as an empty list: the key is withheld", async () => {
     setMockConfig({ baseUrl: A });
     const context = fakeContext();
