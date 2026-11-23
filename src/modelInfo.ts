@@ -47,12 +47,32 @@ export function describeModel(model: OmniRouteModel, cfg: ModelShapingConfig): M
   const tiers = advertisedEffortTiers(model);
 
   return {
-    name: model.display_name?.trim() || model.name?.trim() || model.id,
+    name: pickerName(model),
     contextLength,
     maxInputTokens,
     maxOutputTokens,
     effortTiers: tiers.length > 0 ? tiers : undefined,
   };
+}
+
+/** The name the picker shows: the display name, else the name, else the id, the first
+ * that is not empty once made plain (see `plainName`). */
+function pickerName(model: OmniRouteModel): string {
+  for (const candidate of [model.display_name, model.name, model.id]) {
+    const plain = typeof candidate === "string" ? plainName(candidate) : "";
+    if (plain) return plain;
+  }
+  return model.id;
+}
+
+/** Server text for the picker's name: trimmed, and otherwise unchanged when it is already
+ * one line without control characters or `](` and at most 80 characters; anything else
+ * goes through `plainServerText`. */
+function plainName(text: string): string {
+  const trimmed = text.trim();
+  const alreadyPlain =
+    !LINE_BREAKS_AND_CONTROLS.test(trimmed) && Array.from(trimmed).length <= MAX_STEP_CHARS && !trimmed.includes("](");
+  return alreadyPlain ? trimmed : plainServerText(trimmed, MAX_STEP_CHARS);
 }
 
 /** Localisation hook: the VS Code `l10n.t` shape, so this module stays free of `vscode`. */
@@ -120,6 +140,8 @@ function capped(text: string, max: number): string {
 
 /** C0/C1 control characters and DEL. */
 const CONTROL_CHARACTERS = /[\u0000-\u001f\u007f-\u009f]/g;
+/** The same, and the Unicode line and paragraph separators; not global, for `test`. */
+const LINE_BREAKS_AND_CONTROLS = /[\u0000-\u001f\u007f-\u009f\u2028\u2029]/;
 
 /** Server text for a plain field the picker shows (tooltip, detail): one line, no
  * control characters, at most `max` characters, and no `](` left to form a link,
