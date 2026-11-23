@@ -1090,6 +1090,20 @@ describe("provider effort picker", () => {
     expect(body.reasoning_effort).toBe("high");
   });
 
+  it("lets an effort in modelOptions win over the configured default, and the picker win over both", async () => {
+    const { provider, progress, token } = await list({ defaultReasoningEffort: "low" });
+    const perRequest = await chat(provider, progress, token, {
+      modelOptions: { reasoning_effort: "high" },
+    });
+    expect(perRequest.reasoning_effort).toBe("high");
+
+    const picked = await chat(provider, progress, token, {
+      modelConfiguration: { reasoningEffort: "max" },
+      modelOptions: { reasoning_effort: "high" },
+    });
+    expect(picked.reasoning_effort).toBe("max");
+  });
+
   it("forwards max unchanged", async () => {
     const { provider, progress, token } = await list();
     const body = await chat(provider, progress, token, {
