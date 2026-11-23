@@ -1,5 +1,57 @@
 # Changelog
 
+## 1.5.1
+
+Small fixes found in review after 1.5.0, fewer downloads of the model catalog, and automatic checks
+on every pull request.
+
+### Fixed
+
+- **The model catalog is downloaded once.** When the panel and VS Code asked for the model list at
+  the same moment, the catalog was downloaded twice. Requests that overlap now share one download.
+  Contributed by @ma73id-create in
+  [#41](https://github.com/cheaper-inference/OmniCopilot/pull/41). The second download at start-up
+  and on *Refresh models* is gone as well whenever the two requests overlap, which is the usual
+  case.
+- **A connection that drops while the answer is being read is retried.** If nothing had reached the
+  chat yet, the request is retried like any other network failure, and the status bar shows the
+  server as unreachable once the retries are over.
+- **A negative `Retry-After` no longer causes an immediate retry.** A server that answered
+  `Retry-After: -1` was retried after a quarter of a second. The value is ignored and the normal
+  backoff applies.
+- **A stale "key withheld" warning clears at once.** When another window saved the same key again,
+  the status bar could keep the warning icon, and drop the usage number, until its next check.
+- **Check connection reports on the connection in use.** If the key or the server changed while the
+  check was running, it runs again for the current one.
+- **The withheld-key notice has a sentence of its own for a key with no approved server.** It used
+  to print a blank where the server's name should be.
+- **A keychain failure no longer leaves the panel stale.** If the OS keychain fails right after a
+  key is saved, cleared or set, the status bar, the model picker and the panel still refresh.
+- **The first walkthrough step is ticked when the server answers**, not when the Install or Check
+  button is clicked.
+- **Configure Coding CLI.** A quoted `omnicopilot.cliPath` made only of spaces, or ending in a
+  backslash, is refused. With PowerShell as the terminal shell on Linux or macOS, a quoted path now
+  runs. A user name and password written into the server URL no longer reach the extension's log.
+- **Usage section.** A balance that is negative, or too large to print, shows `—` instead of a
+  percentage or `1e+21`.
+- **Effort tiers written with spaces or capitals** in the catalog (` High `, `MAX`) are understood.
+- **Two long tool names can no longer get the same short alias.**
+
+### Security
+
+- **Hardening after code scanning.** On Windows, a value that cannot be quoted safely for the
+  terminal is refused instead of escaped, and translated strings are escaped before they enter the
+  panel's HTML. Neither was reachable with hostile input.
+- **Server text in the model picker is plain text.** A model's name, id and owner get the same
+  one-line, capped treatment as combo names.
+
+### Changed
+
+- **Faster token counting.** A tool result with images is no longer encoded just to be counted.
+- **Pull requests are checked automatically.** A CI workflow runs the type check, the lint, the
+  tests, the translation check and the packaging. A *Publish* workflow releases a tagged version to
+  both stores without a stored Marketplace token; `docs/PUBLISHING.md` has the one-time setup.
+
 ## 1.5.0
 
 What other gateways' extensions already do, now here: the model's reasoning in the chat, prices and
