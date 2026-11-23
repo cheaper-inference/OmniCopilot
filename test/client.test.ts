@@ -163,6 +163,75 @@ describe("OmniRouteClient.streamChat", () => {
     expect(cancel).toHaveBeenCalledTimes(1);
   });
 
+  /** A 200 answer whose connection drops after `lines` were delivered. */
+  function droppedResponse(lines: string[], failure: unknown = new TypeError("terminated")): Response {
+    let sent = 0;
+    const body = new ReadableStream<Uint8Array>({
+      pull(controller) {
+        if (sent < lines.length) controller.enqueue(new TextEncoder().encode(`${lines[sent++]}\n`));
+        else controller.error(failure);
+      },
+    });
+    return new Response(body, { status: 200, headers: { "content-type": "text/event-stream" } });
+  }
+
+  it("reports a connection dropped while the answer is read as a network failure", async () => {
+    vi.stubGlobal("fetch", vi.fn().mockResolvedValue(droppedResponse([])));
+    const error = await collect(new OmniRouteClient({ baseUrl: "http://x/v1" })).then(
+      () => undefined,
+      (err: unknown) => err
+    );
+    expect(error).toBeInstanceOf(OmniRouteRequestError);
+    expect((error as OmniRouteRequestError).info.network).toBe(true);
+    expect((error as OmniRouteRequestError).message).toMatch(/network error.*terminated/);
+  });
+
+  it("still delivers what arrived before the connection dropped", async () => {
+    vi.stubGlobal(
+      "fetch",
+      vi.fn().mockResolvedValue(
+        droppedResponse(['data: {"choices":[{"delta":{"content":"par"}}]}'])
+      )
+    );
+    const seen: StreamEvent[] = [];
+    const ctrl = new AbortController();
+    const run = async () => {
+      for await (const e of new OmniRouteClient({ baseUrl: "http://x/v1" }).streamChat(
+        { model: "m", messages: [{ role: "user", content: "hi" }], stream: true },
+        ctrl.signal
+      )) {
+        seen.push(e);
+      }
+    };
+    await expect(run()).rejects.toMatchObject({ info: { network: true } });
+    expect(seen).toEqual([{ kind: "text", text: "par" }]);
+  });
+
+  it("keeps a cancelled read an abort, not a network failure", async () => {
+    const ctrl = new AbortController();
+    const abortError = new DOMException("aborted", "AbortError");
+    const body = new ReadableStream<Uint8Array>({
+      pull(controller) {
+        ctrl.abort();
+        controller.error(abortError);
+      },
+    });
+    vi.stubGlobal("fetch", vi.fn().mockResolvedValue(new Response(body, { status: 200 })));
+    const run = async () => {
+      for await (const e of new OmniRouteClient({ baseUrl: "http://x/v1" }).streamChat(
+        { model: "m", messages: [{ role: "user", content: "hi" }], stream: true },
+        ctrl.signal
+      )) {
+        void e;
+      }
+    };
+    const error = await run().then(
+      () => undefined,
+      (err: unknown) => err
+    );
+    expect(error).toBe(abortError);
+  });
+
   it("ignores malformed keep-alive lines", async () => {
     vi.stubGlobal(
       "fetch",
