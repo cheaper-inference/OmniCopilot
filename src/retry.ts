@@ -35,7 +35,9 @@ export function parseRetryAfter(
   const text = value?.trim();
   if (!text) return undefined;
   if (/^\d+(\.\d+)?$/.test(text)) return Math.round(Number(text) * 1000);
-  if (/^-\d*\.?\d+$/.test(text)) return undefined;
+  // A wait is never negative, and an HTTP date never starts with a minus sign: anything
+  // that does is ignored instead of being handed to the date parser.
+  if (text.startsWith("-")) return undefined;
   const date = Date.parse(text);
   if (Number.isNaN(date)) return undefined;
   return Math.max(0, date - now);
