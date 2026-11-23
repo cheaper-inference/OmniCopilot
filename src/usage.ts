@@ -165,14 +165,17 @@ export function dailyUsageLine(personal: UsageLimitView, t: Translate = untransl
 }
 
 /** The text of a quota row: a money balance wins over `unlimited` and over a
- * percentage; otherwise unlimited, then a known percentage, then a dash. */
+ * percentage, and so does a balance that cannot be printed (negative, or too large),
+ * which reads as a dash; otherwise unlimited, then a known percentage, then a dash. */
 function quotaText(
   balance: string | null,
+  unprintableBalance: boolean,
   unlimited: boolean,
   left: number | null,
   t: Translate
 ): string {
   if (balance !== null) return t("{0} left", balance);
+  if (unprintableBalance) return "—";
   if (unlimited) return t("unlimited");
   if (left !== null) return t("{0}% left", left);
   return "—";
@@ -191,7 +194,7 @@ function quotaView(name: string, quota: UsageQuotaWindow, now: number, t: Transl
     balance,
     unlimited,
     resetIn: resetLabel(quota.resetAt, now),
-    text: quotaText(balance, unlimited, left, t),
+    text: quotaText(balance, hasUnprintableBalance(quota), unlimited, left, t),
     label: displayName || name,
   };
 }
@@ -489,13 +492,26 @@ export function quotaRemainingPercent(q: UsageQuotaWindow): number | null {
   return used === null ? null : Math.round(clampPercent(100 - used));
 }
 
+/** From this amount on, JavaScript prints a number with an exponent ("1e+21"). */
+const MAX_PRINTABLE_AMOUNT = 1e21;
+
+/** A money quota whose `remaining` is a number that cannot be shown as a balance: a
+ * negative one (no existing wording says "owed"), or one that would print with an
+ * exponent. Its line reads "—" rather than falling back to a share. */
+function hasUnprintableBalance(q: UsageQuotaWindow): boolean {
+  if (!isMoneyQuota(q)) return false;
+  const remaining = toNumber(q.remaining);
+  return Number.isFinite(remaining) && (remaining < 0 || remaining >= MAX_PRINTABLE_AMOUNT);
+}
+
 /** The amount left on a money quota, formatted for display: "$12.50" for USD,
- * "12.5 EUR" for anything else. Null for a window without a currency or
- * without a finite, non-negative `remaining`. */
+ * "12.5 EUR" for anything else. Null for a window without a currency, without a
+ * finite, non-negative `remaining`, or with one too large to print without an
+ * exponent. */
 export function quotaBalance(q: UsageQuotaWindow): string | null {
   if (!isMoneyQuota(q)) return null;
   const remaining = toNumber(q.remaining);
-  if (!Number.isFinite(remaining) || remaining < 0) return null;
+  if (!Number.isFinite(remaining) || remaining < 0 || remaining >= MAX_PRINTABLE_AMOUNT) return null;
   const code = q.currency.trim().toUpperCase();
   if (code === "USD") return formatUsd(remaining);
   return `${Math.round(remaining * 100) / 100} ${code}`;

@@ -188,6 +188,43 @@ describe("money quotas in the panel view", () => {
     expect(q.negative?.balance).toBeNull();
     expect(q.none?.balance).toBeNull();
   });
+
+  it("shows a dash, not a percentage, for a negative balance", () => {
+    const q = quotasOf({
+      overspent: { remaining: -3.2, currency: "USD", total: 10, used: 13.2 },
+      overspentEur: { remaining: "-0.5", currency: "EUR", total: 5, remainingPercentage: 40 },
+      bare: { remaining: -1, currency: "USD" },
+    });
+    for (const name of ["overspent", "overspentEur", "bare"]) {
+      expect(q[name]?.balance, name).toBeNull();
+      expect(q[name]?.text, name).toBe("—");
+    }
+  });
+
+  it("treats an amount that would print with an exponent as no number", () => {
+    const q = quotasOf({
+      huge: { remaining: 1e21, currency: "EUR" },
+      hugeUsd: { remaining: 1e21, currency: "USD", total: 2e21, used: 1e21 },
+      largest: { remaining: 999_999_999_999_999_900_000, currency: "EUR" },
+    });
+    expect(q.huge).toMatchObject({ balance: null, text: "—" });
+    expect(q.hugeUsd).toMatchObject({ balance: null, text: "—" });
+    expect(q.largest?.balance).toBe("999999999999999900000 EUR");
+    for (const quota of Object.values(q)) expect(String(quota.text)).not.toMatch(/e\+/);
+  });
+
+  it("chooses the text of a quota line: a balance, then unlimited, then a share, then a dash", () => {
+    const q = quotasOf({
+      balanceOverUnlimited: { remaining: 2, currency: "USD", unlimited: true, usedPercentage: 10 },
+      unlimitedOverShare: { unlimited: true, usedPercentage: 10 },
+      share: { usedPercentage: 10 },
+      nothing: { remaining: 250 },
+    });
+    expect(q.balanceOverUnlimited?.text).toBe("$2.00 left");
+    expect(q.unlimitedOverShare?.text).toBe("unlimited");
+    expect(q.share?.text).toBe("90% left");
+    expect(q.nothing?.text).toBe("—");
+  });
 });
 
 describe("formatters", () => {
