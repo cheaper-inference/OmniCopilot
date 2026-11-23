@@ -189,6 +189,21 @@ describe("resolveReasoningEffort with the model picker", () => {
     ).toBe("max");
   });
 
+  it("orders picker, then modelOptions, then the configured default", () => {
+    const base = { configuredDefault: "low", modelIsReasoning: true };
+    expect(
+      resolveReasoningEffort({ ...base, modelOptions: { reasoning_effort: "high" } })
+    ).toBe("high");
+    expect(
+      resolveReasoningEffort({
+        ...base,
+        modelConfiguration: { reasoningEffort: "max" },
+        modelOptions: { reasoning_effort: "high" },
+      })
+    ).toBe("max");
+    expect(resolveReasoningEffort(base)).toBe("low");
+  });
+
   it("normalizes the picker choice against the tiers the model advertises", () => {
     expect(
       resolveReasoningEffort({
