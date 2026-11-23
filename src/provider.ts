@@ -188,6 +188,8 @@ export class OmniRouteChatProvider
   /** Whether the host's last listing in this refresh generation succeeded; undefined
    * until it has listed (a cancelled listing does not count). */
   private hostListingOk: boolean | undefined;
+  /** The host's listing under way, settled once `hostListingOk` has been recorded for it. */
+  private hostListingUnderWay: { generation: number; done: Promise<void> } | undefined;
   /** Counts `refresh()` calls: a listing that finishes after one belongs to a
    * connection that may no longer be the current one. */
   private refreshGeneration = 0;
@@ -204,6 +206,7 @@ export class OmniRouteChatProvider
     this.lastListing = undefined;
     this.inFlightListing = undefined;
     this.hostListingOk = undefined;
+    this.hostListingUnderWay = undefined;
     this.reasoningModelIds.clear();
     this.effortTiersById.clear();
     this._onDidChange.fire();
@@ -212,16 +215,19 @@ export class OmniRouteChatProvider
   /**
    * `refresh()`, unless the picker already has (or is getting) the models: for the first
    * poll that finds the server accepting requests, which must not download the catalog
-   * again when the host's first listing succeeded. A listing under way is waited for, and
-   * the picker is refreshed only when it did not succeed.
+   * again when the host's first listing succeeded. The host's listing and any listing
+   * under way are waited for; the picker is then refreshed unless the HOST's own listing in
+   * this generation succeeded. Another caller's listing (the panel's) does not fill the
+   * picker, and neither does a host listing that failed, threw or was cancelled.
    */
   async refreshUnlessListed(): Promise<void> {
     const generation = this.refreshGeneration;
     const running = this.inFlightListing?.generation === generation ? this.inFlightListing : undefined;
-    const shared = running ? await running.result : undefined;
+    const host = this.hostListingUnderWay?.generation === generation ? this.hostListingUnderWay : undefined;
+    await Promise.all([running?.result, host?.done]);
     // A refresh that came in meanwhile lists for itself.
     if (generation !== this.refreshGeneration) return;
-    if (this.lastListing || shared?.ok) return;
+    if (this.hostListingOk === true) return;
     await this.refresh();
   }
 
@@ -247,11 +253,18 @@ export class OmniRouteChatProvider
     token: vscode.CancellationToken
   ): Promise<OmniModelInfo[]> {
     const generation = this.refreshGeneration;
-    const listing = await this.listModels(options, token);
-    if (generation === this.refreshGeneration && !token.isCancellationRequested) {
-      this.hostListingOk = listing.ok;
-    }
-    return listing.infos;
+    const listed = this.listModels(options, token).then((listing) => {
+      if (generation === this.refreshGeneration && !token.isCancellationRequested) {
+        this.hostListingOk = listing.ok;
+      }
+      return listing;
+    });
+    const entry = { generation, done: listed.then(() => undefined, () => undefined) };
+    this.hostListingUnderWay = entry;
+    void entry.done.then(() => {
+      if (this.hostListingUnderWay === entry) this.hostListingUnderWay = undefined;
+    });
+    return (await listed).infos;
   }
 
   /**
