@@ -507,8 +507,9 @@ class ToolCallAssembler {
     for (const call of this.slots) {
       if (!call.name) continue;
       // Some servers never send an id; the editor needs one to pair the call
-      // with its result, so make one up rather than dropping the call.
-      const id = call.id || `call_${randomBytes(4).toString("hex")}`;
+      // with its result, so make one up rather than dropping the call: 96 random
+      // bits, so two calls of one conversation never share an id.
+      const id = call.id || `call_${randomBytes(12).toString("hex")}`;
       if (finishReason === "length" && call.args.trim() === "") {
         yield { kind: "toolCall", id, name: call.name, args: call.args, cutOff: true };
       } else {

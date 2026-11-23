@@ -538,7 +538,26 @@ describe("OmniRouteClient.streamChat errors", () => {
     expect(events).toHaveLength(2);
     expect(events[1]).toEqual({ kind: "finish", reason: "tool_calls" });
     expect(events[0]).toMatchObject({ kind: "toolCall", name: "run", args: "{}" });
-    expect((events[0] as { id: string }).id).toMatch(/^call_[0-9a-f]{8}$/);
+    expect((events[0] as { id: string }).id).toMatch(/^call_[0-9a-f]{24}$/);
+  });
+
+  it("invents a 96-bit id for each call that arrives without one, different for each", async () => {
+    vi.stubGlobal(
+      "fetch",
+      vi.fn().mockResolvedValue(
+        sseResponse([
+          'data: {"choices":[{"delta":{"tool_calls":[{"index":0,"function":{"name":"one","arguments":"{}"}},{"index":1,"function":{"name":"two","arguments":"{}"}}]}}]}',
+          'data: {"choices":[{"delta":{},"finish_reason":"tool_calls"}]}',
+          "data: [DONE]",
+        ])
+      )
+    );
+    const ids = (await collect(client()))
+      .filter((e): e is Extract<StreamEvent, { kind: "toolCall" }> => e.kind === "toolCall")
+      .map((e) => e.id);
+    expect(ids).toHaveLength(2);
+    for (const id of ids) expect(id).toMatch(/^call_[0-9a-f]{24}$/);
+    expect(ids[0]).not.toBe(ids[1]);
   });
 
   it("still drops a fragment that never got a name", async () => {
