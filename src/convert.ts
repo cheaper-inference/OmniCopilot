@@ -194,20 +194,34 @@ export function renderToolResult(
   options: { imageInput: boolean }
 ): { text: string; images: ChatContentPart[] } {
   const images: ChatContentPart[] = [];
+  const text = renderToolResultText(content, options.imageInput, (part) => {
+    const base64 = Buffer.from(part.data).toString("base64");
+    images.push({ type: "image_url", image_url: { url: `data:${part.mimeType};base64,${base64}` } });
+  });
+  return { text, images };
+}
+
+/** The text half of `renderToolResult`. `attachImage` is called once for each
+ * image that goes out with the request, so a caller that only needs to know
+ * how many there are does not have to encode them. */
+function renderToolResultText(
+  content: unknown,
+  imageInput: boolean,
+  attachImage: (part: vscode.LanguageModelDataPart) => void
+): string {
   const parts = Array.isArray(content) ? content : content === undefined || content === null ? [] : [content];
 
-  const text = parts
+  return parts
     .map((part) => {
       if (typeof part === "string") return part;
       if (part instanceof vscode.LanguageModelDataPart && typeof part.mimeType === "string") {
         if (isMarkerMime(part.mimeType)) return "";
         const size = describeSize(part.data.byteLength);
         if (isImageMime(part.mimeType)) {
-          if (!options.imageInput) {
+          if (!imageInput) {
             return `[image omitted: ${part.mimeType}, ${size}; this model does not accept images]`;
           }
-          const base64 = Buffer.from(part.data).toString("base64");
-          images.push({ type: "image_url", image_url: { url: `data:${part.mimeType};base64,${base64}` } });
+          attachImage(part);
           return `[image: ${part.mimeType}, ${size}; attached after this result]`;
         }
         if (isReadableMime(part.mimeType)) return new TextDecoder().decode(part.data);
@@ -221,8 +235,6 @@ export function renderToolResult(
       return stringify(part);
     })
     .join("");
-
-  return { text, images };
 }
 
 /** Text of a tool result with no image attachments (see `renderToolResult`). */
@@ -258,8 +270,12 @@ export function estimateTokens(text: string | vscode.LanguageModelChatRequestMes
     } else if (part instanceof vscode.LanguageModelToolCallPart) {
       chars += part.name.length + JSON.stringify(part.input ?? {}).length;
     } else if (part instanceof vscode.LanguageModelToolResultPart) {
-      const { text: rendered, images } = renderToolResult(part.content, { imageInput: true });
-      chars += rendered.length + images.length * TOKENS_PER_IMAGE * 4;
+      // Images cost a flat amount, so they are only counted, never encoded.
+      let images = 0;
+      const rendered = renderToolResultText(part.content, true, () => {
+        images += 1;
+      });
+      chars += rendered.length + images * TOKENS_PER_IMAGE * 4;
     } else if (part instanceof vscode.LanguageModelDataPart && typeof part.mimeType === "string") {
       // Markers cost nothing; images a flat amount; readable text its length;
       // other binary data is never sent, so it costs nothing either.

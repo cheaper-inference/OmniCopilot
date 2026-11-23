@@ -1,4 +1,4 @@
-import { describe, expect, it } from "vitest";
+import { describe, expect, it, vi } from "vitest";
 import * as vscode from "vscode";
 import {
   estimateTokens,
@@ -355,6 +355,36 @@ describe("estimateTokens for data parts", () => {
     const n = estimateTokens(msg(user, [toolResultPart(new vscode.LanguageModelTextPart("ok"), png)]));
     expect(n).toBeLessThan(4100);
     expect(n).toBeGreaterThanOrEqual(4000);
+  });
+});
+
+describe("estimateTokens for tool-result images", () => {
+  const user = vscode.LanguageModelChatMessageRole.User;
+  const note = (size: string) => `[image: image/png, ${size}; attached after this result]`;
+
+  it("counts one image the same as before, without encoding it", () => {
+    const img = new vscode.LanguageModelDataPart(new Uint8Array(3000).fill(7), "image/png");
+    const encode = vi.spyOn(Buffer.prototype, "toString");
+    try {
+      expect(estimateTokens(msg(user, [toolResultPart(img)]))).toBe(
+        4000 + Math.ceil(note("3 KB").length / 4)
+      );
+      expect(encode.mock.calls.filter(([encoding]) => encoding === "base64")).toEqual([]);
+    } finally {
+      encode.mockRestore();
+    }
+  });
+
+  it("counts every image of several results in one message (test only: same numbers as before)", () => {
+    const a = new vscode.LanguageModelDataPart(new Uint8Array(10).fill(1), "image/png");
+    const b = new vscode.LanguageModelDataPart(new Uint8Array(20).fill(2), "image/png");
+    const c = new vscode.LanguageModelDataPart(new Uint8Array(30).fill(3), "image/png");
+    const chars = note("10 B").length + note("20 B").length + note("30 B").length + 3 * 4000 * 4 + "ok".length;
+    const message = msg(user, [
+      toolResultPart(a, b),
+      toolResultPart(new vscode.LanguageModelTextPart("ok"), c),
+    ]);
+    expect(estimateTokens(message)).toBe(Math.ceil(chars / 4));
   });
 });
 
