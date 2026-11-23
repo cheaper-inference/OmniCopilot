@@ -1227,6 +1227,47 @@ describe("provider request retries", () => {
     expect(ctx.activity).toEqual([true]);
   });
 
+  it("waits until the HTTP date of a Retry-After header, then answers", async () => {
+    vi.setSystemTime(new Date("2026-11-14T12:00:00Z"));
+    fetchMock
+      .mockResolvedValueOnce(cooling("Sat, 14 Nov 2026 12:00:05 GMT"))
+      .mockResolvedValueOnce(sseResponse([text("back")]));
+    const ctx = makeProvider();
+    const result = ask(ctx);
+
+    await vi.advanceTimersByTimeAsync(4_999);
+    expect(fetchMock).toHaveBeenCalledTimes(1);
+    await vi.advanceTimersByTimeAsync(1);
+
+    expect(await result).toEqual({ ok: true });
+    expect(fetchMock).toHaveBeenCalledTimes(2);
+  });
+
+  it("retries after the shortest wait on Retry-After: 0, and on the normal backoff when it is negative", async () => {
+    fetchMock
+      .mockResolvedValueOnce(cooling("0"))
+      .mockResolvedValueOnce(sseResponse([text("back")]));
+    const zero = makeProvider();
+    const first = ask(zero);
+    await vi.advanceTimersByTimeAsync(249);
+    expect(fetchMock).toHaveBeenCalledTimes(1);
+    await vi.advanceTimersByTimeAsync(1);
+    expect(await first).toEqual({ ok: true });
+    expect(fetchMock).toHaveBeenCalledTimes(2);
+
+    fetchMock.mockReset();
+    fetchMock
+      .mockResolvedValueOnce(cooling("-1"))
+      .mockResolvedValueOnce(sseResponse([text("back")]));
+    const negative = makeProvider();
+    const second = ask(negative);
+    await vi.advanceTimersByTimeAsync(999);
+    expect(fetchMock).toHaveBeenCalledTimes(1);
+    await vi.advanceTimersByTimeAsync(1);
+    expect(await second).toEqual({ ok: true });
+    expect(fetchMock).toHaveBeenCalledTimes(2);
+  });
+
   it("waits for the reset hint of an error that arrives inside the stream", async () => {
     fetchMock
       .mockResolvedValueOnce(

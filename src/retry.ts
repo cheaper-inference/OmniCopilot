@@ -25,8 +25,9 @@ const RETRYABLE_STATUS = new Set([408, 429, 500, 502, 503, 504]);
 const MIN_DELAY_MS = 250;
 
 /** Parse a `Retry-After` value — delay in seconds or an HTTP date — into
- * milliseconds. A date already in the past means no wait (0). Anything else
- * is "no hint" (undefined). */
+ * milliseconds. A date already in the past means no wait (0). A negative
+ * number is not a wait, and must not reach the date parser (which reads `-1`
+ * as a year); like anything else unreadable it is "no hint" (undefined). */
 export function parseRetryAfter(
   value: string | null | undefined,
   now: number = Date.now()
@@ -34,6 +35,7 @@ export function parseRetryAfter(
   const text = value?.trim();
   if (!text) return undefined;
   if (/^\d+(\.\d+)?$/.test(text)) return Math.round(Number(text) * 1000);
+  if (/^-\d*\.?\d+$/.test(text)) return undefined;
   const date = Date.parse(text);
   if (Number.isNaN(date)) return undefined;
   return Math.max(0, date - now);
