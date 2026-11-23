@@ -39,7 +39,6 @@
   "Online — {0} models available": "Online — {0} modellen beschikbaar",
   "Open GitHub": "GitHub openen",
   "Open OmniRoute dashboard": "OmniRoute-dashboard openen",
-  "Optional — leave empty if your OmniRoute does not require an API key. Stored in the OS keychain.": "Optioneel — laat leeg als uw OmniRoute geen API-sleutel vereist. Opgeslagen in de sleutelhanger van het besturingssysteem.",
   "Refresh models": "Modellen vernieuwen",
   "Refresh models in the picker": "Modellen in de kiezer vernieuwen",
   "Remove the stored API key": "De opgeslagen API-sleutel verwijderen",
@@ -100,5 +99,6 @@
   "The model's answer was cut off before the tool call was complete. Raise omnicopilot.maxOutputTokens or ask for smaller steps.": "Het antwoord van het model werd afgekapt voordat de aanroep van het hulpprogramma voltooid was. Verhoog omnicopilot.maxOutputTokens of vraag om kleinere stappen.",
   "The model sent a tool call with invalid arguments.": "Het model heeft een aanroep van een hulpprogramma met ongeldige argumenten verzonden.",
   "The model used its whole output limit before it wrote an answer. Raise omnicopilot.maxOutputTokens or lower the thinking effort.": "Het model heeft zijn volledige uitvoerlimiet gebruikt voordat het een antwoord schreef. Verhoog omnicopilot.maxOutputTokens of verlaag de denkinspanning.",
-  "This workspace's API key will be handed to {0}, whose configuration is shared by all your projects.": "De API-sleutel van deze werkruimte wordt doorgegeven aan {0}, waarvan de configuratie door al uw projecten wordt gedeeld."
+  "This workspace's API key will be handed to {0}, whose configuration is shared by all your projects.": "De API-sleutel van deze werkruimte wordt doorgegeven aan {0}, waarvan de configuratie door al uw projecten wordt gedeeld.",
+  "The stored API key is not approved for {0} and is not being sent to it. Press Save & Test to use it here.": "De opgeslagen API-sleutel is niet goedgekeurd voor {0} en wordt niet naar die server verstuurd. Kies \"Opslaan en testen\" om hem hier te gebruiken."
 }

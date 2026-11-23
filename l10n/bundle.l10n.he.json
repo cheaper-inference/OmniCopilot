@@ -39,7 +39,6 @@
   "Online — {0} models available": "מקוון — {0} מודלים זמינים",
   "Open GitHub": "פתיחת GitHub",
   "Open OmniRoute dashboard": "פתיחת לוח הבקרה של OmniRoute",
-  "Optional — leave empty if your OmniRoute does not require an API key. Stored in the OS keychain.": "אופציונלי — השאירו ריק אם ה-OmniRoute שלכם אינו דורש מפתח API. נשמר במחזיק המפתחות של מערכת ההפעלה.",
   "Refresh models": "רענון מודלים",
   "Refresh models in the picker": "רענון המודלים בבורר",
   "Remove the stored API key": "הסרת מפתח ה-API השמור",
@@ -100,5 +99,6 @@
   "The model's answer was cut off before the tool call was complete. Raise omnicopilot.maxOutputTokens or ask for smaller steps.": "תשובת המודל נקטעה לפני שקריאת הכלי הושלמה. הגדילו את ערך ההגדרה omnicopilot.maxOutputTokens או בקשו צעדים קטנים יותר.",
   "The model sent a tool call with invalid arguments.": "המודל שלח קריאת כלי עם ארגומנטים לא תקינים.",
   "The model used its whole output limit before it wrote an answer. Raise omnicopilot.maxOutputTokens or lower the thinking effort.": "המודל ניצל את כל מגבלת הפלט שלו לפני שכתב תשובה. הגדילו את ערך ההגדרה omnicopilot.maxOutputTokens או הפחיתו את מאמץ החשיבה.",
-  "This workspace's API key will be handed to {0}, whose configuration is shared by all your projects.": "מפתח ה-API של סביבת העבודה הזו יימסר לכלי {0}, שההגדרות שלו משותפות לכל הפרויקטים שלכם."
+  "This workspace's API key will be handed to {0}, whose configuration is shared by all your projects.": "מפתח ה-API של סביבת העבודה הזו יימסר לכלי {0}, שההגדרות שלו משותפות לכל הפרויקטים שלכם.",
+  "The stored API key is not approved for {0} and is not being sent to it. Press Save & Test to use it here.": "מפתח ה-API השמור אינו מאושר עבור {0} ואינו נשלח לשם. לחצו על \"שמירה ובדיקה\" כדי להשתמש בו כאן."
 }

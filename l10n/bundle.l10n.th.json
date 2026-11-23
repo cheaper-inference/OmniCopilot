@@ -39,7 +39,6 @@
   "Online — {0} models available": "ออนไลน์ — มีโมเดลพร้อมใช้งาน {0} รายการ",
   "Open GitHub": "เปิด GitHub",
   "Open OmniRoute dashboard": "เปิดแดชบอร์ด OmniRoute",
-  "Optional — leave empty if your OmniRoute does not require an API key. Stored in the OS keychain.": "ไม่บังคับ — เว้นว่างไว้หาก OmniRoute ของคุณไม่ต้องการคีย์ API จะเก็บไว้ในที่เก็บคีย์ของระบบปฏิบัติการ",
   "Refresh models": "รีเฟรชโมเดล",
   "Refresh models in the picker": "รีเฟรชโมเดลในตัวเลือก",
   "Remove the stored API key": "ลบคีย์ API ที่เก็บไว้",
@@ -100,5 +99,6 @@
   "The model's answer was cut off before the tool call was complete. Raise omnicopilot.maxOutputTokens or ask for smaller steps.": "คำตอบของโมเดลถูกตัดก่อนที่การเรียกใช้เครื่องมือจะเสร็จสมบูรณ์ เพิ่มค่า omnicopilot.maxOutputTokens หรือขอทีละขั้นตอนย่อย ๆ",
   "The model sent a tool call with invalid arguments.": "โมเดลส่งการเรียกใช้เครื่องมือที่มีอาร์กิวเมนต์ไม่ถูกต้อง",
   "The model used its whole output limit before it wrote an answer. Raise omnicopilot.maxOutputTokens or lower the thinking effort.": "โมเดลใช้ขีดจำกัดเอาต์พุตจนหมดก่อนที่จะเขียนคำตอบ เพิ่มค่า omnicopilot.maxOutputTokens หรือลดระดับการคิด",
-  "This workspace's API key will be handed to {0}, whose configuration is shared by all your projects.": "คีย์ API ของพื้นที่ทำงานนี้จะถูกส่งให้ {0} ซึ่งมีการกำหนดค่าเดียวที่ทุกโปรเจกต์ของคุณใช้ร่วมกัน"
+  "This workspace's API key will be handed to {0}, whose configuration is shared by all your projects.": "คีย์ API ของพื้นที่ทำงานนี้จะถูกส่งให้ {0} ซึ่งมีการกำหนดค่าเดียวที่ทุกโปรเจกต์ของคุณใช้ร่วมกัน",
+  "The stored API key is not approved for {0} and is not being sent to it. Press Save & Test to use it here.": "คีย์ API ที่เก็บไว้ไม่ได้รับอนุมัติสำหรับ {0} และไม่ได้ส่งไปยังเซิร์ฟเวอร์นั้น กดปุ่ม บันทึกและทดสอบ เพื่อใช้ที่นี่"
 }

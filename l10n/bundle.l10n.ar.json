@@ -39,7 +39,6 @@
   "Online — {0} models available": "متصل — {0} نموذجًا متاحًا",
   "Open GitHub": "فتح GitHub",
   "Open OmniRoute dashboard": "فتح لوحة تحكم OmniRoute",
-  "Optional — leave empty if your OmniRoute does not require an API key. Stored in the OS keychain.": "اختياري — اتركه فارغًا إذا كان OmniRoute لديك لا يتطلب مفتاح API. يُخزَّن في حلقة مفاتيح نظام التشغيل.",
   "Refresh models": "تحديث النماذج",
   "Refresh models in the picker": "تحديث النماذج في المنتقي",
   "Remove the stored API key": "إزالة مفتاح API المخزّن",
@@ -100,5 +99,6 @@
   "The model's answer was cut off before the tool call was complete. Raise omnicopilot.maxOutputTokens or ask for smaller steps.": "انقطعت إجابة النموذج قبل اكتمال استدعاء الأداة. ارفع قيمة الإعداد omnicopilot.maxOutputTokens أو اطلب خطوات أصغر.",
   "The model sent a tool call with invalid arguments.": "أرسل النموذج استدعاء أداة بوسائط غير صالحة.",
   "The model used its whole output limit before it wrote an answer. Raise omnicopilot.maxOutputTokens or lower the thinking effort.": "استهلك النموذج حد الإخراج بالكامل قبل أن يكتب إجابة. ارفع قيمة الإعداد omnicopilot.maxOutputTokens أو اخفض جهد التفكير.",
-  "This workspace's API key will be handed to {0}, whose configuration is shared by all your projects.": "سيُسلَّم مفتاح API الخاص بمساحة العمل هذه إلى الأداة {0}، التي تشترك جميع مشاريعك في تكوينها."
+  "This workspace's API key will be handed to {0}, whose configuration is shared by all your projects.": "سيُسلَّم مفتاح API الخاص بمساحة العمل هذه إلى الأداة {0}، التي تشترك جميع مشاريعك في تكوينها.",
+  "The stored API key is not approved for {0} and is not being sent to it. Press Save & Test to use it here.": "مفتاح API المخزّن غير معتمد لـ {0} ولا يُرسَل إليه. اضغط \"حفظ واختبار\" لاستخدامه هنا."
 }

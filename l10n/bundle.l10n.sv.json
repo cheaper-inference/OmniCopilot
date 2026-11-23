@@ -39,7 +39,6 @@
   "Online — {0} models available": "Online — {0} modeller tillgängliga",
   "Open GitHub": "Öppna GitHub",
   "Open OmniRoute dashboard": "Öppna OmniRoutes instrumentpanel",
-  "Optional — leave empty if your OmniRoute does not require an API key. Stored in the OS keychain.": "Valfritt — lämna tomt om din OmniRoute inte kräver någon API-nyckel. Lagras i operativsystemets nyckelring.",
   "Refresh models": "Uppdatera modeller",
   "Refresh models in the picker": "Uppdatera modellerna i väljaren",
   "Remove the stored API key": "Ta bort den lagrade API-nyckeln",
@@ -100,5 +99,6 @@
   "The model's answer was cut off before the tool call was complete. Raise omnicopilot.maxOutputTokens or ask for smaller steps.": "Modellens svar avbröts innan verktygsanropet var klart. Höj omnicopilot.maxOutputTokens eller be om mindre steg.",
   "The model sent a tool call with invalid arguments.": "Modellen skickade ett verktygsanrop med ogiltiga argument.",
   "The model used its whole output limit before it wrote an answer. Raise omnicopilot.maxOutputTokens or lower the thinking effort.": "Modellen använde hela sin utdatagräns innan den skrev ett svar. Höj omnicopilot.maxOutputTokens eller sänk resonemangsnivån.",
-  "This workspace's API key will be handed to {0}, whose configuration is shared by all your projects.": "Den här arbetsytans API-nyckel lämnas över till {0}, vars konfiguration delas av alla dina projekt."
+  "This workspace's API key will be handed to {0}, whose configuration is shared by all your projects.": "Den här arbetsytans API-nyckel lämnas över till {0}, vars konfiguration delas av alla dina projekt.",
+  "The stored API key is not approved for {0} and is not being sent to it. Press Save & Test to use it here.": "Den lagrade API-nyckeln är inte godkänd för {0} och skickas inte till den servern. Klicka på \"Spara och testa\" för att använda den här."
 }

@@ -39,7 +39,6 @@
   "Online — {0} models available": "ఆన్‌లైన్ — {0} మోడల్స్ అందుబాటులో ఉన్నాయి",
   "Open GitHub": "GitHubను తెరవండి",
   "Open OmniRoute dashboard": "OmniRoute డాష్‌బోర్డ్‌ను తెరవండి",
-  "Optional — leave empty if your OmniRoute does not require an API key. Stored in the OS keychain.": "ఐచ్ఛికం — మీ OmniRouteకు API కీ అవసరం లేకపోతే ఖాళీగా వదిలేయండి. ఆపరేటింగ్ సిస్టమ్ యొక్క సురక్షిత కీ నిల్వలో నిల్వ చేయబడుతుంది.",
   "Refresh models": "మోడల్స్‌ను రిఫ్రెష్ చేయండి",
   "Refresh models in the picker": "పికర్‌లో మోడల్స్‌ను రిఫ్రెష్ చేయండి",
   "Remove the stored API key": "నిల్వ చేసిన API కీని తొలగించండి",
@@ -100,5 +99,6 @@
   "The model's answer was cut off before the tool call was complete. Raise omnicopilot.maxOutputTokens or ask for smaller steps.": "సాధన కాల్ పూర్తికాకముందే మోడల్ సమాధానం తెగిపోయింది. omnicopilot.maxOutputTokens సెట్టింగ్ విలువను పెంచండి లేదా చిన్న దశలను అడగండి.",
   "The model sent a tool call with invalid arguments.": "మోడల్ చెల్లని ఆర్గ్యుమెంట్‌లతో సాధన కాల్‌ను పంపింది.",
   "The model used its whole output limit before it wrote an answer. Raise omnicopilot.maxOutputTokens or lower the thinking effort.": "సమాధానం రాయడానికి ముందే మోడల్ తన మొత్తం అవుట్‌పుట్ పరిమితిని వాడేసింది. omnicopilot.maxOutputTokens సెట్టింగ్ విలువను పెంచండి లేదా ఆలోచన ప్రయత్నాన్ని తగ్గించండి.",
-  "This workspace's API key will be handed to {0}, whose configuration is shared by all your projects.": "ఈ వర్క్‌స్పేస్ యొక్క API కీ {0} సాధనానికి ఇవ్వబడుతుంది, దాని కాన్ఫిగరేషన్‌ను మీ అన్ని ప్రాజెక్ట్‌లు షేర్ చేస్తాయి."
+  "This workspace's API key will be handed to {0}, whose configuration is shared by all your projects.": "ఈ వర్క్‌స్పేస్ యొక్క API కీ {0} సాధనానికి ఇవ్వబడుతుంది, దాని కాన్ఫిగరేషన్‌ను మీ అన్ని ప్రాజెక్ట్‌లు షేర్ చేస్తాయి.",
+  "The stored API key is not approved for {0} and is not being sent to it. Press Save & Test to use it here.": "నిల్వ చేసిన API కీ {0} కోసం ఆమోదించబడలేదు మరియు అక్కడికి పంపబడటం లేదు. దాన్ని ఇక్కడ ఉపయోగించడానికి \"సేవ్ చేసి పరీక్షించండి\" నొక్కండి."
 }

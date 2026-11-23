@@ -39,7 +39,6 @@
   "Online — {0} models available": "온라인 — {0}개 모델 사용 가능",
   "Open GitHub": "GitHub 열기",
   "Open OmniRoute dashboard": "OmniRoute 대시보드 열기",
-  "Optional — leave empty if your OmniRoute does not require an API key. Stored in the OS keychain.": "선택 사항 — OmniRoute에서 API 키를 요구하지 않으면 비워 두세요. OS 키체인에 저장됩니다.",
   "Refresh models": "모델 새로 고침",
   "Refresh models in the picker": "선택기의 모델 새로 고침",
   "Remove the stored API key": "저장된 API 키 제거",
@@ -100,5 +99,6 @@
   "The model's answer was cut off before the tool call was complete. Raise omnicopilot.maxOutputTokens or ask for smaller steps.": "모델의 응답이 도구 호출이 완료되기 전에 끊겼습니다. omnicopilot.maxOutputTokens 값을 높이거나 더 작은 단계로 요청하세요.",
   "The model sent a tool call with invalid arguments.": "모델이 잘못된 인수가 담긴 도구 호출을 보냈습니다.",
   "The model used its whole output limit before it wrote an answer. Raise omnicopilot.maxOutputTokens or lower the thinking effort.": "모델이 답변을 작성하기 전에 출력 한도를 모두 사용했습니다. omnicopilot.maxOutputTokens 값을 높이거나 사고 강도를 낮추세요.",
-  "This workspace's API key will be handed to {0}, whose configuration is shared by all your projects.": "이 작업 영역의 API 키가 모든 프로젝트에서 구성을 공유하는 {0}에 전달됩니다."
+  "This workspace's API key will be handed to {0}, whose configuration is shared by all your projects.": "이 작업 영역의 API 키가 모든 프로젝트에서 구성을 공유하는 {0}에 전달됩니다.",
+  "The stored API key is not approved for {0} and is not being sent to it. Press Save & Test to use it here.": "저장된 API 키는 {0}에 대해 승인되지 않았으며 해당 서버로 전송되지 않고 있습니다. 여기서 사용하려면 저장 및 테스트 버튼을 누르세요."
 }

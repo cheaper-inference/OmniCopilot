@@ -39,7 +39,6 @@
   "Online — {0} models available": "Mtandaoni — modeli {0} zinapatikana",
   "Open GitHub": "Fungua GitHub",
   "Open OmniRoute dashboard": "Fungua dashibodi ya OmniRoute",
-  "Optional — leave empty if your OmniRoute does not require an API key. Stored in the OS keychain.": "Si lazima — acha tupu ikiwa OmniRoute yako haihitaji ufunguo wa API. Huhifadhiwa katika hifadhi salama ya funguo ya mfumo wa uendeshaji.",
   "Refresh models": "Sasisha modeli",
   "Refresh models in the picker": "Sasisha modeli kwenye kichaguzi",
   "Remove the stored API key": "Ondoa ufunguo wa API uliohifadhiwa",
@@ -100,5 +99,6 @@
   "The model's answer was cut off before the tool call was complete. Raise omnicopilot.maxOutputTokens or ask for smaller steps.": "Jibu la modeli lilikatika kabla ya wito wa zana kukamilika. Ongeza omnicopilot.maxOutputTokens au omba hatua ndogo zaidi.",
   "The model sent a tool call with invalid arguments.": "Modeli ilituma wito wa zana wenye hoja zisizo sahihi.",
   "The model used its whole output limit before it wrote an answer. Raise omnicopilot.maxOutputTokens or lower the thinking effort.": "Modeli ilitumia kikomo chake chote cha matokeo kabla ya kuandika jibu. Ongeza omnicopilot.maxOutputTokens au punguza kiwango cha ufikirio.",
-  "This workspace's API key will be handed to {0}, whose configuration is shared by all your projects.": "Ufunguo wa API wa eneo la kazi hili utakabidhiwa kwa {0}, ambayo usanidi wake hushirikiwa na miradi yako yote."
+  "This workspace's API key will be handed to {0}, whose configuration is shared by all your projects.": "Ufunguo wa API wa eneo la kazi hili utakabidhiwa kwa {0}, ambayo usanidi wake hushirikiwa na miradi yako yote.",
+  "The stored API key is not approved for {0} and is not being sent to it. Press Save & Test to use it here.": "Ufunguo wa API uliohifadhiwa haujaidhinishwa kwa {0} na haujatumwa kwa seva hiyo. Bonyeza kitufe cha Hifadhi na Ujaribu ili kuutumia hapa."
 }

@@ -39,7 +39,6 @@
   "Online — {0} models available": "Tilkoblet — {0} modeller tilgjengelig",
   "Open GitHub": "Åpne GitHub",
   "Open OmniRoute dashboard": "Åpne OmniRoute-dashbordet",
-  "Optional — leave empty if your OmniRoute does not require an API key. Stored in the OS keychain.": "Valgfritt — la stå tomt hvis OmniRoute ikke krever en API-nøkkel. Lagres i operativsystemets nøkkelring.",
   "Refresh models": "Oppdater modeller",
   "Refresh models in the picker": "Oppdater modellene i velgeren",
   "Remove the stored API key": "Fjern den lagrede API-nøkkelen",
@@ -100,5 +99,6 @@
   "The model's answer was cut off before the tool call was complete. Raise omnicopilot.maxOutputTokens or ask for smaller steps.": "Modellens svar ble avbrutt før verktøykallet var fullført. Øk omnicopilot.maxOutputTokens eller be om mindre trinn.",
   "The model sent a tool call with invalid arguments.": "Modellen sendte et verktøykall med ugyldige argumenter.",
   "The model used its whole output limit before it wrote an answer. Raise omnicopilot.maxOutputTokens or lower the thinking effort.": "Modellen brukte hele utdatagrensen sin før den skrev et svar. Øk omnicopilot.maxOutputTokens eller senk tenkeinnsatsen.",
-  "This workspace's API key will be handed to {0}, whose configuration is shared by all your projects.": "API-nøkkelen for dette arbeidsområdet gis til {0}, hvis konfigurasjon deles av alle prosjektene dine."
+  "This workspace's API key will be handed to {0}, whose configuration is shared by all your projects.": "API-nøkkelen for dette arbeidsområdet gis til {0}, hvis konfigurasjon deles av alle prosjektene dine.",
+  "The stored API key is not approved for {0} and is not being sent to it. Press Save & Test to use it here.": "Den lagrede API-nøkkelen er ikke godkjent for {0} og sendes ikke til denne serveren. Trykk på \"Lagre og test\" for å bruke den her."
 }

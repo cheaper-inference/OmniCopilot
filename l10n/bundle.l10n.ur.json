@@ -39,7 +39,6 @@
   "Online — {0} models available": "آن لائن — {0} ماڈلز دستیاب ہیں",
   "Open GitHub": "GitHub کھولیں",
   "Open OmniRoute dashboard": "OmniRoute ڈیش بورڈ کھولیں",
-  "Optional — leave empty if your OmniRoute does not require an API key. Stored in the OS keychain.": "اختیاری — اگر آپ کے OmniRoute کو API کلید درکار نہیں تو خالی چھوڑ دیں۔ آپریٹنگ سسٹم کے محفوظ کلیدی ذخیرے میں محفوظ ہوتی ہے۔",
   "Refresh models": "ماڈلز ریفریش کریں",
   "Refresh models in the picker": "پکر میں ماڈلز ریفریش کریں",
   "Remove the stored API key": "محفوظ شدہ API کلید ہٹائیں",
@@ -100,5 +99,6 @@
   "The model's answer was cut off before the tool call was complete. Raise omnicopilot.maxOutputTokens or ask for smaller steps.": "ٹول کال مکمل ہونے سے پہلے ماڈل کا جواب کٹ گیا۔ سیٹنگ omnicopilot.maxOutputTokens کی قدر بڑھائیں یا چھوٹے مراحل مانگیں۔",
   "The model sent a tool call with invalid arguments.": "ماڈل نے غلط آرگیومنٹس کے ساتھ ٹول کال بھیجی۔",
   "The model used its whole output limit before it wrote an answer. Raise omnicopilot.maxOutputTokens or lower the thinking effort.": "ماڈل نے جواب لکھنے سے پہلے اپنی پوری آؤٹ پٹ حد استعمال کر لی۔ سیٹنگ omnicopilot.maxOutputTokens کی قدر بڑھائیں یا سوچ کی کوشش کم کریں۔",
-  "This workspace's API key will be handed to {0}, whose configuration is shared by all your projects.": "اس ورک اسپیس کی API کلید ٹول {0} کو دی جائے گی، جس کی کنفیگریشن آپ کے تمام پروجیکٹس میں مشترک ہے۔"
+  "This workspace's API key will be handed to {0}, whose configuration is shared by all your projects.": "اس ورک اسپیس کی API کلید ٹول {0} کو دی جائے گی، جس کی کنفیگریشن آپ کے تمام پروجیکٹس میں مشترک ہے۔",
+  "The stored API key is not approved for {0} and is not being sent to it. Press Save & Test to use it here.": "محفوظ شدہ API کلید {0} کے لیے منظور شدہ نہیں ہے اور وہاں نہیں بھیجی جا رہی۔ اسے یہاں استعمال کرنے کے لیے \"محفوظ کریں اور آزمائیں\" دبائیں۔"
 }

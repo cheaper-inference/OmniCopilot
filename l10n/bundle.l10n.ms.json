@@ -39,7 +39,6 @@
   "Online — {0} models available": "Dalam talian — {0} model tersedia",
   "Open GitHub": "Buka GitHub",
   "Open OmniRoute dashboard": "Buka papan pemuka OmniRoute",
-  "Optional — leave empty if your OmniRoute does not require an API key. Stored in the OS keychain.": "Pilihan — biarkan kosong jika OmniRoute anda tidak memerlukan kunci API. Disimpan dalam rantai kunci OS.",
   "Refresh models": "Segar semula model",
   "Refresh models in the picker": "Segar semula model dalam pemilih",
   "Remove the stored API key": "Alih keluar kunci API yang disimpan",
@@ -100,5 +99,6 @@
   "The model's answer was cut off before the tool call was complete. Raise omnicopilot.maxOutputTokens or ask for smaller steps.": "Jawapan model terpotong sebelum panggilan alat selesai. Tingkatkan omnicopilot.maxOutputTokens atau minta langkah yang lebih kecil.",
   "The model sent a tool call with invalid arguments.": "Model menghantar panggilan alat dengan argumen yang tidak sah.",
   "The model used its whole output limit before it wrote an answer. Raise omnicopilot.maxOutputTokens or lower the thinking effort.": "Model telah menggunakan keseluruhan had outputnya sebelum menulis jawapan. Tingkatkan omnicopilot.maxOutputTokens atau turunkan usaha berfikir.",
-  "This workspace's API key will be handed to {0}, whose configuration is shared by all your projects.": "Kunci API ruang kerja ini akan diberikan kepada {0}, yang konfigurasinya dikongsi oleh semua projek anda."
+  "This workspace's API key will be handed to {0}, whose configuration is shared by all your projects.": "Kunci API ruang kerja ini akan diberikan kepada {0}, yang konfigurasinya dikongsi oleh semua projek anda.",
+  "The stored API key is not approved for {0} and is not being sent to it. Press Save & Test to use it here.": "Kunci API yang disimpan belum diluluskan untuk {0} dan tidak dihantar ke pelayan itu. Tekan butang Simpan & Uji untuk menggunakannya di sini."
 }

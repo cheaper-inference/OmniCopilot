@@ -39,7 +39,6 @@
   "Online — {0} models available": "Online — {0} modell érhető el",
   "Open GitHub": "GitHub megnyitása",
   "Open OmniRoute dashboard": "OmniRoute irányítópult megnyitása",
-  "Optional — leave empty if your OmniRoute does not require an API key. Stored in the OS keychain.": "Opcionális — hagyja üresen, ha az OmniRoute nem igényel API-kulcsot. A rendszer kulcstárolójában tárolódik.",
   "Refresh models": "Modellek frissítése",
   "Refresh models in the picker": "Modellek frissítése a választóban",
   "Remove the stored API key": "A tárolt API-kulcs eltávolítása",
@@ -100,5 +99,6 @@
   "The model's answer was cut off before the tool call was complete. Raise omnicopilot.maxOutputTokens or ask for smaller steps.": "A modell válasza megszakadt, mielőtt az eszközhívás befejeződött volna. Növelje az omnicopilot.maxOutputTokens értékét, vagy kérjen kisebb lépéseket.",
   "The model sent a tool call with invalid arguments.": "A modell érvénytelen argumentumokkal küldött eszközhívást.",
   "The model used its whole output limit before it wrote an answer. Raise omnicopilot.maxOutputTokens or lower the thinking effort.": "A modell felhasználta a teljes kimeneti korlátját, mielőtt választ írt volna. Növelje az omnicopilot.maxOutputTokens értékét, vagy csökkentse a gondolkodási ráfordítást.",
-  "This workspace's API key will be handed to {0}, whose configuration is shared by all your projects.": "A munkaterület API-kulcsát megkapja a(z) {0}, amelynek konfigurációján az összes projektje osztozik."
+  "This workspace's API key will be handed to {0}, whose configuration is shared by all your projects.": "A munkaterület API-kulcsát megkapja a(z) {0}, amelynek konfigurációján az összes projektje osztozik.",
+  "The stored API key is not approved for {0} and is not being sent to it. Press Save & Test to use it here.": "A tárolt API-kulcs nincs jóváhagyva ehhez a kiszolgálóhoz: {0}, és nem kerül elküldésre erre a kiszolgálóra. Az itteni használathoz nyomja meg a \"Mentés és tesztelés\" gombot."
 }

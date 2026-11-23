@@ -39,7 +39,6 @@
   "Online — {0} models available": "オンライン — {0}個のモデルが利用可能",
   "Open GitHub": "GitHubを開く",
   "Open OmniRoute dashboard": "OmniRouteダッシュボードを開く",
-  "Optional — leave empty if your OmniRoute does not require an API key. Stored in the OS keychain.": "省略可 — OmniRouteがAPIキーを必要としない場合は空のままにしてください。OSのキーチェーンに保存されます。",
   "Refresh models": "モデルを更新",
   "Refresh models in the picker": "ピッカーのモデルを更新",
   "Remove the stored API key": "保存されたAPIキーを削除",
@@ -100,5 +99,6 @@
   "The model's answer was cut off before the tool call was complete. Raise omnicopilot.maxOutputTokens or ask for smaller steps.": "モデルの応答がツール呼び出しの完了前に途切れました。omnicopilot.maxOutputTokensを引き上げるか、より小さなステップで依頼してください。",
   "The model sent a tool call with invalid arguments.": "モデルが無効な引数を含むツール呼び出しを送信しました。",
   "The model used its whole output limit before it wrote an answer. Raise omnicopilot.maxOutputTokens or lower the thinking effort.": "モデルは回答を書く前に出力上限をすべて使い切りました。omnicopilot.maxOutputTokensを引き上げるか、思考強度を下げてください。",
-  "This workspace's API key will be handed to {0}, whose configuration is shared by all your projects.": "このワークスペースのAPIキーは、構成がすべてのプロジェクトで共有される {0} に渡されます。"
+  "This workspace's API key will be handed to {0}, whose configuration is shared by all your projects.": "このワークスペースのAPIキーは、構成がすべてのプロジェクトで共有される {0} に渡されます。",
+  "The stored API key is not approved for {0} and is not being sent to it. Press Save & Test to use it here.": "保存済みのAPIキーは {0} に対して承認されていないため、そのサーバーには送信されていません。ここで使用するには「保存してテスト」ボタンを押してください。"
 }
