@@ -1,3 +1,4 @@
+import { runInNewContext } from "node:vm";
 import { afterEach, describe, expect, it, vi } from "vitest";
 import * as vscode from "vscode";
 import { OmniPanelProvider, escapeHtml } from "../src/panel";
@@ -95,5 +96,139 @@ describe("panel document built from translated strings", () => {
     expect(markup).toContain('<button id="save">Save &amp; Test</button>');
     expect(markup).toContain('<label for="url">Server URL</label>');
     expect(markup).toContain('placeholder="paste your OmniRoute API key"');
+  });
+});
+
+/** A node of the minimal DOM the panel script runs against: it records what is appended. */
+type FakeNode = {
+  tag: string;
+  id: string;
+  children: unknown[];
+  textContent: string;
+  className: string;
+  value: string;
+  checked: boolean;
+  href?: string;
+  rel?: string;
+  childElementCount: number;
+  style: Record<string, string>;
+  dataset: Record<string, string>;
+  addEventListener(): void;
+  setAttribute(): void;
+  append(...nodes: unknown[]): void;
+};
+
+/** Runs the panel's real webview script against a minimal DOM and returns its elements by id,
+ * the elements it created, and a way to deliver a message. The script is cut out by position. */
+function runPanelScript() {
+  const html = panelHtml();
+  const open = html.indexOf("<script nonce=");
+  const start = html.indexOf(">", open) + 1;
+  const script = html.slice(start, html.lastIndexOf("</script>"));
+  const node = (tag: string, id = ""): FakeNode => ({
+    tag,
+    id,
+    children: [],
+    textContent: "",
+    className: "",
+    value: "",
+    checked: false,
+    childElementCount: 0,
+    style: {},
+    dataset: {},
+    addEventListener() {},
+    setAttribute() {},
+    append(...nodes: unknown[]) {
+      this.children.push(...nodes);
+      this.childElementCount += nodes.filter((n) => typeof n === "object").length;
+    },
+  });
+  const byId = new Map<string, FakeNode>();
+  const created: FakeNode[] = [];
+  let onMessage: ((event: { data: unknown }) => void) | undefined;
+  runInNewContext(script, {
+    document: {
+      getElementById: (id: string) => {
+        if (!byId.has(id)) byId.set(id, node("element", id));
+        return byId.get(id);
+      },
+      querySelectorAll: () => [],
+      createElement: (tag: string) => {
+        const made = node(tag);
+        created.push(made);
+        return made;
+      },
+    },
+    acquireVsCodeApi: () => ({ postMessage() {} }),
+    window: {
+      addEventListener: (type: string, listener: (event: { data: unknown }) => void) => {
+        if (type === "message") onMessage = listener;
+      },
+    },
+  });
+  return { byId, created, deliver: (data: unknown) => onMessage?.({ data }) };
+}
+
+describe("panel script: the footer credit", () => {
+  afterEach(() => vi.restoreAllMocks());
+
+  const translatingCredit = (translation: string) => {
+    const t = vscode.l10n.t.bind(vscode.l10n);
+    vi.spyOn(vscode.l10n, "t").mockImplementation(((source: string, ...args: unknown[]) =>
+      source === "Created by {0}" ? translation : t(source, ...args)) as never);
+  };
+
+  it.each([
+    ["Created by {0}", "Created by ", ""],
+    ["Erstellt von {0} mit Liebe", "Erstellt von ", " mit Liebe"],
+    ["{0} が作成", "", " が作成"],
+  ])("splits %j around {0} and makes the name a link where the translation puts it", (translation, before, after) => {
+    translatingCredit(translation);
+    const { byId } = runPanelScript();
+    const parts = byId.get("foot")!.children.slice(1);
+    expect(parts).toHaveLength(3);
+    expect(parts[0]).toBe(before);
+    expect(parts[2]).toBe(after);
+    expect(parts[1]).toMatchObject({ tag: "a", textContent: "Diego Souza", href: "https://github.com/diegosouzapw" });
+  });
+
+  it("still links the name after a translation that lost {0}", () => {
+    translatingCredit("Erstellt von");
+    const { byId } = runPanelScript();
+    const parts = byId.get("foot")!.children.slice(1);
+    expect(parts[0]).toBe("Erstellt von ");
+    expect(parts[1]).toMatchObject({ tag: "a", textContent: "Diego Souza" });
+  });
+});
+
+describe("panel script: usage bars", () => {
+  it("clamps a bar to 0–100 and draws none without a percentage", () => {
+    const { created, deliver } = runPanelScript();
+    const quota = (percentLeft: number | null, label: string) => ({ text: "x", label, percentLeft, resetIn: null });
+    deliver({
+      type: "status",
+      online: true,
+      url: "http://localhost:20128",
+      modelCount: 1,
+      hasKey: true,
+      usage: {
+        kind: "ready",
+        personal: null,
+        providers: [
+          {
+            provider: "p",
+            quotas: { over: quota(150, "over"), under: quota(-20, "under"), half: quota(42.5, "half"), none: quota(null, "none") },
+          },
+        ],
+      },
+    });
+
+    const rows = created.filter((n) => n.className === "usage-row");
+    expect(rows).toHaveLength(4);
+    const widths = rows.map((row) => {
+      const bar = row.children.find((child) => (child as FakeNode).className === "bar") as FakeNode | undefined;
+      return bar ? (bar.children[0] as FakeNode).style.width : undefined;
+    });
+    expect(widths).toEqual(["100%", "0%", "42.5%", undefined]);
   });
 });

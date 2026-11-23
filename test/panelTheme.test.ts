@@ -87,6 +87,19 @@ describe("panel theme rules", () => {
     expect(rule(css, "body.vscode-dark")).toContain("--omni-track: rgba(242,240,232,.18)");
   });
 
+  it("gives Clear key a fill and the button border: the secondary button colours, which dark themes define", () => {
+    const panel = new OmniPanelProvider(
+      {} as vscode.ExtensionContext,
+      {} as vscode.LogOutputChannel,
+      async () => undefined,
+      listedModels()
+    );
+    const html = (panel as unknown as { html(): string }).html();
+    expect(html).toContain('<button id="clearKey" class="secondary"');
+    expect(rule(css, "button.secondary")).toContain("background: var(--vscode-button-secondaryBackground)");
+    expect(rule(css, "button")).toContain("border: 1px solid var(--vscode-button-border, transparent)");
+  });
+
   it("keeps the secondary hover on a defined colour", () => {
     expect(rule(css, "button.secondary:hover")).toEqual([
       "background: var(--vscode-button-secondaryHoverBackground, var(--vscode-button-secondaryBackground))",
