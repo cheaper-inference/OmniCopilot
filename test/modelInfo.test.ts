@@ -31,6 +31,29 @@ describe("describeModel", () => {
     expect(describeModel({ id: "x/y", name: "  " }, cfg).name).toBe("x/y");
   });
 
+  it("shows a display name from the server as one plain line without links", () => {
+    const name = describeModel({ id: "x/y", display_name: "[x](command:y)\n\u0007Model\u2028Pro\u0000" }, cfg).name;
+    expect(name).toBe("[x] (command:y) Model Pro");
+    expect(name).not.toMatch(/[\u0000-\u001f\u007f-\u009f\u2028\u2029]/);
+  });
+
+  it("caps a display name at 80 characters with an ellipsis", () => {
+    expect(describeModel({ id: "x/y", name: "n".repeat(81) }, cfg).name).toBe(`${"n".repeat(80)}…`);
+    expect(describeModel({ id: "x/y", name: "n".repeat(80) }, cfg).name).toBe("n".repeat(80));
+  });
+
+  it.each(["Y Pro", "GPT  4 (preview)", "Ünïcødé — modèle ✨", "a]b (c)", "[beta] Qwen3-Coder 480B A35B"])(
+    "leaves a name that is already plain byte for byte: %j",
+    (plain) => {
+      expect(describeModel({ id: "x/y", display_name: plain }, cfg).name).toBe(plain);
+    }
+  );
+
+  it("falls back to the next name when one is left empty once it is made plain", () => {
+    expect(describeModel({ id: "x/y", display_name: "\u0007\u0000", name: "Y Pro" }, cfg).name).toBe("Y Pro");
+    expect(describeModel({ id: "x/y", name: "\u0007" }, cfg).name).toBe("x/y");
+  });
+
   it("uses the default context length when the catalog omits it", () => {
     expect(describeModel({ id: "x/y" }, cfg).contextLength).toBe(128_000);
   });
