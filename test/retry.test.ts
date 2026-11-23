@@ -31,7 +31,7 @@ describe("parseRetryAfter", () => {
 });
 
 describe("parseRetryAfter with a number that is not a wait", () => {
-  it.each(["-1", "-5", "-0.5", " -3 "])("ignores %j instead of reading it as a date", (value) => {
+  it.each(["-1", "-5", "-0.5", " -3 ", "-1.", "- 1", "-1.5.2", "-"])("ignores %j instead of reading it as a date", (value) => {
     expect(parseRetryAfter(value)).toBeUndefined();
   });
 
@@ -118,12 +118,10 @@ describe("module structure", () => {
   /** The modules a source file imports or re-exports from, by their specifier. */
   function importsOf(file: string): string[] {
     const source = readFileSync(join(__dirname, "..", "src", file), "utf8");
-    const found: string[] = [];
-    for (const line of source.split("\n")) {
-      const match = /^(?:import|export)\b.*\bfrom\s+"([^"]+)"/.exec(line);
-      if (match) found.push(match[1]);
-    }
-    return found;
+    // Every `from "x"` (an import or re-export on one line or spread over several),
+    // `import "x"` and `import("x")`.
+    const specifier = /\bfrom\s+"([^"]+)"|\bimport\s*\(?\s*"([^"]+)"/g;
+    return [...source.matchAll(specifier)].map((match) => match[1] ?? match[2]);
   }
 
   it("keeps the client and the retry policy from importing each other", () => {
