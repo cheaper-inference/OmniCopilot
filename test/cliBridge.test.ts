@@ -170,9 +170,16 @@ describe("shellQuote", () => {
   it("single-quotes for a POSIX shell, where a quote inside is closed, escaped and reopened", () => {
     expect(shellQuote("/opt/my tools/omniroute", "linux")).toBe("'/opt/my tools/omniroute'");
     expect(shellQuote("it's", "linux")).toBe("'it'\\''s'");
-    // Inside single quotes a backslash is an ordinary character, a trailing one included.
-    expect(shellQuote("/opt/dir\\", "linux")).toBe("'/opt/dir\\'");
+    // Inside single quotes a backslash is an ordinary character for a POSIX shell.
+    expect(shellQuote("/opt/my\\dir/omniroute", "linux")).toBe("'/opt/my\\dir/omniroute'");
   });
+
+  it.each(["linux", "darwin", "win32"] as const)(
+    "refuses a value that ends in a backslash on %s: fish reads \\' as an escaped quote",
+    (platform) => {
+      expect(shellQuote("/opt/dir\\", platform)).toBeUndefined();
+    }
+  );
 });
 
 describe("resolveCliCommand and a path that cannot be quoted", () => {
@@ -186,11 +193,11 @@ describe("resolveCliCommand and a path that cannot be quoted", () => {
     ).toEqual({ ok: false });
   });
 
-  it("still takes the same kind of path on linux, where single quotes keep the backslash literal", () => {
-    expect(resolveCliCommand("'/opt/my tools/dir\\'", linux)).toEqual({
-      ok: true,
-      command: "'/opt/my tools/dir\\'",
-    });
+  it("refuses the same kind of path on linux and macOS too: in fish a trailing backslash escapes the closing quote", () => {
+    for (const shell of [linux, { platform: "darwin" as const, shellPath: "/opt/homebrew/bin/fish" }]) {
+      expect(resolveCliCommand("'/opt/my tools/dir\\'", shell)).toEqual({ ok: false });
+      expect(resolveCliCommand('"/opt/my tools/dir\\"', shell)).toEqual({ ok: false });
+    }
   });
 });
 

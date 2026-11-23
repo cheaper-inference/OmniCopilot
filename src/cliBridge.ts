@@ -34,18 +34,20 @@ const TERMINAL_NAME = "OmniRoute Setup";
 
 /**
  * `value` as one quoted word for the terminal's shell, or undefined when it cannot be
- * quoted safely. On Windows the word is wrapped in double quotes and nothing inside is
- * escaped: cmd.exe and PowerShell disagree on how to escape a double quote, and a
- * trailing backslash would swallow the closing quote for the program that reads the
- * argument, so a value with either is refused. Callers validate first; this is the
- * last check, not the only one.
+ * quoted safely. A value that ends in a backslash is refused on every platform: on
+ * Windows it would swallow the closing double quote for the program that reads the
+ * argument, and in fish `\'` inside single quotes is an escaped quote, which leaves the
+ * command line open. On Windows the word is wrapped in double quotes and nothing inside
+ * is escaped: cmd.exe and PowerShell disagree on how to escape a double quote, so a value
+ * with one is refused. Callers validate first; this is the last check, not the only one.
  */
 export function shellQuote(
   value: string,
   platform: NodeJS.Platform = process.platform
 ): string | undefined {
+  if (value.endsWith("\\")) return undefined;
   if (platform === "win32") {
-    return value.includes('"') || value.endsWith("\\") ? undefined : `"${value}"`;
+    return value.includes('"') ? undefined : `"${value}"`;
   }
   return `'${value.replace(/'/g, `'\\''`)}'`;
 }
