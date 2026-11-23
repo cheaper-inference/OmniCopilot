@@ -72,12 +72,16 @@ export function resolveCliCommand(
   const first = value[0];
   if (value.length >= 2 && (first === '"' || first === "'") && value.endsWith(first)) {
     const path = value.slice(1, -1);
-    if (!QUOTED_EXECUTABLE_PATH.test(path)) return { ok: false };
+    // A path made only of blanks names nothing.
+    if (!QUOTED_EXECUTABLE_PATH.test(path) || path.trim() === "") return { ok: false };
+    // On Windows the double quotes suit cmd.exe and PowerShell alike; elsewhere the single
+    // quotes suit POSIX shells and PowerShell alike (the path holds no quote character).
     const quoted = shellQuote(path, shell.platform);
     if (quoted === undefined) return { ok: false };
-    // PowerShell runs a quoted path only with the call operator; cmd.exe must not get it.
+    // PowerShell, on any platform, runs a quoted path only with the call operator;
+    // cmd.exe and POSIX shells must not get it.
     const shellName = (shell.shellPath ?? "").split(/[\\/]/).pop() ?? "";
-    const needsCallOperator = shell.platform === "win32" && POWERSHELL.test(shellName);
+    const needsCallOperator = POWERSHELL.test(shellName);
     return { ok: true, command: needsCallOperator ? `& ${quoted}` : quoted };
   }
   return COMMAND_WITH_ARGS.test(value) ? { ok: true, command: value } : { ok: false };
