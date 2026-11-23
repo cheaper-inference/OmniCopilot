@@ -1,6 +1,7 @@
 import { describe, expect, it } from "vitest";
 import {
   REASONING_EFFORTS,
+  advertisedEffortTiers,
   buildEffortSchema,
   effortTiersFor,
   isReasoningModel,
@@ -49,6 +50,29 @@ describe("normalizeReasoningEffort", () => {
     for (const value of ["", "   ", "turbo", "7", null, undefined, 3, {}, []]) {
       expect(normalizeReasoningEffort(value)).toBeUndefined();
     }
+  });
+});
+
+describe("advertisedEffortTiers", () => {
+  const model = (effort_tiers: unknown) =>
+    ({ capabilities: { effort_tiers } }) as unknown as Parameters<typeof advertisedEffortTiers>[0];
+
+  it("trims and lower-cases what the catalog writes, and drops empty and non-string entries", () => {
+    expect(advertisedEffortTiers(model([" High ", "MAX", "", 7, "  ", "low"]))).toEqual([
+      "high",
+      "max",
+      "low",
+    ]);
+  });
+
+  it("lists a tier once however the catalog spelled it", () => {
+    expect(advertisedEffortTiers(model(["high", " HIGH "]))).toEqual(["high"]);
+  });
+
+  it("feeds the normalised tiers to the picker's list and to the lookup", () => {
+    const tiers = effortTiersFor(model([" High ", "MAX"]));
+    expect(tiers).toEqual(["high", "max"]);
+    expect(normalizeReasoningEffort("max", tiers)).toBe("max");
   });
 });
 
