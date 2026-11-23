@@ -18,3 +18,4 @@ assets/icon.svg
 .env
 .env.*
 !.env.example
+.github/**

@@ -1,0 +1,74 @@
+name: Publish
+
+# Publishes one tagged version to the VS Code Marketplace and to Open VSX, and attaches the
+# same .vsix to the GitHub release. Started by hand, from a version tag:
+#   Actions → Publish → Run workflow → "Use workflow from" → Tags → vX.Y.Z
+# The Marketplace sign-in is Trusted Publishing (GitHub OIDC): no token is stored for it.
+# See docs/PUBLISHING.md for the one-time setup.
+
+on:
+  workflow_dispatch:
+
+permissions:
+  contents: read
+
+concurrency:
+  group: publish
+  cancel-in-progress: false
+
+jobs:
+  publish:
+    name: Marketplace, Open VSX and GitHub release
+    runs-on: ubuntu-latest
+    timeout-minutes: 20
+    environment: marketplace
+    permissions:
+      contents: write # the GitHub release
+      id-token: write # Trusted Publishing
+    steps:
+      - name: Only from a version tag
+        run: |
+          case "$GITHUB_REF" in
+            refs/tags/v[0-9]*.[0-9]*.[0-9]*) echo "Publishing $GITHUB_REF_NAME" ;;
+            *) echo "::error::Run this workflow from a version tag (vX.Y.Z), not from $GITHUB_REF"; exit 1 ;;
+          esac
+      - uses: actions/checkout@3d3c42e5aac5ba805825da76410c181273ba90b1 # v7.0.1
+      - uses: actions/setup-node@949feb2413d6458794dcd2491c4babbbce0c15c1 # v7.1.0
+        with:
+          node-version: 24
+          cache: npm
+      - name: The tag is the version in package.json
+        run: |
+          version=$(node -p "require('./package.json').version")
+          if [ "v$version" != "$GITHUB_REF_NAME" ]; then
+            echo "::error::package.json says $version but the tag is $GITHUB_REF_NAME"; exit 1
+          fi
+          echo "VERSION=$version" >> "$GITHUB_ENV"
+      - name: Install
+        run: npm ci --ignore-scripts
+      - name: Type check
+        run: npm run check-types
+      - name: Lint
+        run: npm run lint
+      - name: Tests
+        run: npm test
+      - name: Translations are complete
+        run: npm run l10n:check
+      - name: Package
+        run: npx vsce package -o "omnicopilot-$VERSION.vsix"
+      - name: Publish to the VS Code Marketplace
+        run: npx --yes @vscode/vsce@4.1.1 publish --oidc --packagePath "omnicopilot-$VERSION.vsix"
+      - name: Publish to Open VSX
+        env:
+          OVSX_PAT: ${{ secrets.OVSX_PAT }}
+        run: npx --yes ovsx@1.4.0 publish "omnicopilot-$VERSION.vsix" -p "$OVSX_PAT"
+      - name: GitHub release
+        env:
+          GH_TOKEN: ${{ github.token }}
+        run: |
+          awk -v v="## $VERSION" '$0 == v {on=1; next} on && /^## / {exit} on' CHANGELOG.md > release-notes.md
+          if gh release view "$GITHUB_REF_NAME" >/dev/null 2>&1; then
+            gh release upload "$GITHUB_REF_NAME" "omnicopilot-$VERSION.vsix" --clobber
+          else
+            gh release create "$GITHUB_REF_NAME" "omnicopilot-$VERSION.vsix" --verify-tag --title "$VERSION" --notes-file release-notes.md
+          fi
