@@ -1577,6 +1577,191 @@ describe("provider current listing (what the panel reports)", () => {
     expect(catalogDownloads()).toBe(1);
   });
 
+  describe("a caller that joins a listing under way", () => {
+    const flush = () => new Promise<void>((resolve) => setTimeout(resolve, 0));
+    const CONNECTION_HELP = "Could not reach OmniRoute at http://gateway.test. Is it running?";
+    const networkFailure = () => Promise.reject(new TypeError("fetch failed"));
+    const unauthorized = () => new Response("{}", { status: 401 });
+    const storeApprovedKey = async (ctx: ReturnType<typeof makeProvider>) => {
+      await ctx.context.secrets.store(SECRET_API_KEY, "sk-1");
+      await ctx.context.secrets.store(SECRET_API_KEY_ORIGINS, JSON.stringify(["http://gateway.test"]));
+    };
+    let warn: ReturnType<typeof vi.spyOn>;
+    beforeEach(() => {
+      warn = vi.spyOn(vscode.window, "showWarningMessage").mockResolvedValue(undefined);
+    });
+    afterEach(() => warn.mockRestore());
+
+    it("is told the server is unreachable when it joined a silent listing that failed", async () => {
+      const gate = holdNextCatalog(networkFailure);
+      const { provider } = makeProvider();
+
+      const starter = provider.listModels({ silent: true });
+      await vi.waitFor(() => expect(gate.held()).toBe(true));
+      const joiner = provider.listModels({ silent: false });
+      gate.release();
+
+      expect(await starter).toMatchObject({ ok: false });
+      expect(await joiner).toBe(await starter);
+      await flush();
+      expect(warn).toHaveBeenCalledTimes(1);
+      expect(warn.mock.calls[0][0]).toBe(CONNECTION_HELP);
+      expect(catalogDownloads()).toBe(1);
+    });
+
+    it("is told the key was rejected when it joined a silent listing the server answered with a 401", async () => {
+      const gate = holdNextCatalog(unauthorized);
+      const ctx = makeProvider();
+      await storeApprovedKey(ctx);
+
+      const starter = ctx.provider.listModels({ silent: true });
+      await vi.waitFor(() => expect(gate.held()).toBe(true));
+      const joiner = ctx.provider.listModels({ silent: false });
+      gate.release();
+
+      expect(await joiner).toMatchObject({ ok: false, failure: { status: 401 } });
+      await starter;
+      await flush();
+      expect(warn).toHaveBeenCalledTimes(1);
+      expect(warn.mock.calls[0][0]).toBe("OmniRoute at http://gateway.test rejected the API key (HTTP 401).");
+      expect(catalogDownloads()).toBe(1);
+    });
+
+    it("is told the server needs a key when none is stored, and nothing when the key is withheld", async () => {
+      const gate = holdNextCatalog(unauthorized);
+      const ctx = makeProvider();
+      const starter = ctx.provider.listModels({ silent: true });
+      await vi.waitFor(() => expect(gate.held()).toBe(true));
+      const joiner = ctx.provider.listModels({ silent: false });
+      gate.release();
+      await Promise.all([starter, joiner]);
+      await flush();
+      expect(warn).toHaveBeenCalledTimes(1);
+      expect(warn.mock.calls[0][0]).toBe("OmniRoute at http://gateway.test needs an API key (HTTP 401).");
+
+      warn.mockClear();
+      await ctx.context.secrets.store(SECRET_API_KEY, "sk-1");
+      await ctx.context.secrets.store(SECRET_API_KEY_ORIGINS, JSON.stringify(["http://elsewhere.test"]));
+      await ctx.provider.refresh();
+      const gate2 = holdNextCatalog(unauthorized);
+      const starter2 = ctx.provider.listModels({ silent: true });
+      await vi.waitFor(() => expect(gate2.held()).toBe(true));
+      const joiner2 = ctx.provider.listModels({ silent: false });
+      gate2.release();
+      await Promise.all([starter2, joiner2]);
+      await flush();
+      expect(warn).not.toHaveBeenCalled();
+    });
+
+    it("never lets the configured address become a link in the message it is shown", async () => {
+      const gate = holdNextCatalog(unauthorized);
+      const ctx = makeProvider({ config: { baseUrl: "[x](command:y)" } });
+      await ctx.context.secrets.store(SECRET_API_KEY, "sk-1");
+      await ctx.context.secrets.store(SECRET_API_KEY_ORIGINS, JSON.stringify(["http://[x](command:y)"]));
+
+      const starter = ctx.provider.listModels({ silent: true });
+      await vi.waitFor(() => expect(gate.held()).toBe(true));
+      const joiner = ctx.provider.listModels({ silent: false });
+      gate.release();
+      await Promise.all([starter, joiner]);
+      await flush();
+
+      expect(warn).toHaveBeenCalledTimes(1);
+      const text = String(warn.mock.calls[0][0]);
+      expect(text).toContain("rejected the API key (HTTP 401)");
+      expect(text).not.toContain("](");
+    });
+
+    it("shows one notice when two callers that are told share the failed listing", async () => {
+      const gate = holdNextCatalog(networkFailure);
+      const { provider } = makeProvider();
+
+      const starter = provider.listModels({ silent: true });
+      await vi.waitFor(() => expect(gate.held()).toBe(true));
+      const joined = [provider.listModels({ silent: false }), provider.listModels({ silent: false })];
+      gate.release();
+      await Promise.all([starter, ...joined]);
+      await flush();
+
+      expect(warn).toHaveBeenCalledTimes(1);
+      expect(catalogDownloads()).toBe(1);
+    });
+
+    it("shows one notice when the starter is told and the joiner is told as well", async () => {
+      const gate = holdNextCatalog(networkFailure);
+      const { provider } = makeProvider();
+
+      const starter = provider.listModels({ silent: false });
+      await vi.waitFor(() => expect(gate.held()).toBe(true));
+      const joiner = provider.listModels({ silent: false });
+      gate.release();
+      await Promise.all([starter, joiner]);
+      await flush();
+
+      expect(warn).toHaveBeenCalledTimes(1);
+    });
+
+    it("shows the starter's notice once when the caller that joined is silent", async () => {
+      const gate = holdNextCatalog(networkFailure);
+      const { provider } = makeProvider();
+
+      const starter = provider.listModels({ silent: false });
+      await vi.waitFor(() => expect(gate.held()).toBe(true));
+      const joiner = provider.listModels({ silent: true });
+      gate.release();
+      await Promise.all([starter, joiner]);
+      await flush();
+
+      expect(warn).toHaveBeenCalledTimes(1);
+      expect(warn.mock.calls[0][0]).toBe(CONNECTION_HELP);
+    });
+
+    it("says nothing when every caller is silent, the panel's included", async () => {
+      const gate = holdNextCatalog(networkFailure);
+      const { provider } = makeProvider();
+
+      const starter = provider.listModels({ silent: true });
+      await vi.waitFor(() => expect(gate.held()).toBe(true));
+      const panel = provider.currentListing();
+      gate.release();
+      await Promise.all([starter, panel]);
+      await flush();
+
+      expect(warn).not.toHaveBeenCalled();
+    });
+
+    it("lists for itself when the starter's request was cancelled meanwhile", async () => {
+      const gate = holdNextCatalog();
+      const { provider } = makeProvider();
+      const { token, cancel } = hostToken();
+
+      const starter = provider.listModels({ silent: true }, token);
+      await vi.waitFor(() => expect(gate.held()).toBe(true));
+      const joiner = provider.listModels({ silent: false });
+      cancel();
+      gate.release();
+      await starter;
+
+      expect(await joiner).toMatchObject({ ok: true, count: 3 });
+      expect(catalogDownloads()).toBe(2);
+    });
+
+    it("does not join a listing from before a refresh()", async () => {
+      const gate = holdNextCatalog();
+      const { provider } = makeProvider();
+
+      const before = provider.listModels({ silent: true });
+      await vi.waitFor(() => expect(gate.held()).toBe(true));
+      await provider.refresh();
+      const after = provider.listModels({ silent: false });
+      gate.release();
+      await Promise.all([before, after]);
+
+      expect(await after).toMatchObject({ ok: true, count: 3 });
+      expect(catalogDownloads()).toBe(2);
+    });
+  });
+
   it("reports the last listing the picker's own call made, without another download", async () => {
     const { provider, token } = makeProvider();
     await provider.provideLanguageModelChatInformation({ silent: true }, token);
@@ -1650,14 +1835,15 @@ describe("provider current listing (what the panel reports)", () => {
     return { token: state as never, cancel: () => void (state.isCancellationRequested = true) };
   }
 
-  /** Holds the next catalog download until `release()`; the combos call answers at once. */
-  function holdNextCatalog() {
+  /** Holds the next catalog download until `release()` (then it answers with `answer()`, by
+   * default the usual catalog); the combos call answers at once. */
+  function holdNextCatalog(answer?: () => Response | Promise<Response>) {
     let release: (() => void) | undefined;
     const fallback = fetchMock.getMockImplementation()!;
     fetchMock.mockImplementation(async (url: string) => {
       if (String(url).includes("/combos") || release) return fallback(url);
       return new Promise<Response>((resolve) => {
-        release = () => resolve(fallback(url) as Response);
+        release = () => resolve(answer ? answer() : (fallback(url) as Response));
       });
     });
     return { release: () => release?.(), held: () => release !== undefined };
