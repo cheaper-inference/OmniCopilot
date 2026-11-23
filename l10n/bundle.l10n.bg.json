@@ -39,7 +39,6 @@
   "Online — {0} models available": "Онлайн — налични са {0} модела",
   "Open GitHub": "Отваряне на GitHub",
   "Open OmniRoute dashboard": "Отваряне на таблото на OmniRoute",
-  "Optional — leave empty if your OmniRoute does not require an API key. Stored in the OS keychain.": "Незадължително — оставете празно, ако вашият OmniRoute не изисква API ключ. Съхранява се в защитеното хранилище на ОС.",
   "Refresh models": "Опресняване на моделите",
   "Refresh models in the picker": "Опресняване на моделите в списъка за избор",
   "Remove the stored API key": "Премахване на запазения API ключ",
@@ -100,5 +99,6 @@
   "The model's answer was cut off before the tool call was complete. Raise omnicopilot.maxOutputTokens or ask for smaller steps.": "Отговорът на модела беше прекъснат, преди извикването на инструмента да приключи. Увеличете omnicopilot.maxOutputTokens или поискайте по-малки стъпки.",
   "The model sent a tool call with invalid arguments.": "Моделът изпрати извикване на инструмент с невалидни аргументи.",
   "The model used its whole output limit before it wrote an answer. Raise omnicopilot.maxOutputTokens or lower the thinking effort.": "Моделът изразходва целия си лимит на изход, преди да напише отговор. Увеличете omnicopilot.maxOutputTokens или намалете нивото на разсъждение.",
-  "This workspace's API key will be handed to {0}, whose configuration is shared by all your projects.": "API ключът на тази работна област ще бъде предоставен на {0}, чиято конфигурация се споделя от всички ваши проекти."
+  "This workspace's API key will be handed to {0}, whose configuration is shared by all your projects.": "API ключът на тази работна област ще бъде предоставен на {0}, чиято конфигурация се споделя от всички ваши проекти.",
+  "The stored API key is not approved for {0} and is not being sent to it. Press Save & Test to use it here.": "Запазеният API ключ не е одобрен за {0} и не се изпраща към този сървър. Натиснете \"Запазване и тест\", за да го използвате тук."
 }

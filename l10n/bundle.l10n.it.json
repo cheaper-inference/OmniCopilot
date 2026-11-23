@@ -39,7 +39,6 @@
   "Online — {0} models available": "Online — {0} modelli disponibili",
   "Open GitHub": "Apri GitHub",
   "Open OmniRoute dashboard": "Apri la dashboard di OmniRoute",
-  "Optional — leave empty if your OmniRoute does not require an API key. Stored in the OS keychain.": "Facoltativa — lascia vuoto se il tuo OmniRoute non richiede una chiave API. Archiviata nel portachiavi del sistema operativo.",
   "Refresh models": "Aggiorna modelli",
   "Refresh models in the picker": "Aggiorna i modelli nel selettore",
   "Remove the stored API key": "Rimuovi la chiave API archiviata",
@@ -100,5 +99,6 @@
   "The model's answer was cut off before the tool call was complete. Raise omnicopilot.maxOutputTokens or ask for smaller steps.": "La risposta del modello è stata interrotta prima che la chiamata allo strumento fosse completa. Aumenta omnicopilot.maxOutputTokens o chiedi passaggi più piccoli.",
   "The model sent a tool call with invalid arguments.": "Il modello ha inviato una chiamata a uno strumento con argomenti non validi.",
   "The model used its whole output limit before it wrote an answer. Raise omnicopilot.maxOutputTokens or lower the thinking effort.": "Il modello ha usato tutto il suo limite di output prima di scrivere una risposta. Aumenta omnicopilot.maxOutputTokens o riduci lo sforzo di ragionamento.",
-  "This workspace's API key will be handed to {0}, whose configuration is shared by all your projects.": "La chiave API di questa area di lavoro verrà consegnata a {0}, la cui configurazione è condivisa da tutti i tuoi progetti."
+  "This workspace's API key will be handed to {0}, whose configuration is shared by all your projects.": "La chiave API di questa area di lavoro verrà consegnata a {0}, la cui configurazione è condivisa da tutti i tuoi progetti.",
+  "The stored API key is not approved for {0} and is not being sent to it. Press Save & Test to use it here.": "La chiave API archiviata non è approvata per {0} e non viene inviata a quel server. Premi \"Salva e testa\" per usarla qui."
 }

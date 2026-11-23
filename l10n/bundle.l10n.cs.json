@@ -39,7 +39,6 @@
   "Online — {0} models available": "Online — k dispozici je {0} modelů",
   "Open GitHub": "Otevřít GitHub",
   "Open OmniRoute dashboard": "Otevřít řídicí panel OmniRoute",
-  "Optional — leave empty if your OmniRoute does not require an API key. Stored in the OS keychain.": "Volitelné — pokud vaše instalace OmniRoute klíč API nevyžaduje, nechte prázdné. Ukládá se do klíčenky operačního systému.",
   "Refresh models": "Aktualizovat modely",
   "Refresh models in the picker": "Aktualizovat modely ve výběru",
   "Remove the stored API key": "Odebrat uložený klíč API",
@@ -100,5 +99,6 @@
   "The model's answer was cut off before the tool call was complete. Raise omnicopilot.maxOutputTokens or ask for smaller steps.": "Odpověď modelu byla přerušena dřív, než bylo volání nástroje dokončeno. Zvyšte hodnotu omnicopilot.maxOutputTokens nebo požádejte o menší kroky.",
   "The model sent a tool call with invalid arguments.": "Model odeslal volání nástroje s neplatnými argumenty.",
   "The model used its whole output limit before it wrote an answer. Raise omnicopilot.maxOutputTokens or lower the thinking effort.": "Model vyčerpal celý svůj výstupní limit, než napsal odpověď. Zvyšte hodnotu omnicopilot.maxOutputTokens nebo snižte míru uvažování.",
-  "This workspace's API key will be handed to {0}, whose configuration is shared by all your projects.": "Klíč API tohoto pracovního prostoru bude předán nástroji {0}, jehož konfiguraci sdílejí všechny vaše projekty."
+  "This workspace's API key will be handed to {0}, whose configuration is shared by all your projects.": "Klíč API tohoto pracovního prostoru bude předán nástroji {0}, jehož konfiguraci sdílejí všechny vaše projekty.",
+  "The stored API key is not approved for {0} and is not being sent to it. Press Save & Test to use it here.": "Uložený klíč API není schválen pro {0} a na tento server se neodesílá. Pokud ho chcete použít tady, klikněte na \"Uložit a otestovat\"."
 }

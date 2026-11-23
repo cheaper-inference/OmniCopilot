@@ -39,7 +39,6 @@
   "Online — {0} models available": "Onlayn — {0} model mövcuddur",
   "Open GitHub": "GitHub-ı aç",
   "Open OmniRoute dashboard": "OmniRoute idarə panelini aç",
-  "Optional — leave empty if your OmniRoute does not require an API key. Stored in the OS keychain.": "İstəyə bağlı — OmniRoute API açarı tələb etmirsə, boş buraxın. Əməliyyat sisteminin açar anbarında saxlanılır.",
   "Refresh models": "Modelləri yenilə",
   "Refresh models in the picker": "Seçicidəki modelləri yenilə",
   "Remove the stored API key": "Saxlanılmış API açarını sil",
@@ -100,5 +99,6 @@
   "The model's answer was cut off before the tool call was complete. Raise omnicopilot.maxOutputTokens or ask for smaller steps.": "Modelin cavabı alət çağırışı başa çatmamış kəsildi. omnicopilot.maxOutputTokens dəyərini artırın və ya daha kiçik addımlar istəyin.",
   "The model sent a tool call with invalid arguments.": "Model yanlış arqumentlərlə alət çağırışı göndərdi.",
   "The model used its whole output limit before it wrote an answer. Raise omnicopilot.maxOutputTokens or lower the thinking effort.": "Model cavab yazmazdan əvvəl bütün çıxış limitini istifadə etdi. omnicopilot.maxOutputTokens dəyərini artırın və ya mülahizə səyini azaldın.",
-  "This workspace's API key will be handed to {0}, whose configuration is shared by all your projects.": "Bu iş sahəsinin API açarı, konfiqurasiyası bütün layihələrinizin paylaşdığı {0} alətinə veriləcək."
+  "This workspace's API key will be handed to {0}, whose configuration is shared by all your projects.": "Bu iş sahəsinin API açarı, konfiqurasiyası bütün layihələrinizin paylaşdığı {0} alətinə veriləcək.",
+  "The stored API key is not approved for {0} and is not being sent to it. Press Save & Test to use it here.": "Saxlanılmış API açarı {0} üçün təsdiqlənməyib və həmin ünvana göndərilmir. Onu burada istifadə etmək üçün \"Saxla və yoxla\" düyməsini basın."
 }

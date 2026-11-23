@@ -39,7 +39,6 @@
   "Online — {0} models available": "ஆன்லைன் — {0} மாடல்கள் கிடைக்கின்றன",
   "Open GitHub": "GitHub ஐத் திற",
   "Open OmniRoute dashboard": "OmniRoute டாஷ்போர்டைத் திற",
-  "Optional — leave empty if your OmniRoute does not require an API key. Stored in the OS keychain.": "விருப்பத் தேர்வு — உங்கள் OmniRoute க்கு API விசை தேவையில்லை என்றால் காலியாக விடவும். இயக்க முறைமையின் பாதுகாப்பு விசையகத்தில் சேமிக்கப்படும்.",
   "Refresh models": "மாடல்களைப் புதுப்பி",
   "Refresh models in the picker": "தேர்வியில் மாடல்களைப் புதுப்பி",
   "Remove the stored API key": "சேமிக்கப்பட்ட API விசையை அகற்று",
@@ -100,5 +99,6 @@
   "The model's answer was cut off before the tool call was complete. Raise omnicopilot.maxOutputTokens or ask for smaller steps.": "கருவி அழைப்பு முடிவதற்கு முன்பே மாடலின் பதில் துண்டிக்கப்பட்டது. omnicopilot.maxOutputTokens அமைப்பின் மதிப்பை உயர்த்தவும் அல்லது சிறிய படிகளைக் கேட்கவும்.",
   "The model sent a tool call with invalid arguments.": "மாடல் செல்லாத ஆர்குமென்ட்களுடன் ஒரு கருவி அழைப்பை அனுப்பியது.",
   "The model used its whole output limit before it wrote an answer. Raise omnicopilot.maxOutputTokens or lower the thinking effort.": "பதிலை எழுதுவதற்கு முன்பே மாடல் தனது முழு வெளியீட்டு வரம்பையும் பயன்படுத்திவிட்டது. omnicopilot.maxOutputTokens அமைப்பின் மதிப்பை உயர்த்தவும் அல்லது சிந்தனை முயற்சியைக் குறைக்கவும்.",
-  "This workspace's API key will be handed to {0}, whose configuration is shared by all your projects.": "இந்தப் பணியிடத்தின் API விசை {0} கருவிக்கு வழங்கப்படும்; அதன் உள்ளமைவை உங்கள் எல்லாத் திட்டங்களும் பகிர்ந்துகொள்கின்றன."
+  "This workspace's API key will be handed to {0}, whose configuration is shared by all your projects.": "இந்தப் பணியிடத்தின் API விசை {0} கருவிக்கு வழங்கப்படும்; அதன் உள்ளமைவை உங்கள் எல்லாத் திட்டங்களும் பகிர்ந்துகொள்கின்றன.",
+  "The stored API key is not approved for {0} and is not being sent to it. Press Save & Test to use it here.": "சேமிக்கப்பட்ட API விசை {0} க்காக அங்கீகரிக்கப்படவில்லை மற்றும் அங்கு அனுப்பப்படவில்லை. இங்கே பயன்படுத்த \"சேமித்து சோதி\" என்பதை அழுத்தவும்."
 }

@@ -39,7 +39,6 @@
   "Online — {0} models available": "Online — {0} mallia saatavilla",
   "Open GitHub": "Avaa GitHub",
   "Open OmniRoute dashboard": "Avaa OmniRouten hallintapaneeli",
-  "Optional — leave empty if your OmniRoute does not require an API key. Stored in the OS keychain.": "Valinnainen — jätä tyhjäksi, jos OmniRoute ei vaadi API-avainta. Tallennetaan käyttöjärjestelmän avainnippuun.",
   "Refresh models": "Päivitä mallit",
   "Refresh models in the picker": "Päivitä valitsimen mallit",
   "Remove the stored API key": "Poista tallennettu API-avain",
@@ -100,5 +99,6 @@
   "The model's answer was cut off before the tool call was complete. Raise omnicopilot.maxOutputTokens or ask for smaller steps.": "Mallin vastaus katkesi ennen kuin työkalukutsu oli valmis. Nosta asetusta omnicopilot.maxOutputTokens tai pyydä pienempiä vaiheita.",
   "The model sent a tool call with invalid arguments.": "Malli lähetti työkalukutsun, jonka argumentit ovat virheellisiä.",
   "The model used its whole output limit before it wrote an answer. Raise omnicopilot.maxOutputTokens or lower the thinking effort.": "Malli käytti koko tulostekiintiönsä ennen kuin kirjoitti vastauksen. Nosta asetusta omnicopilot.maxOutputTokens tai laske ajattelun tasoa.",
-  "This workspace's API key will be handed to {0}, whose configuration is shared by all your projects.": "Tämän työtilan API-avain annetaan työkalulle {0}, jonka konfiguraation kaikki projektisi jakavat."
+  "This workspace's API key will be handed to {0}, whose configuration is shared by all your projects.": "Tämän työtilan API-avain annetaan työkalulle {0}, jonka konfiguraation kaikki projektisi jakavat.",
+  "The stored API key is not approved for {0} and is not being sent to it. Press Save & Test to use it here.": "Tallennettu API-avain ei ole hyväksytty osoitteelle {0}, eikä sitä lähetetä sinne. Käytä sitä täällä painamalla \"Tallenna ja testaa\"."
 }

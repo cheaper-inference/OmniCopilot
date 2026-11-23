@@ -39,7 +39,6 @@
   "Online — {0} models available": "Online — {0} Modelle verfügbar",
   "Open GitHub": "GitHub öffnen",
   "Open OmniRoute dashboard": "OmniRoute-Dashboard öffnen",
-  "Optional — leave empty if your OmniRoute does not require an API key. Stored in the OS keychain.": "Optional — leer lassen, wenn Ihr OmniRoute keinen API-Schlüssel erfordert. Wird im Schlüsselbund des Betriebssystems gespeichert.",
   "Refresh models": "Modelle aktualisieren",
   "Refresh models in the picker": "Modelle in der Auswahl aktualisieren",
   "Remove the stored API key": "Gespeicherten API-Schlüssel entfernen",
@@ -100,5 +99,6 @@
   "The model's answer was cut off before the tool call was complete. Raise omnicopilot.maxOutputTokens or ask for smaller steps.": "Die Antwort des Modells wurde abgeschnitten, bevor der Tool-Aufruf vollständig war. Erhöhen Sie omnicopilot.maxOutputTokens, oder bitten Sie um kleinere Schritte.",
   "The model sent a tool call with invalid arguments.": "Das Modell hat einen Tool-Aufruf mit ungültigen Argumenten gesendet.",
   "The model used its whole output limit before it wrote an answer. Raise omnicopilot.maxOutputTokens or lower the thinking effort.": "Das Modell hat sein gesamtes Ausgabelimit verbraucht, bevor es eine Antwort geschrieben hat. Erhöhen Sie omnicopilot.maxOutputTokens, oder senken Sie den Denkaufwand.",
-  "This workspace's API key will be handed to {0}, whose configuration is shared by all your projects.": "Der API-Schlüssel dieses Arbeitsbereichs wird an {0} übergeben, dessen Konfiguration von allen Ihren Projekten gemeinsam genutzt wird."
+  "This workspace's API key will be handed to {0}, whose configuration is shared by all your projects.": "Der API-Schlüssel dieses Arbeitsbereichs wird an {0} übergeben, dessen Konfiguration von allen Ihren Projekten gemeinsam genutzt wird.",
+  "The stored API key is not approved for {0} and is not being sent to it. Press Save & Test to use it here.": "Der gespeicherte API-Schlüssel ist nicht für {0} freigegeben und wird nicht an diesen Server gesendet. Klicken Sie auf \"Speichern und testen\", um ihn hier zu verwenden."
 }

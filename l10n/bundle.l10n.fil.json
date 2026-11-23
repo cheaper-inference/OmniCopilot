@@ -39,7 +39,6 @@
   "Online — {0} models available": "Online — {0} model ang available",
   "Open GitHub": "Buksan ang GitHub",
   "Open OmniRoute dashboard": "Buksan ang OmniRoute dashboard",
-  "Optional — leave empty if your OmniRoute does not require an API key. Stored in the OS keychain.": "Opsyonal — iwanang blangko kung hindi nangangailangan ng API key ang iyong OmniRoute. Nakaimbak sa keychain ng OS.",
   "Refresh models": "I-refresh ang mga model",
   "Refresh models in the picker": "I-refresh ang mga model sa picker",
   "Remove the stored API key": "Alisin ang nakaimbak na API key",
@@ -100,5 +99,6 @@
   "The model's answer was cut off before the tool call was complete. Raise omnicopilot.maxOutputTokens or ask for smaller steps.": "Naputol ang sagot ng model bago makumpleto ang tool call. Taasan ang omnicopilot.maxOutputTokens o humiling ng mas maliliit na hakbang.",
   "The model sent a tool call with invalid arguments.": "Nagpadala ang model ng tool call na may di-wastong mga argument.",
   "The model used its whole output limit before it wrote an answer. Raise omnicopilot.maxOutputTokens or lower the thinking effort.": "Naubos ng model ang buong output limit nito bago ito makasulat ng sagot. Taasan ang omnicopilot.maxOutputTokens o ibaba ang antas ng pag-iisip.",
-  "This workspace's API key will be handed to {0}, whose configuration is shared by all your projects.": "Ibibigay ang API key ng workspace na ito sa {0}, na ang configuration ay ibinabahagi ng lahat ng iyong proyekto."
+  "This workspace's API key will be handed to {0}, whose configuration is shared by all your projects.": "Ibibigay ang API key ng workspace na ito sa {0}, na ang configuration ay ibinabahagi ng lahat ng iyong proyekto.",
+  "The stored API key is not approved for {0} and is not being sent to it. Press Save & Test to use it here.": "Ang nakaimbak na API key ay hindi aprubado para sa {0} at hindi ipinapadala roon. Pindutin ang button na I-save at Subukan para magamit ito rito."
 }

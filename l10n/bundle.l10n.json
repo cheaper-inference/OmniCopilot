@@ -39,7 +39,6 @@
   "Online — {0} models available": "Online — {0} models available",
   "Open GitHub": "Open GitHub",
   "Open OmniRoute dashboard": "Open OmniRoute dashboard",
-  "Optional — leave empty if your OmniRoute does not require an API key. Stored in the OS keychain.": "Optional — leave empty if your OmniRoute does not require an API key. Stored in the OS keychain.",
   "Refresh models": "Refresh models",
   "Refresh models in the picker": "Refresh models in the picker",
   "Remove the stored API key": "Remove the stored API key",
@@ -100,5 +99,6 @@
   "The model's answer was cut off before the tool call was complete. Raise omnicopilot.maxOutputTokens or ask for smaller steps.": "The model's answer was cut off before the tool call was complete. Raise omnicopilot.maxOutputTokens or ask for smaller steps.",
   "The model sent a tool call with invalid arguments.": "The model sent a tool call with invalid arguments.",
   "This workspace's API key will be handed to {0}, whose configuration is shared by all your projects.": "This workspace's API key will be handed to {0}, whose configuration is shared by all your projects.",
-  "The model used its whole output limit before it wrote an answer. Raise omnicopilot.maxOutputTokens or lower the thinking effort.": "The model used its whole output limit before it wrote an answer. Raise omnicopilot.maxOutputTokens or lower the thinking effort."
+  "The model used its whole output limit before it wrote an answer. Raise omnicopilot.maxOutputTokens or lower the thinking effort.": "The model used its whole output limit before it wrote an answer. Raise omnicopilot.maxOutputTokens or lower the thinking effort.",
+  "The stored API key is not approved for {0} and is not being sent to it. Press Save & Test to use it here.": "The stored API key is not approved for {0} and is not being sent to it. Press Save & Test to use it here."
 }

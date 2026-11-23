@@ -39,7 +39,6 @@
   "Online — {0} models available": "Online — {0} modele disponibile",
   "Open GitHub": "Deschidere GitHub",
   "Open OmniRoute dashboard": "Deschidere tablou de bord OmniRoute",
-  "Optional — leave empty if your OmniRoute does not require an API key. Stored in the OS keychain.": "Opțional — lăsați gol dacă OmniRoute nu necesită o cheie API. Stocată în inelul de chei al sistemului de operare.",
   "Refresh models": "Reîmprospătare modele",
   "Refresh models in the picker": "Reîmprospătați modelele din selector",
   "Remove the stored API key": "Eliminați cheia API stocată",
@@ -100,5 +99,6 @@
   "The model's answer was cut off before the tool call was complete. Raise omnicopilot.maxOutputTokens or ask for smaller steps.": "Răspunsul modelului a fost întrerupt înainte ca apelul instrumentului să fie complet. Măriți valoarea omnicopilot.maxOutputTokens sau cereți pași mai mici.",
   "The model sent a tool call with invalid arguments.": "Modelul a trimis un apel de instrument cu argumente nevalide.",
   "The model used its whole output limit before it wrote an answer. Raise omnicopilot.maxOutputTokens or lower the thinking effort.": "Modelul și-a folosit întreaga limită de ieșire înainte de a scrie un răspuns. Măriți valoarea omnicopilot.maxOutputTokens sau reduceți efortul de raționament.",
-  "This workspace's API key will be handed to {0}, whose configuration is shared by all your projects.": "Cheia API a acestui spațiu de lucru va fi transmisă instrumentului {0}, a cărui configurație este partajată de toate proiectele dvs."
+  "This workspace's API key will be handed to {0}, whose configuration is shared by all your projects.": "Cheia API a acestui spațiu de lucru va fi transmisă instrumentului {0}, a cărui configurație este partajată de toate proiectele dvs.",
+  "The stored API key is not approved for {0} and is not being sent to it. Press Save & Test to use it here.": "Cheia API stocată nu este aprobată pentru {0} și nu este trimisă către acest server. Apăsați \"Salvare și testare\" pentru a o folosi aici."
 }

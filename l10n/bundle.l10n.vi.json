@@ -39,7 +39,6 @@
   "Online — {0} models available": "Trực tuyến — {0} mô hình khả dụng",
   "Open GitHub": "Mở GitHub",
   "Open OmniRoute dashboard": "Mở bảng điều khiển OmniRoute",
-  "Optional — leave empty if your OmniRoute does not require an API key. Stored in the OS keychain.": "Tùy chọn — để trống nếu OmniRoute của bạn không yêu cầu khóa API. Được lưu trong kho khóa an toàn của hệ điều hành.",
   "Refresh models": "Làm mới mô hình",
   "Refresh models in the picker": "Làm mới mô hình trong bộ chọn",
   "Remove the stored API key": "Xóa khóa API đã lưu",
@@ -100,5 +99,6 @@
   "The model's answer was cut off before the tool call was complete. Raise omnicopilot.maxOutputTokens or ask for smaller steps.": "Câu trả lời của mô hình bị cắt trước khi lệnh gọi công cụ hoàn tất. Hãy tăng omnicopilot.maxOutputTokens hoặc yêu cầu từng bước nhỏ hơn.",
   "The model sent a tool call with invalid arguments.": "Mô hình đã gửi một lệnh gọi công cụ có đối số không hợp lệ.",
   "The model used its whole output limit before it wrote an answer. Raise omnicopilot.maxOutputTokens or lower the thinking effort.": "Mô hình đã dùng hết giới hạn đầu ra trước khi viết câu trả lời. Hãy tăng omnicopilot.maxOutputTokens hoặc giảm mức độ tư duy.",
-  "This workspace's API key will be handed to {0}, whose configuration is shared by all your projects.": "Khóa API của không gian làm việc này sẽ được chuyển cho {0}, có cấu hình được dùng chung cho mọi dự án của bạn."
+  "This workspace's API key will be handed to {0}, whose configuration is shared by all your projects.": "Khóa API của không gian làm việc này sẽ được chuyển cho {0}, có cấu hình được dùng chung cho mọi dự án của bạn.",
+  "The stored API key is not approved for {0} and is not being sent to it. Press Save & Test to use it here.": "Khóa API đã lưu chưa được chấp thuận cho {0} và không được gửi đến máy chủ đó. Nhấn nút Lưu và kiểm tra để dùng tại đây."
 }

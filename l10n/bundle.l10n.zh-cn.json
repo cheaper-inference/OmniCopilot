@@ -39,7 +39,6 @@
   "Online — {0} models available": "在线 — {0} 个模型可用",
   "Open GitHub": "打开 GitHub",
   "Open OmniRoute dashboard": "打开 OmniRoute 仪表板",
-  "Optional — leave empty if your OmniRoute does not require an API key. Stored in the OS keychain.": "可选 — 如果你的 OmniRoute 不需要 API 密钥，请留空。存储在系统钥匙串中。",
   "Refresh models": "刷新模型",
   "Refresh models in the picker": "刷新选择器中的模型",
   "Remove the stored API key": "删除已存储的 API 密钥",
@@ -100,5 +99,6 @@
   "The model's answer was cut off before the tool call was complete. Raise omnicopilot.maxOutputTokens or ask for smaller steps.": "模型的回答在工具调用完成之前被截断。请调高 omnicopilot.maxOutputTokens，或将任务拆分为更小的步骤。",
   "The model sent a tool call with invalid arguments.": "模型发送的工具调用包含无效参数。",
   "The model used its whole output limit before it wrote an answer. Raise omnicopilot.maxOutputTokens or lower the thinking effort.": "模型在写出回答之前就用完了全部输出上限。请调高 omnicopilot.maxOutputTokens，或降低思考强度。",
-  "This workspace's API key will be handed to {0}, whose configuration is shared by all your projects.": "此工作区的 API 密钥将交给 {0}，其配置由你的所有项目共用。"
+  "This workspace's API key will be handed to {0}, whose configuration is shared by all your projects.": "此工作区的 API 密钥将交给 {0}，其配置由你的所有项目共用。",
+  "The stored API key is not approved for {0} and is not being sent to it. Press Save & Test to use it here.": "已存储的 API 密钥未获批准用于 {0}，不会发送到该服务器。单击“保存并测试”即可在此处使用。"
 }

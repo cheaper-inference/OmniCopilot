@@ -39,7 +39,6 @@
   "Online — {0} models available": "En línea — {0} modelos disponibles",
   "Open GitHub": "Abrir GitHub",
   "Open OmniRoute dashboard": "Abrir el panel de OmniRoute",
-  "Optional — leave empty if your OmniRoute does not require an API key. Stored in the OS keychain.": "Opcional — déjelo vacío si su OmniRoute no requiere una clave de API. Se almacena en el llavero del sistema operativo.",
   "Refresh models": "Actualizar modelos",
   "Refresh models in the picker": "Actualizar los modelos del selector",
   "Remove the stored API key": "Quitar la clave de API almacenada",
@@ -100,5 +99,6 @@
   "The model's answer was cut off before the tool call was complete. Raise omnicopilot.maxOutputTokens or ask for smaller steps.": "La respuesta del modelo se cortó antes de que se completara la llamada a la herramienta. Aumente omnicopilot.maxOutputTokens o pida pasos más pequeños.",
   "The model sent a tool call with invalid arguments.": "El modelo envió una llamada a una herramienta con argumentos no válidos.",
   "The model used its whole output limit before it wrote an answer. Raise omnicopilot.maxOutputTokens or lower the thinking effort.": "El modelo agotó todo su límite de salida antes de escribir una respuesta. Aumente omnicopilot.maxOutputTokens o reduzca el esfuerzo de razonamiento.",
-  "This workspace's API key will be handed to {0}, whose configuration is shared by all your projects.": "La clave de API de esta área de trabajo se entregará a {0}, cuya configuración comparten todos sus proyectos."
+  "This workspace's API key will be handed to {0}, whose configuration is shared by all your projects.": "La clave de API de esta área de trabajo se entregará a {0}, cuya configuración comparten todos sus proyectos.",
+  "The stored API key is not approved for {0} and is not being sent to it. Press Save & Test to use it here.": "La clave de API almacenada no está aprobada para {0} y no se envía a ese servidor. Pulse \"Guardar y probar\" para usarla aquí."
 }

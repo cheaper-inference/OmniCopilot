@@ -39,7 +39,6 @@
   "Online — {0} models available": "آنلاین — {0} مدل در دسترس",
   "Open GitHub": "باز کردن GitHub",
   "Open OmniRoute dashboard": "باز کردن داشبورد OmniRoute",
-  "Optional — leave empty if your OmniRoute does not require an API key. Stored in the OS keychain.": "اختیاری — اگر OmniRoute شما به کلید API نیاز ندارد، خالی بگذارید. در دسته‌کلید سیستم‌عامل ذخیره می‌شود.",
   "Refresh models": "نوسازی مدل‌ها",
   "Refresh models in the picker": "نوسازی مدل‌ها در انتخابگر",
   "Remove the stored API key": "حذف کلید API ذخیره‌شده",
@@ -100,5 +99,6 @@
   "The model's answer was cut off before the tool call was complete. Raise omnicopilot.maxOutputTokens or ask for smaller steps.": "پاسخ مدل پیش از کامل شدن فراخوانی ابزار قطع شد. مقدار تنظیم omnicopilot.maxOutputTokens را افزایش دهید یا مراحل کوچک‌تری بخواهید.",
   "The model sent a tool call with invalid arguments.": "مدل یک فراخوانی ابزار با آرگومان‌های نامعتبر ارسال کرد.",
   "The model used its whole output limit before it wrote an answer. Raise omnicopilot.maxOutputTokens or lower the thinking effort.": "مدل پیش از نوشتن پاسخ، کل سقف خروجی خود را مصرف کرد. مقدار تنظیم omnicopilot.maxOutputTokens را افزایش دهید یا تلاش تفکر را کاهش دهید.",
-  "This workspace's API key will be handed to {0}, whose configuration is shared by all your projects.": "کلید API این فضای کار به ابزار {0} داده خواهد شد؛ پیکربندی این ابزار میان همه پروژه‌های شما مشترک است."
+  "This workspace's API key will be handed to {0}, whose configuration is shared by all your projects.": "کلید API این فضای کار به ابزار {0} داده خواهد شد؛ پیکربندی این ابزار میان همه پروژه‌های شما مشترک است.",
+  "The stored API key is not approved for {0} and is not being sent to it. Press Save & Test to use it here.": "کلید API ذخیره‌شده برای {0} تأیید نشده است و به آن ارسال نمی‌شود. برای استفاده از آن در اینجا، \"ذخیره و آزمایش\" را بزنید."
 }
