@@ -235,6 +235,16 @@ describe("Set API Key", () => {
     ext.dispose();
   });
 
+  it("asks for the key with the prompt that says where it is stored and how to clear it", async () => {
+    const ext = setUp();
+    const box = vi.spyOn(vscode.window, "showInputBox").mockResolvedValue(undefined);
+    await ext.run("omnicopilot.setApiKey");
+    expect((box.mock.calls[0][0] as { prompt: string }).prompt).toBe(
+      "Stored securely in the OS keychain (SecretStorage). Leave empty to clear."
+    );
+    ext.dispose();
+  });
+
   it("writes the global key when no workspace is open, even with the switch on", async () => {
     const ext = setUp({ workspace: false, switchOn: true });
     const box = await typing(ext, "sk-new");

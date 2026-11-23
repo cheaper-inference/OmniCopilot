@@ -2,7 +2,7 @@ import * as vscode from "vscode";
 import { expandForAgentsWindow } from "./agentsWindow";
 import { selectChatModels } from "./catalogFilter";
 import { OmniRouteClient, OmniRouteRequestError, projectHeaderValue, serverRootUrl } from "./client";
-import { SECRET_API_KEY, displayUrl, resolveConnection, type Connection } from "./connection";
+import { displayUrl, resolveConnection, type Connection } from "./connection";
 import { estimateTokens, toOpenAiMessages, toOpenAiTools } from "./convert";
 import {
   comboDetail,
@@ -24,8 +24,6 @@ import { DEFAULT_RETRY_POLICY, nextRetryDelay } from "./retry";
 import { createToolNameAliases } from "./toolNames";
 import type { ChatRequest, OmniRouteCombo, OmniRouteModel, StreamUsage } from "./types";
 import { USAGE_MIME_TYPE, buildUsagePayload } from "./usage";
-
-export { SECRET_API_KEY };
 
 interface OmniModelInfo extends vscode.LanguageModelChatInformation {
   omniModelId: string;

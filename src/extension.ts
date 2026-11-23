@@ -379,11 +379,7 @@ async function quickActions(context: vscode.ExtensionContext): Promise<void> {
   if (picked) void vscode.commands.executeCommand(commandByAction[picked.action]);
 }
 
-async function setApiKey(
-  context: vscode.ExtensionContext,
-  log: vscode.LogOutputChannel,
-  optionalFlow = false
-): Promise<void> {
+async function setApiKey(context: vscode.ExtensionContext, log: vscode.LogOutputChannel): Promise<void> {
   // The command works on the key the user chose: this workspace's own when the
   // workspace is set to use one, the global key otherwise.
   const scope = chosenKeyScope(context);
@@ -393,11 +389,7 @@ async function setApiKey(
       scope === "workspace"
         ? vscode.l10n.t("API key for this workspace")
         : vscode.l10n.t("OmniRoute API key"),
-    prompt: optionalFlow
-      ? vscode.l10n.t(
-          "Optional — leave empty if your OmniRoute does not require an API key. Stored in the OS keychain."
-        )
-      : vscode.l10n.t("Stored securely in the OS keychain (SecretStorage). Leave empty to clear."),
+    prompt: vscode.l10n.t("Stored securely in the OS keychain (SecretStorage). Leave empty to clear."),
     value: existing ?? "",
     password: true,
     ignoreFocusOut: true,

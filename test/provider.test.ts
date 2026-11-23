@@ -2,6 +2,7 @@ import { afterEach, beforeEach, describe, expect, it, vi } from "vitest";
 import * as vscode from "vscode";
 import { setMockConfig, setMockInspect, setMockWorkspace, setThinkingPartAvailable } from "./vscode.mock";
 import { SECRET_API_KEY, SECRET_API_KEY_ORIGINS } from "../src/connection";
+import * as providerModule from "../src/provider";
 import { OmniRouteChatProvider } from "../src/provider";
 import { aliasToolName } from "../src/toolNames";
 
@@ -2224,5 +2225,11 @@ describe("provider current listing (what the panel reports)", () => {
 
       expect(events()).toBe(1);
     });
+  });
+});
+
+describe("provider module exports", () => {
+  it("does not re-export the secret's name: the connection module owns it", () => {
+    expect(Object.keys(providerModule)).not.toContain("SECRET_API_KEY");
   });
 });
