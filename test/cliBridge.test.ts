@@ -440,6 +440,33 @@ describe("Configure Coding CLI and a local server that is not the default", () =
   const log = () =>
     ({ info: vi.fn(), warn: vi.fn(), error: vi.fn(), debug: vi.fn() }) as unknown as vscode.LogOutputChannel;
 
+  it("keeps the user and the password of the server URL out of the log, and still types them into the terminal", async () => {
+    setMockConfig({ baseUrl: "https://alice:s3cr3tPw@gw.example:8443/v1" });
+    const logged = { info: vi.fn(), warn: vi.fn(), error: vi.fn(), debug: vi.fn() };
+
+    await configureCliTool(context, logged as unknown as vscode.LogOutputChannel, "codex");
+
+    expect(createdTerminals[0]?.sent).toEqual(["omniroute setup-codex --remote 'https://alice:s3cr3tPw@gw.example:8443'"]);
+    const lines = Object.values(logged).flatMap((fn) => fn.mock.calls.map((call) => call.map(String).join(" ")));
+    expect(lines.some((line) => line.startsWith("Running in terminal: "))).toBe(true);
+    for (const line of lines) {
+      for (const secret of ["alice", "s3cr3tPw", "s3cr3t", "cr3tP"]) expect(line).not.toContain(secret);
+    }
+    expect(lines).toContain("Running in terminal: omniroute setup-codex --remote 'https://***:***@gw.example:8443'");
+  });
+
+  it("logs a URL with a user and no password with the user hidden", async () => {
+    setMockConfig({ baseUrl: "https://alice@gw.example" });
+    const logged = { info: vi.fn(), warn: vi.fn(), error: vi.fn(), debug: vi.fn() };
+
+    await configureCliTool(context, logged as unknown as vscode.LogOutputChannel, "codex");
+
+    expect(createdTerminals[0]?.sent).toEqual(["omniroute setup-codex --remote 'https://alice@gw.example'"]);
+    expect(logged.info.mock.calls.map((call) => String(call[0]))).toContain(
+      "Running in terminal: omniroute setup-codex --remote 'https://***@gw.example'"
+    );
+  });
+
   it.each([
     ["http://localhost:3000", "omniroute setup-codex --remote 'http://localhost:3000'"],
     ["https://localhost:20128", "omniroute setup-codex --remote 'https://localhost:20128'"],

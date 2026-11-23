@@ -120,6 +120,20 @@ export function remoteUrlArgument(root: string): string | undefined {
   return hasShellSyntax(serialised) ? undefined : serialised;
 }
 
+/** `url` with its user and password, if any, each replaced by `***`: for the log only. */
+function withoutCredentials(url: string): string {
+  let parsed: URL;
+  try {
+    parsed = new URL(url);
+  } catch {
+    return url;
+  }
+  if (!parsed.username && !parsed.password) return url;
+  if (parsed.username) parsed.username = "***";
+  if (parsed.password) parsed.password = "***";
+  return parsed.href.replace(/\/$/, "");
+}
+
 /** Whether `root` is the default server in any spelling: the URL parser's scheme and
  * host (case-insensitive), a trailing slash or `/v1` suffix, and nothing else (no
  * other path, credentials, query or fragment). */
@@ -214,7 +228,12 @@ export async function configureCliTool(
     );
     return;
   }
-  if (remoteArgument !== undefined) args.push("--remote", remoteArgument);
+  // The log shows the same command with the URL's user and password masked.
+  const logArgs = [...args];
+  if (remoteArgument !== undefined && decision.kind === "remote") {
+    args.push("--remote", remoteArgument);
+    logArgs.push("--remote", shellQuote(withoutCredentials(decision.remote)) ?? "***");
+  }
 
   // `omniroute setup-<tool>` configures the tool at user level, for every project on
   // this machine, and hands it the key (some tools store it, some only reference the
@@ -237,7 +256,7 @@ export async function configureCliTool(
   }
 
   const command = `${cli.command} ${args.join(" ")}`;
-  log.info(`Running in terminal: ${command}${apiKey ? " (API key via env)" : ""}`);
+  log.info(`Running in terminal: ${cli.command} ${logArgs.join(" ")}${apiKey ? " (API key via env)" : ""}`);
 
   const existing = vscode.window.terminals.find((t) => t.name === TERMINAL_NAME);
   existing?.dispose();
