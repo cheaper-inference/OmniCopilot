@@ -980,3 +980,86 @@ describe("ConnectionStatusBar polls and key changes", () => {
     });
   });
 });
+
+describe("ConnectionStatusBar after a refresh the key watcher skipped", () => {
+  afterEach(() => vi.restoreAllMocks());
+
+  /** A status bar whose connection the test sets; counts the probes. */
+  function setUp() {
+    setMockConfig({});
+    let probes = 0;
+    const client = {
+      baseUrl: "http://gateway.test/v1",
+      probe: async () => {
+        probes += 1;
+        return { ok: true, status: 200 } as ProbeResult;
+      },
+    };
+    const connectionWith = (keyWithheld: boolean) =>
+      ({
+        baseUrl: "http://gateway.test/v1",
+        origin: "http://gateway.test",
+        approvedOrigins: keyWithheld ? [] : ["http://gateway.test"],
+        apiKey: keyWithheld ? undefined : "sk-1",
+        hasStoredKey: true,
+        keyWithheld,
+        keyScope: "global",
+      }) as Connection;
+    let current = connectionWith(false);
+    const log = { info: vi.fn(), warn: vi.fn(), debug: vi.fn(), error: vi.fn() };
+    const statusBar = new ConnectionStatusBar(
+      async () => client as unknown as OmniRouteClient,
+      log as unknown as vscode.LogOutputChannel,
+      undefined,
+      async () => current
+    );
+    const text = () => (statusBar as unknown as { item: { text: string } }).item.text;
+    const settle = async () => {
+      for (let i = 0; i < 20; i++) await Promise.resolve();
+    };
+    return {
+      statusBar,
+      text,
+      settle,
+      probes: () => probes,
+      set: (keyWithheld: boolean) => void (current = connectionWith(keyWithheld)),
+      connectionWith,
+    };
+  }
+
+  it("polls again at once when the screen shows a withheld key the settled connection does not have", async () => {
+    const t = setUp();
+    t.set(true);
+    await t.statusBar.checkNow();
+    expect(t.text()).toBe("$(warning) OmniRoute");
+    t.set(false);
+
+    t.statusBar.recheckIfWithheldDiffers(t.connectionWith(false));
+    await vi.waitFor(() => expect(t.text()).toBe("$(circle-filled) OmniRoute"));
+    expect(t.probes()).toBe(2);
+    t.statusBar.dispose();
+  });
+
+  it("polls again at once the other way round", async () => {
+    const t = setUp();
+    await t.statusBar.checkNow();
+    expect(t.text()).toBe("$(circle-filled) OmniRoute");
+    t.set(true);
+
+    t.statusBar.recheckIfWithheldDiffers(t.connectionWith(true));
+    await vi.waitFor(() => expect(t.text()).toBe("$(warning) OmniRoute"));
+    expect(t.probes()).toBe(2);
+    t.statusBar.dispose();
+  });
+
+  it("does nothing when the screen agrees with the settled connection", async () => {
+    const t = setUp();
+    await t.statusBar.checkNow();
+
+    t.statusBar.recheckIfWithheldDiffers(t.connectionWith(false));
+    await t.settle();
+
+    expect(t.probes()).toBe(1);
+    t.statusBar.dispose();
+  });
+});
