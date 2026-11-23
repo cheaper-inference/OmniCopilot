@@ -62,8 +62,13 @@ async function refreshIfConnectionChanged(
   context: vscode.ExtensionContext,
   log: vscode.LogOutputChannel
 ): Promise<void> {
-  const fingerprint = connectionRefreshFingerprint(await resolveConnection(context));
-  if (fingerprint === refreshedFor) return;
+  const connection = await resolveConnection(context);
+  const fingerprint = connectionRefreshFingerprint(connection);
+  if (fingerprint === refreshedFor) {
+    // A poll may have read the key between the writes and left a stale withheld state.
+    statusBar?.recheckIfWithheldDiffers(connection);
+    return;
+  }
   log.info("API key changed — refreshing models and status");
   await connectionMayHaveChanged(context, "await", fingerprint);
 }

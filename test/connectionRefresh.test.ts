@@ -297,6 +297,44 @@ describe("what a change of the connection costs on the wire", () => {
     h.dispose();
   });
 
+  it("polls again at once when a poll landed between the writes of the same key stored again elsewhere", async () => {
+    vi.useFakeTimers();
+    const items: Array<{ text: string }> = [];
+    const createItem = vscode.window.createStatusBarItem as (...args: unknown[]) => { text: string };
+    vi.spyOn(vscode.window, "createStatusBarItem").mockImplementation(((...args: unknown[]) => {
+      const item = createItem(...args);
+      items.push(item);
+      return item;
+    }) as never);
+    const h = harness({ secrets: GLOBAL });
+    await h.settle(50);
+    const item = items[0];
+    expect(item.text).toBe("$(circle-filled) OmniRoute · 50%");
+    // Up to just before the second poll (30 s after the first).
+    await h.settle(29_940);
+    h.take();
+    const events = h.changeEvents();
+
+    // Another window stores the same key again; this window's poll lands after the first write.
+    h.changedElsewhere("omnicopilot.apiKeyOrigins", "[]");
+    await h.settle(20);
+    expect(item.text).toBe("$(warning) OmniRoute");
+    h.changedElsewhere("omnicopilot.apiKey", "sk-global");
+    h.changedElsewhere("omnicopilot.apiKeyOrigins", JSON.stringify([A]));
+    await h.settle(1000);
+
+    expect(item.text).toBe("$(circle-filled) OmniRoute · 50%");
+    // The poll between the writes (its probe without the key was refused) and the one polled
+    // again at once. That one is accepted after a refused one, so the picker lists again as
+    // the next regular poll would have; the usage number, dropped with the key, is read again.
+    expect(h.take()).toEqual({
+      counts: { probe: 2, models: 1, combos: 1, "om-usage": 1, "me/status": 1 },
+      keys: ["-", "sk-global"],
+    });
+    expect(h.changeEvents()).toBe(events + 1);
+    h.dispose();
+  });
+
   it("refreshes once when a key withheld here is cleared in another window (no key in effect before or after)", async () => {
     vi.useFakeTimers();
     const h = harness({

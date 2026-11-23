@@ -256,6 +256,17 @@ export class ConnectionStatusBar implements vscode.Disposable {
     this.render();
   }
 
+  /**
+   * For a refresh that was skipped because the settled connection is the one already
+   * refreshed for: a poll that landed between another window's secret writes may show a
+   * withheld key the settled connection does not have (or the other way round). Then poll
+   * again at once, keeping the usage reading and its floor; otherwise do nothing.
+   */
+  recheckIfWithheldDiffers(connection: Connection): void {
+    if (this.disposed || connection.keyWithheld === this.keyWithheld) return;
+    this.restart({ keepUsage: true });
+  }
+
   /** Forget the number and the floor, and make any read still out harmless. */
   private dropUsage(): void {
     this.usageGeneration++;
