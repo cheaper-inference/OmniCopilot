@@ -25,11 +25,15 @@ non-Microsoft VS Code forks never see the extension.
 3. GitHub → **Actions** → **Publish** → **Run workflow** → *Use workflow from* → **Tags** →
    `vX.Y.Z`.
 
-The workflow refuses to run from anything that is not a `vX.Y.Z` tag, checks that the tag is the
-version in `package.json`, runs the same checks as CI, and packages once. It then publishes that
-package to the Marketplace and to Open VSX, in that order, and creates the GitHub release with the
-notes of that version from `CHANGELOG.md`. If the Marketplace step fails, nothing has been
-published.
+The workflow has two jobs. The first holds no publishing rights: it refuses anything that is not
+a `vX.Y.Z` tag on `main`, checks that the tag is the version in `package.json` and that
+`CHANGELOG.md` has a section headed exactly `## X.Y.Z`, runs the same checks as CI, and packages
+once. The second publishes that package to the Marketplace and to Open VSX, in that order, and
+creates the GitHub release with the notes of that version.
+
+Nothing is published when the Open VSX token is missing or the Marketplace step fails. Both
+publish steps skip a version that is already in the store, so a run that stopped half way can
+be started again from the same tag and finishes what was left out.
 
 ### One-time setup
 
@@ -51,16 +55,29 @@ it receives lasts 15 minutes. The owner of the `diegosouzapw` publisher creates 
 
 3. Select **Create**.
 
-`marketplace` is the environment the workflow's job declares. In the repository's
-Settings → Environments you can add required reviewers to it, so that a publish waits for an
-approval.
+**The `marketplace` environment: this is what restricts a publish to version tags.** A
+manually started workflow runs the workflow file of the ref it is started from, so the tag
+check inside the file cannot be the guard: a branch could remove it. Create the environment the
+publish job declares and restrict it:
 
-**Open VSX: one repository secret.** Settings → Secrets and variables → Actions →
-**New repository secret**, named `OVSX_PAT`, holding the Open VSX access token (section 2).
+1. Settings → Environments → **New environment**, named `marketplace`.
+2. **Deployment branches and tags** → *Selected branches and tags* → add a **tag** rule `v*`,
+   and no branch rule.
+3. Optional: **Required reviewers**, so that a publish waits for an approval.
+
+**Open VSX: one environment secret.** In that same environment, **Add environment secret**
+named `OVSX_PAT`, holding the Open VSX access token (section 2). Keep it in the environment,
+not as a repository secret: a run from a branch cannot use the environment, so it cannot read
+the token.
+
+**CI as a required check.** `.github/workflows/ci.yml` runs on every pull request, but a red
+run does not block a merge until the job `Types, lint, tests, translations, package` is added
+as a required status check to the `Protect default branch` ruleset (Settings → Rules).
 
 **Status:** the workflow was added in 1.5.1 and has not published a version yet, so its first run
 is its test. `--oidc` needs `@vscode/vsce` 4.x; the workflow runs that version for the publish
-step only, and packages with the version in `package-lock.json`.
+step only, and packages with the version in `package-lock.json`. `ovsx` 1.4 also has a
+`--trusted-publishing` option; it is not set up here, Open VSX still uses the token.
 
 The sections below are the manual way: what the workflow does, and the fallback if it fails.
 
