@@ -45,6 +45,45 @@ describe("resolveCliCommand", () => {
     }
   );
 
+  it.each([
+    ["linux", "/usr/bin/pwsh"],
+    ["darwin", "/usr/local/bin/pwsh"],
+    ["linux", "/opt/microsoft/powershell/7/powershell"],
+  ] as const)("single-quotes a quoted path and prefixes the call operator for PowerShell on %s (%s)", (platform, shellPath) => {
+    for (const value of ["'/opt/my tools/omniroute'", '"/opt/my tools/omniroute"']) {
+      expect(resolveCliCommand(value, { platform, shellPath })).toEqual({
+        ok: true,
+        command: "& '/opt/my tools/omniroute'",
+      });
+    }
+  });
+
+  it("leaves an unquoted command as written for PowerShell on linux", () => {
+    expect(resolveCliCommand("npx omniroute", { platform: "linux", shellPath: "/usr/bin/pwsh" })).toEqual({
+      ok: true,
+      command: "npx omniroute",
+    });
+  });
+
+  it("does not add the call operator for a POSIX shell on linux", () => {
+    expect(resolveCliCommand("'/opt/my tools/omniroute'", { platform: "linux", shellPath: "/bin/bash" })).toEqual({
+      ok: true,
+      command: "'/opt/my tools/omniroute'",
+    });
+  });
+
+  it.each(['"   "', "'   '", '" "'])("refuses a quoted path made only of blanks (%j) on every platform and shell", (value) => {
+    for (const shell of [
+      linux,
+      cmdExe,
+      { platform: "win32" as const, shellPath: "C:\\Program Files\\PowerShell\\7\\pwsh.exe" },
+      { platform: "linux" as const, shellPath: "/usr/bin/pwsh" },
+      { platform: "darwin" as const, shellPath: "/bin/zsh" },
+    ]) {
+      expect(resolveCliCommand(value, shell)).toEqual({ ok: false });
+    }
+  });
+
   it("single-quotes a quoted executable path on linux", () => {
     expect(resolveCliCommand("'/opt/my tools/omniroute'", linux)).toEqual({
       ok: true,
