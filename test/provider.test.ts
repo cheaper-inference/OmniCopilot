@@ -901,6 +901,27 @@ describe("provider picker metadata", () => {
     expect(smart?.tooltip).toBe(`OmniRoute · smart · [x] (command:y) # heading · [x] (command:y)${"m".repeat(66)}…`);
   });
 
+  it("keeps the model id in the tooltip and the owner in the detail to one plain line without links", async () => {
+    const id = `[x](command:y)\u0000\n${"m".repeat(90)}`;
+    serve([{ id, owned_by: "[o](command:z)\u2028\u0007own\ner" }]);
+    const info = (await list()).get(id);
+    expect(info).toBeDefined();
+    for (const field of [info?.detail, info?.tooltip]) {
+      expect(field).not.toContain("](");
+      expect(field).not.toMatch(/[\u0000-\u001f\u007f-\u009f\u2028\u2029]/);
+    }
+    expect(info?.detail).toBe("[o] (command:z) own er");
+    expect(info?.tooltip).toBe(`OmniRoute · [x] (command:y) ${"m".repeat(65)}…`);
+  });
+
+  it("caps a long owner at 80 characters and leaves a model without an owner without a detail line", async () => {
+    serve([{ id: "a/b", owned_by: "o".repeat(81) }, { id: "c/d" }]);
+    const byId = await list();
+    expect(byId.get("a/b")?.detail).toBe(`${"o".repeat(80)}…`);
+    expect(byId.get("a/b")?.tooltip).toBe("OmniRoute · a/b");
+    expect(byId.get("c/d")?.detail).toBeUndefined();
+  });
+
   it("keeps a plain combo row when /v1/combos has no entry for it", async () => {
     serve([{ id: "smart", owned_by: "combo" }]);
     const smart = (await list()).get("smart");

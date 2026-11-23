@@ -4,7 +4,14 @@ import { selectChatModels } from "./catalogFilter";
 import { OmniRouteClient, OmniRouteRequestError, projectHeaderValue, serverRootUrl } from "./client";
 import { SECRET_API_KEY, displayUrl, resolveConnection, type Connection } from "./connection";
 import { estimateTokens, toOpenAiMessages, toOpenAiTools } from "./convert";
-import { comboDetail, comboSummary, comboSummaryMarkdown, describeModel, priceLabel } from "./modelInfo";
+import {
+  comboDetail,
+  comboSummary,
+  comboSummaryMarkdown,
+  describeModel,
+  plainModelText,
+  priceLabel,
+} from "./modelInfo";
 import {
   buildEffortSchema,
   effortTiersFor,
@@ -422,7 +429,8 @@ export class OmniRouteChatProvider
       const combo = model.owned_by === "combo" ? combosByName.get(model.id) : undefined;
       const price = priceLabel(model, (message, ...args) => vscode.l10n.t(message, ...args));
       const tooltip = [
-        `OmniRoute · ${model.id}`,
+        // The id and the owner are server text: one plain line, capped, no link syntax.
+        `OmniRoute · ${plainModelText(model.id)}`,
         ...(combo ? [comboSummary(combo)] : []),
         ...(isReasoningModel(model) ? ["extended thinking"] : []),
       ].join(" · ");
@@ -432,7 +440,12 @@ export class OmniRouteChatProvider
         name: described.name,
         family: model.owned_by || "omniroute",
         version: "1.0.0",
-        detail: model.owned_by === "combo" ? comboDetail(combo) : model.owned_by,
+        detail:
+          model.owned_by === "combo"
+            ? comboDetail(combo)
+            : typeof model.owned_by === "string"
+              ? plainModelText(model.owned_by) || undefined
+              : undefined,
         tooltip,
         ...(combo ? { infoText: { combo: comboSummaryMarkdown(combo) } } : {}),
         ...(price ? { pricing: price } : {}),
