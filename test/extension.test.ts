@@ -1069,7 +1069,7 @@ describe("the context key the walkthrough's first step waits for", () => {
   it("does not follow a server URL set by the workspace", async () => {
     vi.stubGlobal("fetch", vi.fn(async (url: string) => {
       // Only the workspace's address answers; the user-level one is down.
-      if (String(url).startsWith("http://workspace.example")) return new Response(null, { status: 200 });
+      if (new URL(String(url)).hostname === "workspace.example") return new Response(null, { status: 200 });
       throw new TypeError("fetch failed", { cause: Object.assign(new Error("refused"), { code: "ECONNREFUSED" }) });
     }));
     setMockConfig({ baseUrl: "http://localhost:20128" });
