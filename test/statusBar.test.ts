@@ -109,6 +109,34 @@ describe("ConnectionStatusBar model refill", () => {
     expect(onModelsReachable).toHaveBeenCalledTimes(3);
     statusBar.dispose();
   });
+
+  it("says which call is the first poll's, so start-up can join the host's first listing", async () => {
+    const { statusBar, onModelsReachable } = bar([
+      { ok: true, status: 200 },
+      { ok: false, failure: "refused" },
+      { ok: true, status: 200 },
+    ]);
+
+    await statusBar.checkNow();
+    await statusBar.checkNow();
+    await statusBar.checkNow();
+
+    expect(onModelsReachable.mock.calls).toEqual([[true], [false]]);
+    statusBar.dispose();
+  });
+
+  it("does not call the first accepted poll after a refused one the first poll", async () => {
+    const { statusBar, onModelsReachable } = bar([
+      { ok: true, status: 401 },
+      { ok: true, status: 200 },
+    ]);
+
+    await statusBar.checkNow();
+    await statusBar.checkNow();
+
+    expect(onModelsReachable.mock.calls).toEqual([[false]]);
+    statusBar.dispose();
+  });
 });
 
 describe("statusPresentation", () => {

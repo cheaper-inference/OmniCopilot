@@ -204,6 +204,22 @@ export class OmniRouteChatProvider
     this._onDidChange.fire();
   }
 
+  /**
+   * `refresh()`, unless the picker already has (or is getting) the models: for the first
+   * poll that finds the server accepting requests, which must not download the catalog
+   * again when the host's first listing succeeded. A listing under way is waited for, and
+   * the picker is refreshed only when it did not succeed.
+   */
+  async refreshUnlessListed(): Promise<void> {
+    const generation = this.refreshGeneration;
+    const running = this.inFlightListing?.generation === generation ? this.inFlightListing : undefined;
+    const shared = running ? await running.result : undefined;
+    // A refresh that came in meanwhile lists for itself.
+    if (generation !== this.refreshGeneration) return;
+    if (this.lastListing || shared?.ok) return;
+    await this.refresh();
+  }
+
   private async makeClient(): Promise<OmniRouteClient> {
     return (await this.connect()).client;
   }
