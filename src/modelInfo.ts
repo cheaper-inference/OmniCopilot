@@ -129,6 +129,12 @@ function plainServerText(text: string, max: number): string {
   return capped(tidy, max).split("](").join("] (");
 }
 
+/** A model's id (tooltip) or owner (detail line) as the picker shows it: `plainServerText`
+ * with the cap of a combo step's name, which is a model id too. */
+export function plainModelText(text: string): string {
+  return plainServerText(text, MAX_STEP_CHARS);
+}
+
 /** Names of the usable steps of a combo; a step without any name is skipped. */
 function comboStepNames(combo: OmniRouteCombo, clean: (name: string) => string = (n) => n): string[] {
   const steps = Array.isArray(combo.models) ? combo.models : [];
