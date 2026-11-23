@@ -28,6 +28,7 @@ let statusBar: ConnectionStatusBar | undefined;
 let panel: OmniPanelProvider | undefined;
 /** The connection the last refresh ran for (`connectionRefreshFingerprint`: the key only by its hash). */
 let refreshedFor: string | undefined;
+let outputLog: vscode.LogOutputChannel | undefined;
 
 function getConfig() {
   return vscode.workspace.getConfiguration("omnicopilot");
@@ -45,7 +46,15 @@ async function connectionMayHaveChanged(
   panelRefresh: "await" | "start" = "await",
   fingerprint?: string
 ): Promise<void> {
-  refreshedFor = fingerprint ?? connectionRefreshFingerprint(await resolveConnection(context));
+  try {
+    refreshedFor = fingerprint ?? connectionRefreshFingerprint(await resolveConnection(context));
+  } catch (err) {
+    // SecretStorage failing, say. Everything below is refreshed all the same (each part
+    // reads the connection again and reports its own failure), and with nothing recorded
+    // the next key change refreshes whatever it finds.
+    refreshedFor = undefined;
+    outputLog?.warn(`Reading the connection failed: ${String(err)}`);
+  }
   statusBar?.restart();
   await provider?.refresh();
   const panelRefreshed = panel?.refreshStatus();
@@ -81,6 +90,7 @@ async function makeClient(context: vscode.ExtensionContext): Promise<OmniRouteCl
 export function activate(context: vscode.ExtensionContext): void {
   const log = vscode.window.createOutputChannel("OmniRoute for Copilot", { log: true });
   context.subscriptions.push(log);
+  outputLog = log;
   log.info(`Activating v${context.extension.packageJSON.version}`);
   /** Start a promise nobody waits for, logging instead of leaving a rejection unhandled. */
   const background = (what: string, promise: Promise<unknown> | undefined): void => {
@@ -444,4 +454,5 @@ export function deactivate(): void {
   statusBar = undefined;
   panel = undefined;
   refreshedFor = undefined;
+  outputLog = undefined;
 }
