@@ -1,4 +1,4 @@
-import { OmniRouteRequestError } from "./client";
+import { OmniRouteRequestError } from "./requestError";
 
 export interface RetryPolicy {
   /** Retries after the first attempt. */

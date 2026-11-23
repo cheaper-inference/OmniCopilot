@@ -1,6 +1,7 @@
 import { randomBytes } from "node:crypto";
 import { classifyNetworkError, type ProbeFailure, type ProbeResult } from "./diagnostics";
 import { isFramingAllowed } from "./embed";
+import { OmniRouteRequestError } from "./requestError";
 import { parseRetryAfter, retryDelayFromMessage } from "./retry";
 import type {
   ChatRequest,
@@ -14,6 +15,10 @@ import type {
   StreamReasoningDetail,
   StreamToolCallDelta,
 } from "./types";
+
+// The error type lives in its own module so the retry policy can use it without importing
+// this one; every other module keeps importing it from here.
+export { OmniRouteRequestError, type RequestErrorInfo } from "./requestError";
 
 export interface ClientOptions {
   baseUrl: string;
@@ -31,27 +36,6 @@ const MODELS_TIMEOUT_MS = 15_000;
 /** The combo lookup only decorates the picker, so it must never hold it for
  * long: a server that black-holes the call costs this much, not 15 s. */
 const COMBOS_TIMEOUT_MS = 3_000;
-
-export interface RequestErrorInfo {
-  /** HTTP status, from the response or from an error reported inside the stream. */
-  status?: number;
-  /** How long the server asked the caller to wait before trying again. */
-  retryAfterMs?: number;
-  /** The server could not be reached at all (no HTTP answer). */
-  network?: boolean;
-}
-
-/** A request the server rejected or could not be reached for. `info` is what
- * the retry logic and the connection indicator need; the message is for people. */
-export class OmniRouteRequestError extends Error {
-  constructor(
-    message: string,
-    readonly info: RequestErrorInfo,
-    cause?: unknown
-  ) {
-    super(message, cause === undefined ? undefined : { cause });
-  }
-}
 
 /** Server root the user configures — the `/v1` suffix is an implementation
  * detail this client appends, so it never leaks into settings or the UI. */
