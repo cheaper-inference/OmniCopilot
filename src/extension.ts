@@ -201,7 +201,8 @@ function registerCommands(context: vscode.ExtensionContext, log: vscode.LogOutpu
   });
 
   register("omnicopilot.checkConnection", async () => {
-    const ok = await statusBar?.checkNow();
+    // A probe overtaken by a change of the connection is checked again for the new one.
+    const ok = await statusBar?.checkNow({ rechecks: 2 });
     if (ok) {
       // The probe is answered without a key; only a listing proves the key works.
       const listing = await provider?.listModels({ silent: false });
