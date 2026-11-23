@@ -31,6 +31,7 @@ import {
   workspaceIdentity,
   workspaceOriginsSecretName,
   workspaceSecretName,
+  describeProbeFailure,
 } from "../src/connection";
 
 /** A settings value that VS Code would render as a clickable command link in a notification. */
@@ -1383,5 +1384,31 @@ describe("watchKeySecrets", () => {
 
     expect(onError).toHaveBeenCalledWith(expect.objectContaining({ message: "refresh failed" }));
     watcher.dispose();
+  });
+});
+
+describe("describeProbeFailure", () => {
+  it("names the server root and, for a refused loopback address, tells how to start OmniRoute", () => {
+    const explained = describeProbeFailure("http://localhost:20128/v1", { ok: false, failure: "refused" }, 4000);
+    expect(explained.summary).toBe("Nothing is listening at http://localhost:20128 (connection refused).");
+    expect(explained.hints).toEqual([
+      "Start OmniRoute (npx omniroute), or point Server URL at the machine where it runs.",
+    ]);
+  });
+
+  it("gives the timeout in whole seconds and no start hint for another machine", () => {
+    const explained = describeProbeFailure("https://gw.example/v1", { ok: false, failure: "timeout" }, 4000);
+    expect(explained.summary).toBe("No answer from https://gw.example within 4 seconds.");
+    expect(explained.hints.some((hint) => hint.startsWith("Start OmniRoute"))).toBe(false);
+  });
+
+  it("keeps a link out of the summary once it is made a notification", () => {
+    const explained = describeProbeFailure(
+      `${LINK_IN_PATH}/v1`,
+      { ok: false, failure: "tls", code: "[x](command:y)" },
+      4000
+    );
+    expect(explained.summary).not.toContain("](command:workbench");
+    expect(plainNotificationText(explained.summary)).not.toContain("](");
   });
 });

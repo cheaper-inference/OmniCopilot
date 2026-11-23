@@ -245,6 +245,25 @@ describe("Set API Key", () => {
     ext.dispose();
   });
 
+  it("writes the key to the scope the input box asked about, even if the switch changed while it was open", async () => {
+    const ext = setUp({ workspaceKey: true, switchOn: true });
+    let typed: (value: string) => void = () => undefined;
+    const box = vi
+      .spyOn(vscode.window, "showInputBox")
+      .mockImplementation((() => new Promise<string>((resolve) => (typed = resolve))) as never);
+
+    const command = ext.run("omnicopilot.setApiKey") as Promise<void>;
+    await vi.waitFor(() => expect(box).toHaveBeenCalled());
+    expect((box.mock.calls[0][0] as { title: string }).title).toBe("API key for this workspace");
+    ext.local.set(SWITCH, false); // turned off elsewhere while the box is open
+    typed("sk-new");
+    await command;
+
+    expect(ext.secrets.get(WS_KEY)).toBe("sk-new");
+    expect(ext.secrets.get("omnicopilot.apiKey")).toBe("sk-global");
+    ext.dispose();
+  });
+
   it("writes the global key when no workspace is open, even with the switch on", async () => {
     const ext = setUp({ workspace: false, switchOn: true });
     const box = await typing(ext, "sk-new");
@@ -1063,6 +1082,57 @@ describe("the context key the walkthrough's first step waits for", () => {
     // Set at activation, and again (still false) when the first poll finds the server offline.
     expect(contextValues(execute)[0]).toBe(false);
     expect(contextValues(execute)).not.toContain(true);
+    ext.dispose();
+  });
+});
+
+describe("a key the server starts accepting", () => {
+  beforeEach(() => vi.useFakeTimers({ toFake: ["setTimeout", "clearTimeout", "setInterval", "clearInterval"] }));
+  afterEach(() => {
+    vi.useRealTimers();
+    vi.unstubAllGlobals();
+    vi.restoreAllMocks();
+  });
+
+  it("refills the picker at the next poll, without a manual refresh", async () => {
+    let accepted = false;
+    vi.stubGlobal(
+      "fetch",
+      vi.fn(async (url: string, init?: RequestInit) => {
+        if (init?.method === "HEAD") return new Response(null, { status: accepted ? 200 : 401 });
+        if (String(url).includes("/combos")) return new Response("{}", { status: 404 });
+        if (String(url).includes("/api/usage/") || String(url).includes("/me/status")) {
+          return new Response("{}", { status: 404 });
+        }
+        return accepted
+          ? new Response(JSON.stringify({ object: "list", data: [chat("a/one"), chat("a/two")] }), { status: 200 })
+          : new Response(JSON.stringify({ error: { message: "no" } }), { status: 401 });
+      })
+    );
+    setMockConfig({ baseUrl: "http://localhost:20128" });
+    const listed: number[] = [];
+    vi.spyOn(vscode.lm, "registerLanguageModelChatProvider").mockImplementation(((_vendor: string, p: unknown) => {
+      const picker = p as {
+        provideLanguageModelChatInformation(o: { silent: boolean }, t: unknown): Promise<unknown[]>;
+        onDidChangeLanguageModelChatInformation(listener: () => void): void;
+      };
+      const list = () =>
+        void picker
+          .provideLanguageModelChatInformation({ silent: true }, { isCancellationRequested: false })
+          .then((infos) => listed.push(infos.length));
+      picker.onDidChangeLanguageModelChatInformation(list);
+      list(); // the host's first listing
+      return { dispose() {} };
+    }) as never);
+    const ext = activated({ [SECRET_API_KEY]: "sk-1", [SECRET_API_KEY_ORIGINS]: JSON.stringify(["http://localhost:20128"]) });
+
+    await vi.advanceTimersByTimeAsync(300);
+    expect(listed).toEqual([0]);
+
+    accepted = true; // the key is accepted from now on (granted on the server, say)
+    await vi.advanceTimersByTimeAsync(30_000);
+
+    expect(listed).toEqual([0, 2]);
     ext.dispose();
   });
 });
