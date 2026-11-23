@@ -239,6 +239,14 @@ export class OmniRouteChatProvider
    */
   listModels(options: { silent: boolean }, token?: vscode.CancellationToken): Promise<ModelListing> {
     const generation = this.refreshGeneration;
+    const running =
+      this.inFlightListing?.generation === generation ? this.inFlightListing : undefined;
+    if (running) {
+      return running.result.then(
+        (result) => result ?? this.listModels(options, token),
+        () => this.listModels(options, token)
+      );
+    }
     const listing = this.listFromServer(options, token).then((result) => {
       // A listing whose request the host cancelled is not an answer about the server (the
       // client returns no models for a cancelled token): it neither becomes the count nor

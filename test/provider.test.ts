@@ -1565,6 +1565,18 @@ describe("provider current listing (what the panel reports)", () => {
     expect(catalogDownloads()).toBe(1);
   });
 
+  it("coalesces concurrent direct model listings", async () => {
+    const { provider } = makeProvider();
+
+    const [first, second] = await Promise.all([
+      provider.listModels({ silent: true }),
+      provider.listModels({ silent: true }),
+    ]);
+
+    expect(first).toBe(second);
+    expect(catalogDownloads()).toBe(1);
+  });
+
   it("reports the last listing the picker's own call made, without another download", async () => {
     const { provider, token } = makeProvider();
     await provider.provideLanguageModelChatInformation({ silent: true }, token);
