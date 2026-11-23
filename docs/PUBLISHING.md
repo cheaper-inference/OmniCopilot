@@ -14,6 +14,58 @@ non-Microsoft VS Code forks never see the extension.
 
 ---
 
+## 0. The usual way: the `Publish` workflow
+
+`.github/workflows/publish.yml` publishes one tagged version to both stores and attaches the same
+`.vsix` to the GitHub release. It is started by hand, from the tag:
+
+1. Bump `version` in `package.json` and `package-lock.json`, add the `CHANGELOG.md` entry, merge.
+2. Tag the merged commit and push the tag:
+   `git tag -a vX.Y.Z <commit> -m "X.Y.Z" && git push origin vX.Y.Z`.
+3. GitHub → **Actions** → **Publish** → **Run workflow** → *Use workflow from* → **Tags** →
+   `vX.Y.Z`.
+
+The workflow refuses to run from anything that is not a `vX.Y.Z` tag, checks that the tag is the
+version in `package.json`, runs the same checks as CI, and packages once. It then publishes that
+package to the Marketplace and to Open VSX, in that order, and creates the GitHub release with the
+notes of that version from `CHANGELOG.md`. If the Marketplace step fails, nothing has been
+published.
+
+### One-time setup
+
+**Marketplace: Trusted Publishing, no token.** The workflow signs in with GitHub OIDC
+(`vsce publish --oidc`), so no Marketplace token is stored anywhere. The Marketplace credential
+it receives lasts 15 minutes. The owner of the `diegosouzapw` publisher creates the policy once:
+
+1. Open https://marketplace.visualstudio.com/manage, select the `diegosouzapw` publisher, then
+   **Trusted Publishing**, and expand **Create**.
+2. Fill in the fields:
+
+   | Field | Value |
+   | --- | --- |
+   | Policy name | `Release workflow` |
+   | Repository owner | `cheaper-inference` |
+   | Repository | `OmniCopilot` |
+   | Workflow | `publish.yml` |
+   | Environment | `marketplace` |
+
+3. Select **Create**.
+
+`marketplace` is the environment the workflow's job declares. In the repository's
+Settings → Environments you can add required reviewers to it, so that a publish waits for an
+approval.
+
+**Open VSX: one repository secret.** Settings → Secrets and variables → Actions →
+**New repository secret**, named `OVSX_PAT`, holding the Open VSX access token (section 2).
+
+**Status:** the workflow was added in 1.5.1 and has not published a version yet, so its first run
+is its test. `--oidc` needs `@vscode/vsce` 4.x; the workflow runs that version for the publish
+step only, and packages with the version in `package-lock.json`.
+
+The sections below are the manual way: what the workflow does, and the fallback if it fails.
+
+---
+
 ## 1. VS Code Marketplace (`vsce`)
 
 ### One-time setup — Personal Access Token (PAT)
@@ -31,8 +83,13 @@ separate site:
 5. First time on Azure DevOps? It asks you to create an *organization* before issuing tokens —
    any name works, it's unrelated to the publisher.
 
-Global Azure DevOps PATs **retire 2026-12-01**. Before then, switch to Entra ID auth
-(`vsce publish --azure-credential` — see the [vsce README](https://github.com/microsoft/vscode-vsce#usage)).
+Global Azure DevOps PATs **retire on 2026-12-01**, according to the
+[VS Code publishing guide](https://code.visualstudio.com/api/working-with-extensions/publishing-extension)
+as read on 2026-11-23. A postponement to 2027-01-27 has been reported, but that guide did not
+show it, so plan for December. After the retirement this manual way stops working for the
+Marketplace: use the `Publish` workflow (section 0). The guide documents
+`vsce publish --azure-credential` for Azure Pipelines with a managed identity, not for GitHub
+Actions.
 
 ### Publish
 
