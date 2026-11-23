@@ -315,6 +315,40 @@ describe("Configure Coding CLI and the workspace key", () => {
     expect(createdTerminals[0].env).toEqual({ OMNIROUTE_API_KEY: "sk-global" });
   });
 
+  it("hands no key to the terminal, and asks nothing, when the key is withheld for this server", async () => {
+    setMockConfig({ baseUrl: "http://localhost:20128" });
+    setMockWorkspace({ folders: [WS] });
+    const context = fakeContext();
+    await context.secrets.store("omnicopilot.apiKey", "sk-elsewhere");
+    await context.secrets.store("omnicopilot.apiKeyOrigins", JSON.stringify(["https://elsewhere.example"]));
+    const warn = vi.spyOn(vscode.window, "showWarningMessage");
+
+    await configureCliTool(context, log(), "codex");
+
+    expect(warn).not.toHaveBeenCalled();
+    expect(createdTerminals).toHaveLength(1);
+    expect(createdTerminals[0].env).toBeUndefined();
+    expect(createdTerminals[0].sent.join("\n")).not.toContain("sk-elsewhere");
+  });
+
+  it("hands over the key the question was asked about, even if the key in effect changed while it was open", async () => {
+    const context = await withKeys({ workspaceKey: true });
+    let answer: (value: unknown) => void = () => undefined;
+    vi.spyOn(vscode.window, "showWarningMessage").mockImplementation(
+      (() => new Promise((resolve) => (answer = resolve))) as never
+    );
+
+    const configured = configureCliTool(context, log(), "codex");
+    await vi.waitFor(() => expect(vscode.window.showWarningMessage).toHaveBeenCalled());
+    // The switch goes off while the question is open: the global key is now the one in effect.
+    await context.workspaceState.update("omnicopilot.useWorkspaceKey", false);
+    answer("Continue");
+    await configured;
+
+    expect(createdTerminals).toHaveLength(1);
+    expect(createdTerminals[0].env).toEqual({ OMNIROUTE_API_KEY: "sk-ws" });
+  });
+
   it("does not ask when no key is stored", async () => {
     setMockConfig({ baseUrl: "http://localhost:20128" });
     setMockWorkspace({ folders: [WS] });
