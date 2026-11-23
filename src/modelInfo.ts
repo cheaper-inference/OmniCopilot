@@ -37,6 +37,9 @@ export function describeModel(model: OmniRouteModel, cfg: ModelShapingConfig): M
     Math.min(modelCeiling ?? cfg.maxOutputTokens, cfg.maxOutputTokens, Math.floor(contextLength / 2)),
     1
   );
+  // The 1024 floor is deliberate: a window under 2048 tokens is far more likely a wrong or
+  // missing catalog value than a real limit, so it is treated as unreliable and the request
+  // still goes out; the server enforces the real limit.
   const maxInputTokens = Math.max(
     Math.min(contextLength - maxOutputTokens, positive(model.max_input_tokens) ?? Infinity),
     1024
