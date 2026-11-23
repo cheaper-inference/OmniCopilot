@@ -2111,4 +2111,97 @@ describe("provider current listing (what the panel reports)", () => {
     expect(warn).not.toHaveBeenCalled();
     warn.mockRestore();
   });
+
+  describe("refreshUnlessListed (the first poll that finds the server)", () => {
+    const changeEvents = (provider: OmniRouteChatProvider) => {
+      let events = 0;
+      provider.onDidChangeLanguageModelChatInformation(() => void (events += 1));
+      return () => events;
+    };
+
+    it("refreshes when nothing has been listed", async () => {
+      const { provider } = makeProvider();
+      const events = changeEvents(provider);
+
+      await provider.refreshUnlessListed();
+
+      expect(events()).toBe(1);
+      expect(catalogDownloads()).toBe(0);
+    });
+
+    it("does nothing after a listing that succeeded", async () => {
+      const { provider } = makeProvider();
+      await provider.provideLanguageModelChatInformation({ silent: true }, hostToken().token);
+      const events = changeEvents(provider);
+
+      await provider.refreshUnlessListed();
+
+      expect(events()).toBe(0);
+      expect(catalogDownloads()).toBe(1);
+    });
+
+    it("waits for the listing under way and does nothing when it succeeds", async () => {
+      const { provider } = makeProvider();
+      const gate = holdNextCatalog();
+      const events = changeEvents(provider);
+      const fromHost = provider.provideLanguageModelChatInformation({ silent: true }, hostToken().token);
+      await vi.waitFor(() => expect(gate.held()).toBe(true));
+
+      const decided = provider.refreshUnlessListed();
+      gate.release();
+      await decided;
+      await fromHost;
+
+      expect(events()).toBe(0);
+      expect(catalogDownloads()).toBe(1);
+    });
+
+    it("refreshes when the listing under way fails", async () => {
+      const { provider } = makeProvider();
+      const gate = holdNextCatalog(() => new Response("{}", { status: 503 }));
+      const events = changeEvents(provider);
+      const fromHost = provider.provideLanguageModelChatInformation({ silent: true }, hostToken().token);
+      await vi.waitFor(() => expect(gate.held()).toBe(true));
+
+      const decided = provider.refreshUnlessListed();
+      gate.release();
+      await decided;
+
+      expect(await fromHost).toEqual([]);
+      expect(events()).toBe(1);
+    });
+
+    it("refreshes when the host cancelled the listing under way", async () => {
+      const { provider } = makeProvider();
+      const gate = holdNextCatalog();
+      const { token, cancel } = hostToken();
+      const events = changeEvents(provider);
+      const fromHost = provider.provideLanguageModelChatInformation({ silent: true }, token);
+      await vi.waitFor(() => expect(gate.held()).toBe(true));
+
+      const decided = provider.refreshUnlessListed();
+      cancel();
+      gate.release();
+      await decided;
+      await fromHost;
+
+      expect(events()).toBe(1);
+    });
+
+    it("adds no refresh of its own when a refresh() came in while it waited", async () => {
+      const { provider } = makeProvider();
+      const gate = holdNextCatalog(() => new Response("{}", { status: 503 }));
+      const events = changeEvents(provider);
+      const fromHost = provider.provideLanguageModelChatInformation({ silent: true }, hostToken().token);
+      await vi.waitFor(() => expect(gate.held()).toBe(true));
+
+      const decided = provider.refreshUnlessListed();
+      await provider.refresh();
+      gate.release();
+      await decided;
+      await fromHost;
+
+      expect(events()).toBe(1);
+    });
+  });
 });

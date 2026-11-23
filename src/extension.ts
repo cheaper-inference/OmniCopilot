@@ -88,8 +88,10 @@ export function activate(context: vscode.ExtensionContext): void {
     undefined,
     () => resolveConnection(context),
     // The model picker is empty when the server was down at startup; list again once a poll
-    // finds it accepting requests.
-    () => background("Model refresh", provider?.refresh()),
+    // finds it accepting requests. The first poll runs alongside the host's first listing, so
+    // it lists again only when that listing did not succeed.
+    (firstPoll) =>
+      background("Model refresh", firstPoll ? provider?.refreshUnlessListed() : provider?.refresh()),
     // The key's daily limit next to the status (setting omnicopilot.statusBarUsage).
     (connection) => fetchPersonalUsage(connection.baseUrl, connection.apiKey, vscode.l10n.t)
   );
@@ -177,11 +179,12 @@ function registerCommands(context: vscode.ExtensionContext, log: vscode.LogOutpu
 
   register("omnicopilot.refreshModels", async () => {
     if (!provider) return;
-    // A real listing, so the result below is what the server answered. The
-    // provider tells the user why when it fails; the picker is told to list
-    // again either way.
-    const listing = await provider.listModels({ silent: false });
+    // The picker is told to list again, and the command takes part in that same listing
+    // (whichever of the two asks first starts it): one download, made after the command
+    // was invoked, so the result below is what the server answered. The provider tells
+    // the user why when it fails. Not awaited: the listing starts in this same turn.
     void provider.refresh();
+    const listing = await provider.listModels({ silent: false });
     if (listing.ok) {
       void vscode.window.showInformationMessage(
         // The count comes last so the sentence needs no plural form in any language.

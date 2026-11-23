@@ -317,6 +317,76 @@ describe("what a change of the connection costs on the wire", () => {
   });
 });
 
+describe("what activation and Refresh models cost on the wire", () => {
+  afterEach(() => {
+    vi.useRealTimers();
+    vi.unstubAllGlobals();
+    vi.restoreAllMocks();
+    setMockWorkspace();
+  });
+
+  it("activation downloads the catalog once: the first poll joins the host's first listing", async () => {
+    vi.useFakeTimers();
+    const h = harness({ secrets: GLOBAL });
+    await h.settle(1000);
+
+    expect(h.take()).toEqual({
+      counts: { probe: 1, models: 1, combos: 1, "om-usage": 1, "me/status": 1 },
+      keys: ["sk-global"],
+    });
+    h.dispose();
+  });
+
+  it('"Refresh models" downloads the catalog once: the command and the host share one listing', async () => {
+    vi.useFakeTimers();
+    const info = vi.spyOn(vscode.window, "showInformationMessage");
+    const h = harness({ secrets: GLOBAL });
+    await h.settle(1000);
+    h.take();
+    const events = h.changeEvents();
+
+    await registeredCommands.get("omnicopilot.refreshModels")!();
+    await h.settle(1000);
+
+    expect(h.take()).toEqual({ counts: { models: 1, combos: 1 }, keys: ["sk-global"] });
+    // The picker is still told to list again, and the result is the listing the command waited for.
+    expect(h.changeEvents()).toBe(events + 1);
+    expect(info.mock.calls.map((call) => String(call[0]))).toEqual(["Models listed from https://a.example: 3."]);
+    h.dispose();
+  });
+
+  it('"Refresh models" lists again after a listing that already succeeded, never reporting a cached one', async () => {
+    vi.useFakeTimers();
+    const h = harness({ secrets: GLOBAL });
+    await h.settle(1000);
+    h.take();
+
+    for (let round = 0; round < 2; round++) {
+      await registeredCommands.get("omnicopilot.refreshModels")!();
+      await h.settle(1000);
+      expect(h.take().counts, `round ${round}`).toEqual({ models: 1, combos: 1 });
+    }
+    h.dispose();
+  });
+
+  it('"Refresh models" still explains a failed listing once', async () => {
+    vi.useFakeTimers();
+    const warn = vi.spyOn(vscode.window, "showWarningMessage");
+    const h = harness({ secrets: { "omnicopilot.apiKey": "sk-revoked", "omnicopilot.apiKeyOrigins": JSON.stringify([A]) } });
+    await h.settle(1000);
+    h.take();
+
+    await registeredCommands.get("omnicopilot.refreshModels")!();
+    await h.settle(1000);
+
+    expect(h.take().counts).toEqual({ models: 1, combos: 1 });
+    expect(warn.mock.calls.map((call) => String(call[0]))).toEqual([
+      "OmniRoute at https://a.example rejected the API key (HTTP 401).",
+    ]);
+    h.dispose();
+  });
+});
+
 describe("the status bar's usage reads after a settings change", () => {
   afterEach(() => {
     vi.useRealTimers();

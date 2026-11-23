@@ -179,8 +179,9 @@ export class ConnectionStatusBar implements vscode.Disposable {
     private readonly log: vscode.LogOutputChannel,
     private readonly onStatusChange?: (status: "online" | "offline") => void,
     private readonly getConnection?: () => Promise<Connection>,
-    /** Called when a poll found the server accepting requests again (see `shouldRefreshModels`). */
-    private readonly onModelsReachable?: () => void,
+    /** Called when a poll found the server accepting requests again (see `shouldRefreshModels`);
+     * `firstPoll` when no poll had finished before this one. */
+    private readonly onModelsReachable?: (firstPoll: boolean) => void,
     /** Reads the key's own usage for the connection a poll resolved (see `statusBarUsageSuffix`). */
     private readonly fetchPersonalUsage?: (connection: Connection) => Promise<UsageLimitView | null>
   ) {
@@ -239,7 +240,7 @@ export class ConnectionStatusBar implements vscode.Disposable {
     const pollOk = result.ok && result.status >= 200 && result.status < 300;
     const previousPollOk = this.lastPollOk;
     this.lastPollOk = pollOk;
-    if (shouldRefreshModels({ previousPollOk, pollOk })) this.onModelsReachable?.();
+    if (shouldRefreshModels({ previousPollOk, pollOk })) this.onModelsReachable?.(previousPollOk === undefined);
     return result.ok;
   }
 
