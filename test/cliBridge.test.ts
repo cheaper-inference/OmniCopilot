@@ -58,6 +58,25 @@ describe("resolveCliCommand", () => {
     }
   });
 
+  it.each([
+    ["linux", "/opt/microsoft/powershell/7-preview/pwsh-preview", "& '/opt/my tools/omniroute'"],
+    ["darwin", "/usr/local/bin/PWSH-PREVIEW", "& '/opt/my tools/omniroute'"],
+    ["win32", "C:\\Program Files\\PowerShell\\7-preview\\pwsh-preview.exe", "& \"/opt/my tools/omniroute\""],
+    ["win32", "C:\\Windows\\System32\\WindowsPowerShell\\v1.0\\PowerShell.EXE", "& \"/opt/my tools/omniroute\""],
+  ] as const)("recognises PowerShell on %s by the name of %s", (platform, shellPath, command) => {
+    expect(resolveCliCommand("'/opt/my tools/omniroute'", { platform, shellPath })).toEqual({ ok: true, command });
+  });
+
+  it.each(["/usr/bin/pwsh-wrapper", "/usr/bin/mypwsh", "/usr/bin/pwsh-preview.sh", "/bin/bash"])(
+    "does not take %s for PowerShell",
+    (shellPath) => {
+      expect(resolveCliCommand("'/opt/my tools/omniroute'", { platform: "linux", shellPath })).toEqual({
+        ok: true,
+        command: "'/opt/my tools/omniroute'",
+      });
+    }
+  );
+
   it("leaves an unquoted command as written for PowerShell on linux", () => {
     expect(resolveCliCommand("npx omniroute", { platform: "linux", shellPath: "/usr/bin/pwsh" })).toEqual({
       ok: true,
