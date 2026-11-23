@@ -232,6 +232,22 @@ describe("OmniRouteClient.streamChat", () => {
     expect(error).toBe(abortError);
   });
 
+  it("ignores a chunk whose delta is null", async () => {
+    vi.stubGlobal(
+      "fetch",
+      vi.fn().mockResolvedValue(
+        sseResponse([
+          'data: {"choices":[{"delta":null}]}',
+          'data: {"choices":[{"delta":null,"finish_reason":null}]}',
+          'data: {"choices":[{"delta":{"content":"ok"}}]}',
+          "data: [DONE]",
+        ])
+      )
+    );
+    const events = await collect(new OmniRouteClient({ baseUrl: "http://x/v1" }));
+    expect(events).toEqual([{ kind: "text", text: "ok" }]);
+  });
+
   it("ignores malformed keep-alive lines", async () => {
     vi.stubGlobal(
       "fetch",

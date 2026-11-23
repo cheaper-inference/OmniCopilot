@@ -72,7 +72,8 @@ function makeProvider(overrides: { config?: Record<string, unknown> } = {}) {
     state.isCancellationRequested = true;
     for (const listener of [...listeners]) listener();
   };
-  return { provider, context, reported, activity, log, progress, token, cancel };
+  const listenerCount = () => listeners.size;
+  return { provider, context, reported, activity, log, progress, token, cancel, listenerCount };
 }
 
 /** `LanguageModelThinkingPart` is proposed API, so the typings do not know it. */
@@ -749,7 +750,9 @@ describe("provider catalog", () => {
         ? sseResponse([{ choices: [{ delta: { content: "ok" } }] }])
         : String(url).endsWith("/combos")
           ? catalog([])
-          : catalog([{ id: "r", capabilities: { reasoning: true, effort_tiers: ["low", "high", "max"] } }])
+          : catalog([
+              { id: "r", capabilities: { reasoning: true, effort_tiers: ["low", "high", "ultra", "max"] } },
+            ])
     );
     const { provider, progress, token } = makeProvider({ config: { defaultReasoningEffort: "max" } });
     await provider.provideLanguageModelChatInformation({ silent: true }, token);
@@ -768,6 +771,24 @@ describe("provider catalog", () => {
     const chatCall = fetchMock.mock.calls.find(([url]) => String(url).endsWith("/chat/completions"));
     const init = chatCall?.[1] as RequestInit;
     expect(JSON.parse(init.body as string).reasoning_effort).toBe("max");
+
+    // `ultra` is only a tier of its own because this model advertises it; without
+    // the model's tiers it would be read as the synonym of `max`.
+    await provider.provideLanguageModelChatResponse(
+      { ...(modelInfo(false) as object), id: "r", omniModelId: "r" } as never,
+      [
+        {
+          role: vscode.LanguageModelChatMessageRole.User,
+          content: [new vscode.LanguageModelTextPart("go")],
+        } as never,
+      ],
+      { tools: [], toolMode: 1, modelConfiguration: { reasoningEffort: "ultra" } } as never,
+      progress,
+      token
+    );
+    const chatCalls = fetchMock.mock.calls.filter(([url]) => String(url).endsWith("/chat/completions"));
+    const advertised = chatCalls[chatCalls.length - 1][1] as RequestInit;
+    expect(JSON.parse(advertised.body as string).reasoning_effort).toBe("ultra");
   });
 });
 
@@ -1059,6 +1080,18 @@ describe("provider effort picker", () => {
     expect("default" in (byId.get("tiered")?.configurationSchema?.properties.reasoningEffort as object)).toBe(false);
   });
 
+  it("gives the Agents-window clone of a reasoning model the same effort picker", async () => {
+    const { byId } = await list({ exposeToAgentsWindow: true, defaultReasoningEffort: "high" });
+    const original = byId.get("tiered")?.configurationSchema;
+    const clone = byId.get("tiered::agents")?.configurationSchema;
+    expect(original?.properties.reasoningEffort.enum).toEqual(["low", "high", "max"]);
+    expect(clone).toEqual(original);
+    expect(byId.get("thinker::agents")?.configurationSchema).toEqual(
+      byId.get("thinker")?.configurationSchema
+    );
+    expect(byId.get("plain::agents")?.configurationSchema).toBeUndefined();
+  });
+
   async function chat(
     provider: OmniRouteChatProvider,
     progress: vscode.Progress<Reported>,
@@ -1300,6 +1333,28 @@ describe("provider request retries", () => {
     expect(ctx.reported).toHaveLength(1);
   });
 
+  it("disposes the cancellation listener of the wait once the retry timer has fired", async () => {
+    let finishSecondAttempt: (response: Response) => void = () => undefined;
+    fetchMock
+      .mockResolvedValueOnce(status(503))
+      .mockImplementationOnce(
+        () => new Promise<Response>((resolve) => void (finishSecondAttempt = resolve))
+      );
+    const ctx = makeProvider();
+    const result = ask(ctx);
+
+    await vi.advanceTimersByTimeAsync(0);
+    // The request's own listener plus the one of the backoff wait.
+    expect(ctx.listenerCount()).toBe(2);
+    await vi.advanceTimersByTimeAsync(1_000);
+    expect(fetchMock).toHaveBeenCalledTimes(2);
+    expect(ctx.listenerCount()).toBe(1);
+
+    finishSecondAttempt(sseResponse([text("ok")]));
+    expect(await result).toEqual({ ok: true });
+    expect(ctx.listenerCount()).toBe(0);
+  });
+
   it("does not retry after thinking has been shown", async () => {
     fetchMock.mockResolvedValue(
       sseResponse([
@@ -1308,12 +1363,16 @@ describe("provider request retries", () => {
       ])
     );
     const ctx = makeProvider();
-    const result = (await ask(ctx)) as { ok: boolean; error: Error };
+    const pending = ask(ctx);
+    // Let any retry that would happen start, so a regression fails on the
+    // assertions below instead of waiting for a timer nobody advances.
+    await vi.advanceTimersByTimeAsync(5_000);
+    expect(fetchMock).toHaveBeenCalledTimes(1);
+    expect(vi.getTimerCount()).toBe(0);
+    const result = (await pending) as { ok: boolean; error: Error };
 
     expect(result.ok).toBe(false);
     expect(result.error.message).toBe("[503]: busy (reset after 1s)");
-    expect(fetchMock).toHaveBeenCalledTimes(1);
-    expect(vi.getTimerCount()).toBe(0);
     expect(thinkingParts(ctx.reported)).toHaveLength(1);
   });
 
