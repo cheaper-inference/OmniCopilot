@@ -2210,6 +2210,51 @@ describe("provider current listing (what the panel reports)", () => {
       expect(events()).toBe(1);
     });
 
+    it("refreshes after the host cancelled its listing and only the panel's own listing succeeded", async () => {
+      const { provider } = makeProvider();
+      const gate = holdNextCatalog();
+      const { token, cancel } = hostToken();
+      const events = changeEvents(provider);
+      const fromHost = provider.provideLanguageModelChatInformation({ silent: true }, token);
+      await vi.waitFor(() => expect(gate.held()).toBe(true));
+      cancel();
+      gate.release();
+      expect(await fromHost).toEqual([]);
+
+      expect(await provider.currentListing()).toMatchObject({ ok: true }); // the panel's own listing
+      await provider.refreshUnlessListed();
+
+      expect(events()).toBe(1);
+    });
+
+    it("refreshes when only the panel has listed: the host has not", async () => {
+      const { provider } = makeProvider();
+      const events = changeEvents(provider);
+      expect(await provider.currentListing()).toMatchObject({ ok: true });
+
+      await provider.refreshUnlessListed();
+
+      expect(events()).toBe(1);
+    });
+
+    it("does nothing when the host joined the panel's listing under way and it succeeded", async () => {
+      const { provider } = makeProvider();
+      const gate = holdNextCatalog();
+      const events = changeEvents(provider);
+      const fromPanel = provider.currentListing();
+      await vi.waitFor(() => expect(gate.held()).toBe(true));
+      const fromHost = provider.provideLanguageModelChatInformation({ silent: true }, hostToken().token);
+
+      const decided = provider.refreshUnlessListed();
+      gate.release();
+      await decided;
+
+      expect(await fromHost).toHaveLength(3);
+      await fromPanel;
+      expect(events()).toBe(0);
+      expect(catalogDownloads()).toBe(1);
+    });
+
     it("adds no refresh of its own when a refresh() came in while it waited", async () => {
       const { provider } = makeProvider();
       const gate = holdNextCatalog(() => new Response("{}", { status: 503 }));
