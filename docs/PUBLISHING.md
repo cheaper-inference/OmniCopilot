@@ -32,8 +32,9 @@ once. The second publishes that package to the Marketplace and to Open VSX, in t
 creates the GitHub release with the notes of that version.
 
 Nothing is published when the Open VSX token is missing or the Marketplace step fails. Both
-publish steps skip a version that is already in the store, so a run that stopped half way can
-be started again from the same tag and finishes what was left out.
+publish steps skip a version that is already in the store, so a run that stopped half way can be
+finished: fix what stopped it, then use **Re-run failed jobs** on that run. That publishes the
+package the run already built, to the store that was left out.
 
 ### One-time setup
 

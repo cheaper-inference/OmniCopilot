@@ -59,8 +59,8 @@ jobs:
           VERSION: ${{ steps.version.outputs.version }}
         run: |
           awk -v v="## $VERSION" '{ sub(/\r$/, "") } $0 == v { on = 1; next } on && /^## / { exit } on' CHANGELOG.md > release-notes.md
-          if [ ! -s release-notes.md ]; then
-            echo "::error::CHANGELOG.md has no section headed exactly '## $VERSION'"
+          if ! grep -q '[^[:space:]]' release-notes.md; then
+            echo "::error::CHANGELOG.md has no section headed exactly '## $VERSION', or the section is empty"
             exit 1
           fi
       - name: Install
