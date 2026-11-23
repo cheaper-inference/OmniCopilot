@@ -453,6 +453,50 @@ describe("OmniRoute: Check connection after a real listing", () => {
     ext.dispose();
   });
 
+  it("reports a check of the connection in effect when the connection changed while the probe ran", async () => {
+    vi.useFakeTimers({ toFake: ["setTimeout", "clearTimeout", "setInterval", "clearInterval"] });
+    let holdNext = false;
+    let failHeld: (() => void) | undefined;
+    vi.stubGlobal(
+      "fetch",
+      vi.fn(async (url: string, init?: RequestInit) => {
+        if (init?.method === "HEAD") {
+          if (!holdNext) return new Response(null, { status: 200 });
+          holdNext = false;
+          return new Promise<Response>((_resolve, reject) => {
+            failHeld = () => reject(new TypeError("fetch failed"));
+          });
+        }
+        if (String(url).includes("/combos")) return new Response("{}", { status: 404 });
+        return new Response(JSON.stringify({ object: "list", data: [chat("a/one")] }), { status: 200 });
+      })
+    );
+    setMockConfig({ baseUrl: "http://localhost:20128" });
+    let onConfigChange: ((e: { affectsConfiguration(section: string): boolean }) => void) | undefined;
+    vi.spyOn(vscode.workspace, "onDidChangeConfiguration").mockImplementation(((cb: typeof onConfigChange) => {
+      onConfigChange = cb;
+      return { dispose() {} };
+    }) as never);
+    const info = vi.spyOn(vscode.window, "showInformationMessage");
+    const warn = vi.spyOn(vscode.window, "showWarningMessage");
+    const ext = activated();
+    await vi.advanceTimersByTimeAsync(300);
+
+    holdNext = true;
+    const check = ext.run("omnicopilot.checkConnection") as Promise<void>;
+    await vi.waitFor(() => expect(failHeld).toBeDefined());
+    // The connection changes while the command's probe is out; the probe of the old one then fails.
+    onConfigChange?.({ affectsConfiguration: (section) => section === "omnicopilot" || section === "omnicopilot.modelFilter" });
+    failHeld?.();
+    await vi.advanceTimersByTimeAsync(300);
+    await check;
+
+    expect(texts(info)).toEqual(["Connected to OmniRoute at http://localhost:20128."]);
+    expect(warn).not.toHaveBeenCalled();
+    ext.dispose();
+    vi.useRealTimers();
+  });
+
   it("keeps the diagnosis for an unreachable server", async () => {
     stubUnreachable();
     setMockConfig({ baseUrl: "http://localhost:20128" });

@@ -216,21 +216,30 @@ export class ConnectionStatusBar implements vscode.Disposable {
     return this.status === "offline" ? this.lastFailure : undefined;
   }
 
-  async checkNow(): Promise<boolean> {
+  /**
+   * One poll. `rechecks` is for a caller that reports the result ("Check connection"):
+   * when the connection changed while the probe ran, the stale result is not reported
+   * and the check runs again for the connection in effect, up to that many more times.
+   * A background poll passes none: the restart that changed the connection polls itself.
+   */
+  async checkNow(options: { rechecks?: number } = {}): Promise<boolean> {
     // A poll is one generation from start to finish: once the connection changed under
     // it, nothing it resolved or measured is applied, and it starts no usage read.
     let generation = this.connectionGeneration;
     const client = await this.getClient();
-    if (generation !== this.connectionGeneration) return this.checkNow();
+    if (generation !== this.connectionGeneration) return this.checkNow(options);
     const connection = await this.getConnection?.();
-    if (generation !== this.connectionGeneration) return this.checkNow();
+    if (generation !== this.connectionGeneration) return this.checkNow(options);
     this.root = serverRootUrl(client.baseUrl);
     // Before anything is drawn: a number read for another key or server goes at once.
     if (connection && this.adoptUsageConnection(connection)) generation = this.connectionGeneration;
     this.keyNote = connection ? keyWithheldMessage(connection) : undefined;
     this.keyWithheld = connection?.keyWithheld ?? false;
     const result: ProbeResult = await client.probe(PROBE_TIMEOUT_MS);
-    if (generation !== this.connectionGeneration) return result.ok;
+    if (generation !== this.connectionGeneration) {
+      const rechecks = options.rechecks ?? 0;
+      return rechecks > 0 ? this.checkNow({ rechecks: rechecks - 1 }) : result.ok;
+    }
     this.lastFailure = result.ok
       ? undefined
       : describeProbeFailure(client.baseUrl, result, PROBE_TIMEOUT_MS).summary;

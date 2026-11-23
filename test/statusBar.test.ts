@@ -880,6 +880,55 @@ describe("ConnectionStatusBar polls and key changes", () => {
     t.statusBar.dispose();
   });
 
+  it("checks again for the connection in effect when asked to, and returns that result", async () => {
+    const t = setUp();
+    const check = t.statusBar.checkNow({ rechecks: 2 });
+    await vi.waitFor(() => expect(t.probes).toHaveLength(1));
+    t.statusBar.restart(); // its own poll is probe 2
+    await vi.waitFor(() => expect(t.probes).toHaveLength(2));
+
+    t.probes[0]?.ok(200); // stale: not the answer
+    await vi.waitFor(() => expect(t.probes).toHaveLength(3));
+    t.probes[1]?.fail();
+    t.probes[2]?.ok(401);
+
+    expect(await check).toBe(true);
+    await t.flush();
+    expect(t.probes).toHaveLength(3);
+    t.statusBar.dispose();
+  });
+
+  it("checks again at most twice more, then returns the last result", async () => {
+    const t = setUp();
+    const check = t.statusBar.checkNow({ rechecks: 2 });
+    for (let round = 0; round < 3; round++) {
+      await vi.waitFor(() => expect(t.probes.length).toBeGreaterThan(2 * round));
+      t.statusBar.restart(); // the connection changes under every check
+      await vi.waitFor(() => expect(t.probes).toHaveLength(2 * round + 2));
+      t.probes[2 * round]?.ok(200);
+    }
+
+    expect(await check).toBe(true);
+    await t.flush();
+    expect(t.probes).toHaveLength(6); // three checks and three restarts' polls, no fourth check
+    t.statusBar.dispose();
+  });
+
+  it("does not check again for a poll that was not asked to", async () => {
+    const t = setUp();
+    const poll = t.statusBar.checkNow();
+    await vi.waitFor(() => expect(t.probes).toHaveLength(1));
+    t.statusBar.restart();
+    await vi.waitFor(() => expect(t.probes).toHaveLength(2));
+
+    t.probes[0]?.ok(200);
+    await poll;
+    await t.flush();
+
+    expect(t.probes).toHaveLength(2);
+    t.statusBar.dispose();
+  });
+
   it("applies nothing of a stale poll: not its status, not its model refill", async () => {
     const onModelsReachable = vi.fn();
     const t = setUp();
