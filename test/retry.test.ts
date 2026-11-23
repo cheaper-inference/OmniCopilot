@@ -30,6 +30,29 @@ describe("parseRetryAfter", () => {
   });
 });
 
+describe("parseRetryAfter with a number that is not a wait", () => {
+  it.each(["-1", "-5", "-0.5", " -3 "])("ignores %j instead of reading it as a date", (value) => {
+    expect(parseRetryAfter(value)).toBeUndefined();
+  });
+
+  it("keeps zero and non-negative numbers as seconds", () => {
+    expect(parseRetryAfter("0")).toBe(0);
+    expect(parseRetryAfter("3")).toBe(3_000);
+    expect(parseRetryAfter("1.5")).toBe(1_500);
+  });
+
+  it("keeps an HTTP date: the difference when in the future, no wait when it has passed", () => {
+    const now = Date.parse("2026-11-14T12:00:00Z");
+    expect(parseRetryAfter("Sat, 14 Nov 2026 12:00:30 GMT", now)).toBe(30_000);
+    expect(parseRetryAfter("Sat, 14 Nov 2026 11:00:00 GMT", now)).toBe(0);
+  });
+
+  it("lets the normal backoff apply to a negative hint", () => {
+    const hint = parseRetryAfter("-1");
+    expect(nextRetryDelay(http(503, hint), 0, 0)).toBe(1_000);
+  });
+});
+
 describe("retryDelayFromMessage", () => {
   it("reads the reset hint OmniRoute appends to upstream errors", () => {
     expect(retryDelayFromMessage("[x/y] [503]: busy (reset after 24s)")).toBe(24_000);
