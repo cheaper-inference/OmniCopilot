@@ -162,8 +162,7 @@
               "markdown": "media/walkthrough/run.md"
             },
             "completionEvents": [
-              "onCommand:omnicopilot.installOmniRoute",
-              "onCommand:omnicopilot.checkConnection"
+              "onContext:omnicopilot.serverOnline"
             ]
           },
           {

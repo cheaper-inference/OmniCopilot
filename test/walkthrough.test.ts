@@ -30,6 +30,17 @@ const COMPLETION_BUILT_INS = [
   "workbench.action.openSettings",
 ];
 
+/** Context keys a completion event may wait for: each one is set by the extension (checked below). */
+const CONTEXT_KEYS = ["omnicopilot.serverOnline"];
+
+/** Every TypeScript source under src/, as text. */
+function sources(): string {
+  return readdirSync(resolve(root, "src"))
+    .filter((file) => file.endsWith(".ts"))
+    .map((file) => readFileSync(resolve(root, "src", file), "utf8"))
+    .join("\n");
+}
+
 const LINK_LINE = /^\[[^\]]+\]\(command:[^)]+\)$/;
 
 /** The text inside the parentheses of every `[label](command:...)` link, in order. */
@@ -133,12 +144,37 @@ describe("getting-started walkthrough", () => {
           expect(ok, `${step.id}: ${event}`).toBe(true);
         } else if (prefix === "onSettingChanged") {
           expect(id, `${step.id}: ${event}`).toBe("chat.utilityModel");
+        } else if (prefix === "onContext") {
+          expect(CONTEXT_KEYS, `${step.id}: ${event}`).toContain(id);
         } else {
           expect.unreachable(`${step.id}: unexpected completion event ${event}`);
         }
       }
     }
     expect(seen).toBeGreaterThan(0);
+  });
+
+  it("sets every context key a completion event waits for", () => {
+    const src = sources();
+    for (const key of CONTEXT_KEYS) {
+      expect(src, key).toContain(`"setContext", "${key}"`);
+    }
+  });
+
+  it("completes the first step only when the server answers, not when one of its buttons is clicked", () => {
+    const run = steps.find((step) => step.id === "run");
+    expect(run?.completionEvents).toEqual(["onContext:omnicopilot.serverOnline"]);
+    // Both buttons stay in the step.
+    const description = nls[run!.description.slice(1, -1)];
+    expect(linkTargets(description)).toEqual(["command:omnicopilot.installOmniRoute", "command:omnicopilot.checkConnection"]);
+  });
+
+  it("leaves the completion events of the other steps as they were", () => {
+    expect(Object.fromEntries(steps.filter((s) => s.id !== "run").map((s) => [s.id, s.completionEvents]))).toEqual({
+      connect: ["onCommand:omnicopilot.manage"],
+      pickModel: ["onCommand:workbench.action.chat.manage", "onCommand:workbench.action.chat.openModelPicker"],
+      utility: ["onSettingChanged:chat.utilityModel", "onCommand:workbench.action.openSettings"],
+    });
   });
 
   it("says in the utility step that its settings need a recent VS Code", () => {

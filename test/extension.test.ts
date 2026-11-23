@@ -1,6 +1,6 @@
 import { afterEach, beforeEach, describe, expect, it, vi } from "vitest";
 import * as vscode from "vscode";
-import { registeredCommands, setMockConfig, setMockWorkspace } from "./vscode.mock";
+import { registeredCommands, setMockConfig, setMockInspect, setMockWorkspace } from "./vscode.mock";
 import {
   SECRET_API_KEY,
   SECRET_API_KEY_ORIGINS,
@@ -979,6 +979,80 @@ describe("the status bar without a key in effect", () => {
     await vi.advanceTimersByTimeAsync(500);
 
     expect(usageRequests(fetchMock).length).toBeGreaterThan(0);
+    ext.dispose();
+  });
+});
+
+describe("the context key the walkthrough's first step waits for", () => {
+  beforeEach(() => vi.useFakeTimers({ toFake: ["setTimeout", "clearTimeout", "setInterval", "clearInterval"] }));
+  afterEach(() => {
+    vi.useRealTimers();
+    vi.unstubAllGlobals();
+    vi.restoreAllMocks();
+  });
+
+  /** The values given to `omnicopilot.serverOnline`, in order. */
+  function contextValues(spy: ReturnType<typeof vi.spyOn>): unknown[] {
+    return spy.mock.calls
+      .filter((call: unknown[]) => call[0] === "setContext" && call[1] === "omnicopilot.serverOnline")
+      .map((call: unknown[]) => call[2]);
+  }
+
+  it("is false at activation, true once the server answers, and false again when it stops", async () => {
+    let up = true;
+    vi.stubGlobal(
+      "fetch",
+      vi.fn(async (url: string, init?: RequestInit) => {
+        if (!up) throw new TypeError("fetch failed", { cause: Object.assign(new Error("refused"), { code: "ECONNREFUSED" }) });
+        if (init?.method === "HEAD") return new Response(null, { status: 200 });
+        if (String(url).includes("/combos")) return new Response("{}", { status: 404 });
+        return new Response(JSON.stringify({ object: "list", data: [chat("a/one")] }), { status: 200 });
+      })
+    );
+    setMockConfig({ baseUrl: "http://localhost:20128" });
+    const execute = vi.spyOn(vscode.commands, "executeCommand");
+    const ext = activated();
+    expect(contextValues(execute)).toEqual([false]);
+
+    await vi.advanceTimersByTimeAsync(300);
+    expect(contextValues(execute)).toEqual([false, true]);
+
+    up = false;
+    await vi.advanceTimersByTimeAsync(30_000);
+    expect(contextValues(execute)).toEqual([false, true, false]);
+    ext.dispose();
+  });
+
+  it("stays false while the server cannot be reached", async () => {
+    stubUnreachable();
+    setMockConfig({ baseUrl: "http://localhost:20128" });
+    const execute = vi.spyOn(vscode.commands, "executeCommand");
+    const ext = activated();
+
+    await vi.advanceTimersByTimeAsync(300);
+
+    // Set at activation, and again (still false) when the first poll finds the server offline.
+    expect(contextValues(execute)[0]).toBe(false);
+    expect(contextValues(execute)).not.toContain(true);
+    ext.dispose();
+  });
+
+  it("does not follow a server URL set by the workspace", async () => {
+    vi.stubGlobal("fetch", vi.fn(async (url: string) => {
+      // Only the workspace's address answers; the user-level one is down.
+      if (String(url).startsWith("http://workspace.example")) return new Response(null, { status: 200 });
+      throw new TypeError("fetch failed", { cause: Object.assign(new Error("refused"), { code: "ECONNREFUSED" }) });
+    }));
+    setMockConfig({ baseUrl: "http://localhost:20128" });
+    setMockInspect("baseUrl", { workspaceValue: "http://workspace.example" });
+    const execute = vi.spyOn(vscode.commands, "executeCommand");
+    const ext = activated();
+
+    await vi.advanceTimersByTimeAsync(300);
+
+    // Set at activation, and again (still false) when the first poll finds the server offline.
+    expect(contextValues(execute)[0]).toBe(false);
+    expect(contextValues(execute)).not.toContain(true);
     ext.dispose();
   });
 });

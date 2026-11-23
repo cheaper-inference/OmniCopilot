@@ -97,10 +97,20 @@ export function activate(context: vscode.ExtensionContext): void {
     void promise?.catch((err: unknown) => log.warn(`${what} failed: ${String(err)}`));
   };
 
+  // The walkthrough's first step completes on omnicopilot.serverOnline: true while the
+  // status bar finds the server online (it polls the user-level URL only), false before
+  // the first answer and while it is offline.
+  const setServerOnline = (online: boolean): void =>
+    background(
+      "Context update",
+      Promise.resolve(vscode.commands.executeCommand("setContext", "omnicopilot.serverOnline", online))
+    );
+  setServerOnline(false);
+
   statusBar = new ConnectionStatusBar(
     () => makeClient(context),
     log,
-    undefined,
+    (status) => setServerOnline(status === "online"),
     () => resolveConnection(context),
     // The model picker is empty when the server was down at startup; list again once a poll
     // finds it accepting requests. The first poll runs alongside the host's first listing, so
