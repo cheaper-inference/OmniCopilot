@@ -1,3 +1,5 @@
+import { readFileSync } from "node:fs";
+import { join } from "node:path";
 import { describe, expect, it } from "vitest";
 import { OmniRouteRequestError } from "../src/client";
 import {
@@ -86,5 +88,36 @@ describe("nextRetryDelay", () => {
     expect(nextRetryDelay(network(), 0, 0, policy)).toBe(500);
     expect(nextRetryDelay(network(), 1, 0, policy)).toBeNull();
     expect(nextRetryDelay(http(429, 6_000), 0, 0, policy)).toBeNull();
+  });
+});
+
+describe("module structure", () => {
+  /** The modules a source file imports or re-exports from, by their specifier. */
+  function importsOf(file: string): string[] {
+    const source = readFileSync(join(__dirname, "..", "src", file), "utf8");
+    const found: string[] = [];
+    for (const line of source.split("\n")) {
+      const match = /^(?:import|export)\b.*\bfrom\s+"([^"]+)"/.exec(line);
+      if (match) found.push(match[1]);
+    }
+    return found;
+  }
+
+  it("keeps the client and the retry policy from importing each other", () => {
+    const clientImportsRetry = importsOf("client.ts").includes("./retry");
+    const retryImportsClient = importsOf("retry.ts").includes("./client");
+    expect(clientImportsRetry && retryImportsClient).toBe(false);
+    expect(retryImportsClient).toBe(false);
+  });
+
+  it("keeps the shared error type free of imports from either of them", () => {
+    const imports = importsOf("requestError.ts");
+    expect(imports).not.toContain("./client");
+    expect(imports).not.toContain("./retry");
+  });
+
+  it("still exports the error type from the client, as every other module imports it there", () => {
+    expect(importsOf("client.ts")).toContain("./requestError");
+    expect(OmniRouteRequestError.name).toBe("OmniRouteRequestError");
   });
 });
