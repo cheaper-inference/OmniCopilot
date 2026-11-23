@@ -50,7 +50,8 @@ export function shellQuote(
   return `'${value.replace(/'/g, `'\\''`)}'`;
 }
 
-const POWERSHELL = /^(pwsh|powershell)(\.exe)?$/i;
+/** PowerShell's executables: `pwsh`, the preview build `pwsh-preview`, and Windows PowerShell. */
+const POWERSHELL = /^(pwsh|pwsh-preview|powershell)(\.exe)?$/i;
 const QUOTED_EXECUTABLE_PATH = /^[\w@%+=:,./\\ ~()-]+$/;
 const COMMAND_WITH_ARGS = /^[\w@%+=:,./\\ ~-]+$/;
 
