@@ -1249,6 +1249,57 @@ describe("provider request retries", () => {
     expect(ctx.activity).toEqual([true]);
   });
 
+  /** A 200 answer whose connection drops after `chunks` were delivered. */
+  function droppedAnswer(chunks: unknown[] = []): Response {
+    let sent = 0;
+    const body = new ReadableStream<Uint8Array>({
+      pull(controller) {
+        if (sent < chunks.length) {
+          controller.enqueue(new TextEncoder().encode(`data: ${JSON.stringify(chunks[sent++])}\n`));
+        } else controller.error(new TypeError("terminated"));
+      },
+    });
+    return new Response(body, { status: 200, headers: { "content-type": "text/event-stream" } });
+  }
+
+  it("retries a connection dropped before any output and answers from the next attempt", async () => {
+    fetchMock
+      .mockResolvedValueOnce(droppedAnswer())
+      .mockResolvedValueOnce(sseResponse([text("back")]));
+    const ctx = makeProvider();
+    const result = ask(ctx);
+    await vi.advanceTimersByTimeAsync(1_000);
+
+    expect(await result).toEqual({ ok: true });
+    expect(fetchMock).toHaveBeenCalledTimes(2);
+    expect(ctx.reported.filter((p) => p instanceof vscode.LanguageModelTextPart)).toHaveLength(1);
+    expect(ctx.activity).toEqual([true]);
+  });
+
+  it("goes offline when every attempt drops before any output", async () => {
+    fetchMock.mockImplementation(async () => droppedAnswer());
+    const ctx = makeProvider();
+    const result = ask(ctx);
+    await vi.advanceTimersByTimeAsync(3_000);
+
+    const outcome = (await result) as { ok: boolean; error: Error };
+    expect(outcome.ok).toBe(false);
+    expect(outcome.error.message).toMatch(/network error/);
+    expect(fetchMock).toHaveBeenCalledTimes(3);
+    expect(ctx.activity).toEqual([false]);
+  });
+
+  it("does not retry a connection dropped after text was streamed", async () => {
+    fetchMock.mockImplementation(async () => droppedAnswer([text("partial")]));
+    const ctx = makeProvider();
+    const outcome = (await ask(ctx)) as { ok: boolean; error: Error };
+
+    expect(outcome.ok).toBe(false);
+    expect(fetchMock).toHaveBeenCalledTimes(1);
+    expect(vi.getTimerCount()).toBe(0);
+    expect(ctx.reported).toHaveLength(1);
+  });
+
   it("does not retry after thinking has been shown", async () => {
     fetchMock.mockResolvedValue(
       sseResponse([

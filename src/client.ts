@@ -308,7 +308,18 @@ export class OmniRouteClient {
 
     try {
       for (;;) {
-        const { done, value } = await reader.read();
+        let chunk: Awaited<ReturnType<typeof reader.read>>;
+        try {
+          chunk = await reader.read();
+        } catch (err) {
+          // The headers arrived, then the connection dropped. A cancelled request
+          // keeps propagating as an abort; anything else is a network failure
+          // like one before the headers (the provider retries it while nothing
+          // has reached the editor).
+          if (signal.aborted || (err as { name?: string } | null)?.name === "AbortError") throw err;
+          throw networkError(err);
+        }
+        const { done, value } = chunk;
         if (done) break;
         buffer += decoder.decode(value, { stream: true });
 
