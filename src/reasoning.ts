@@ -49,12 +49,19 @@ export function normalizeReasoningEffort(
 }
 
 /** The tiers a catalog entry advertises. The catalog is foreign data: anything
- * that is not an array counts as absent, and entries that are not non-empty
- * strings are dropped. */
+ * that is not an array counts as absent, entries that are not non-empty strings
+ * are dropped, and the rest are trimmed and lower-cased (the lookup against what
+ * a caller asks for is lower-case) and listed once. */
 export function advertisedEffortTiers(model: Pick<OmniRouteModel, "capabilities">): string[] {
   const raw: unknown = model.capabilities?.effort_tiers;
   if (!Array.isArray(raw)) return [];
-  return raw.filter((tier): tier is string => typeof tier === "string" && tier.trim() !== "");
+  const tiers = new Set<string>();
+  for (const tier of raw) {
+    if (typeof tier !== "string") continue;
+    const normal = tier.trim().toLowerCase();
+    if (normal) tiers.add(normal);
+  }
+  return [...tiers];
 }
 
 /** The tiers to offer for a model: what the catalog advertises, else the
