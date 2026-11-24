@@ -107,10 +107,11 @@ When the server cannot be reached, the panel says why instead of only "Offline":
 | The TLS certificate was rejected | A self-signed or expired certificate on an `https://` server |
 | Answered HTTP *n*, which is not what an OmniRoute server answers | Something else is listening at that address |
 
-Two situations explain most reports:
+Three situations explain most reports:
 
 - **Remote windows.** In WSL, over SSH, in a dev container or a Codespace, the extension runs on the remote machine. `localhost` is that machine, not your own computer. Use an address the remote can reach, and set it in the panel from that window.
 - **Proxies.** VS Code routes extension requests through its proxy settings, LAN addresses included. If `curl` reaches the server from a terminal and the extension does not, add the host to `http.noProxy`, for example `"http.noProxy": ["192.168.2.4"]`.
+- **A key the server rejects.** The panel says *Online (models blocked)* and the model picker is empty. Save the right key with **Save & Test**. If the key was fixed on the server instead (enabled, or given access to the models), the extension does not find that out by itself: run `OmniRoute: Refresh Models`, or open the OmniRoute panel, and the models come back.
 
 ## Configure your coding CLIs
 
