@@ -48,6 +48,9 @@ on every pull request.
 ### Changed
 
 - **Faster token counting.** A tool result with images is no longer encoded just to be counted.
+- **Swahili and Azerbaijani were read again from start to finish**, against the wording OmniRoute's
+  own dashboard uses. Fifty strings changed. Among them, the notice for a key that is held back said
+  "not sent yet" in Swahili, and the usage notice read as "this key cannot be used" in Azerbaijani.
 - **Pull requests are checked automatically.** A CI workflow runs the type check, the lint, the
   tests, the translation check and the packaging. A *Publish* workflow releases a tagged version to
   both stores without a stored Marketplace token; `docs/PUBLISHING.md` has the one-time setup.
