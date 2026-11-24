@@ -1,0 +1,132 @@
+name: Publish
+
+# Publishes one tagged version to the VS Code Marketplace and to Open VSX, and attaches the
+# same .vsix to the GitHub release. Started by hand, from a version tag:
+#   Actions → Publish → Run workflow → "Use workflow from" → Tags → vX.Y.Z
+# The Marketplace sign-in is Trusted Publishing (GitHub OIDC): no token is stored for it.
+# What keeps a publish to version tags is the `marketplace` environment (restricted to v* tags
+# in the repository settings), not the check below, which only gives a clear message.
+# See docs/PUBLISHING.md for the one-time setup.
+
+on:
+  workflow_dispatch:
+
+permissions:
+  contents: read
+
+concurrency:
+  group: publish
+  cancel-in-progress: false
+
+jobs:
+  build:
+    name: Check and package
+    runs-on: ubuntu-latest
+    timeout-minutes: 15
+    outputs:
+      version: ${{ steps.version.outputs.version }}
+    steps:
+      - name: Only from a version tag
+        run: |
+          if [ "$GITHUB_REF_TYPE" != "tag" ] || ! printf '%s' "$GITHUB_REF_NAME" | grep -Eq '^v[0-9]+\.[0-9]+\.[0-9]+$'; then
+            echo "::error::Run this workflow from a version tag (vX.Y.Z), not from $GITHUB_REF"
+            exit 1
+          fi
+      - uses: actions/checkout@3d3c42e5aac5ba805825da76410c181273ba90b1 # v7.0.1
+        with:
+          fetch-depth: 0
+          persist-credentials: false
+      - name: The tagged commit is on main
+        run: |
+          if ! git merge-base --is-ancestor "$GITHUB_SHA" origin/main; then
+            echo "::error::$GITHUB_REF_NAME points at a commit that is not on main"
+            exit 1
+          fi
+      - uses: actions/setup-node@949feb2413d6458794dcd2491c4babbbce0c15c1 # v7.1.0
+        with:
+          node-version: 24
+      - name: The tag is the version in package.json
+        id: version
+        run: |
+          version=$(node -p "require('./package.json').version")
+          if [ "v$version" != "$GITHUB_REF_NAME" ]; then
+            echo "::error::package.json says $version but the tag is $GITHUB_REF_NAME"
+            exit 1
+          fi
+          echo "version=$version" >> "$GITHUB_OUTPUT"
+      - name: Release notes of this version
+        env:
+          VERSION: ${{ steps.version.outputs.version }}
+        run: |
+          awk -v v="## $VERSION" '{ sub(/\r$/, "") } $0 == v { on = 1; next } on && /^## / { exit } on' CHANGELOG.md > release-notes.md
+          if ! grep -q '[^[:space:]]' release-notes.md; then
+            echo "::error::CHANGELOG.md has no section headed exactly '## $VERSION', or the section is empty"
+            exit 1
+          fi
+      - name: Install
+        run: npm ci --ignore-scripts
+      - name: Type check
+        run: npm run check-types
+      - name: Lint
+        run: npm run lint
+      - name: Tests
+        run: npm test
+      - name: Translations are complete
+        run: npm run l10n:check
+      - name: Package
+        env:
+          VERSION: ${{ steps.version.outputs.version }}
+        run: npx vsce package -o "omnicopilot-$VERSION.vsix"
+      - uses: actions/upload-artifact@cf430e030ddbb5b0abf93d22962f4752f3646cd9 # v7.0.2
+        with:
+          name: release
+          path: |
+            omnicopilot-*.vsix
+            release-notes.md
+          if-no-files-found: error
+          retention-days: 30
+
+  publish:
+    name: Marketplace, Open VSX and GitHub release
+    needs: build
+    runs-on: ubuntu-latest
+    timeout-minutes: 15
+    environment: marketplace
+    permissions:
+      contents: write # the GitHub release
+      id-token: write # Trusted Publishing
+    env:
+      VERSION: ${{ needs.build.outputs.version }}
+    steps:
+      - name: The Open VSX token is set
+        env:
+          OVSX_PAT: ${{ secrets.OVSX_PAT }}
+        run: |
+          if [ -z "$OVSX_PAT" ]; then
+            echo "::error::The OVSX_PAT secret of the marketplace environment is empty. Nothing was published."
+            exit 1
+          fi
+      - uses: actions/setup-node@949feb2413d6458794dcd2491c4babbbce0c15c1 # v7.1.0
+        with:
+          node-version: 24
+      - uses: actions/download-artifact@9000827ccba6bdab643e8b6fd33ac0654aef8333 # v8.0.2
+        with:
+          name: release
+      # Both publish steps skip a version that is already there, so a run that stopped half way
+      # can be started again and finishes the store that was left out.
+      - name: Publish to the VS Code Marketplace
+        run: npx --yes @vscode/vsce@4.1.1 publish --oidc --skip-duplicate --packagePath "omnicopilot-$VERSION.vsix"
+      - name: Publish to Open VSX
+        env:
+          OVSX_PAT: ${{ secrets.OVSX_PAT }}
+        run: npx --yes ovsx@1.4.0 publish --skip-duplicate "omnicopilot-$VERSION.vsix" -p "$OVSX_PAT"
+      - name: GitHub release
+        env:
+          GH_TOKEN: ${{ github.token }}
+          GH_REPO: ${{ github.repository }}
+        run: |
+          if gh release view "$GITHUB_REF_NAME" >/dev/null 2>&1; then
+            gh release upload "$GITHUB_REF_NAME" "omnicopilot-$VERSION.vsix" --clobber
+          else
+            gh release create "$GITHUB_REF_NAME" "omnicopilot-$VERSION.vsix" --verify-tag --title "$VERSION" --notes-file release-notes.md
+          fi
