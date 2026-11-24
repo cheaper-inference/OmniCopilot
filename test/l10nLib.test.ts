@@ -681,7 +681,9 @@ describe("l10n-lib", () => {
     });
   });
 
-  describe("command line", () => {
+  // These run the real script in a child process, which loads the TypeScript compiler. On a
+  // busy machine or a small CI runner that alone can take longer than the default 5 s.
+  describe("command line", { timeout: 60_000 }, () => {
     const repoRoot = fileURLToPath(new URL("..", import.meta.url));
 
     /** A throwaway repository: copies of the scripts, a link to the real node_modules, and `files`. */
