@@ -730,11 +730,24 @@ describe("l10n-lib", () => {
       const repo = bigRepo(150, 12);
 
       const child = spawn(process.execPath, [path.join(repo, "scripts/l10n-check.mjs")], { stdio: ["ignore", "pipe", "pipe"] });
+      // Watched from the start: a report that fits in the pipe lets the process end before the
+      // reader begins, and a "close" nobody was listening for would never come again.
+      const closed = new Promise<number | null>((resolve) => child.on("close", resolve));
       const chunks: Buffer[] = [];
+      let reading = false;
+      const drain = () => {
+        for (let chunk: Buffer | null; reading && (chunk = child.stdout.read() as Buffer | null) !== null; ) {
+          chunks.push(chunk);
+        }
+      };
+      // Held, not read: with no listener at all Node drains and drops the output of a process
+      // that has ended.
+      child.stdout.on("readable", drain);
       // Do not read for a while: the process must still deliver everything it wrote.
       await new Promise((resolve) => setTimeout(resolve, 400));
-      child.stdout.on("data", (c: Buffer) => chunks.push(c));
-      const status = await new Promise<number | null>((resolve) => child.on("close", resolve));
+      reading = true;
+      drain();
+      const status = await closed;
 
       const text = Buffer.concat(chunks).toString("utf8");
       expect(text.length).toBeGreaterThan(64 * 1024);
