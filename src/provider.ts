@@ -177,6 +177,9 @@ export class OmniRouteChatProvider
   /** The listing under way (whoever started it), for `currentListing` to join. Its
    * `result` is undefined when the host cancelled it or it threw: that is nobody's answer. */
   private inFlightListing: { generation: number; result: Promise<ModelListing | undefined> } | undefined;
+  /** For a listing that failed: how to tell the user why. Whoever asks for it (a caller that
+   * is not silent) takes it, so a failed listing is explained once however many callers share it. */
+  private readonly failureNotices = new WeakMap<ModelListing, () => void>();
   /** Whether the host's last listing in this refresh generation succeeded; undefined
    * until it has listed (a cancelled listing does not count). */
   private hostListingOk: boolean | undefined;
@@ -232,20 +235,35 @@ export class OmniRouteChatProvider
 
   /**
    * One real listing of the server's models. Unless `silent`, a failure tells
-   * the user why (the message is not awaited: it must not hold the listing).
+   * the user why (the message is not awaited: it must not hold the listing), whether
+   * this caller started the listing or joined one under way: it is told once per failed
+   * listing, however many callers that are not silent share it.
    * `silent: true` never prompts: an unreachable server simply contributes no
    * models until the user fixes the connection. While it runs, `currentListing`
-   * joins it instead of downloading the catalog again.
+   * and other callers join it instead of downloading the catalog again.
    */
   listModels(options: { silent: boolean }, token?: vscode.CancellationToken): Promise<ModelListing> {
     const generation = this.refreshGeneration;
-    const listing = this.listFromServer(options, token).then((result) => {
+    const running =
+      this.inFlightListing?.generation === generation ? this.inFlightListing : undefined;
+    if (running) {
+      return running.result.then(
+        (result) => {
+          if (!result) return this.listModels(options, token);
+          if (!options.silent) this.explainFailure(result);
+          return result;
+        },
+        () => this.listModels(options, token)
+      );
+    }
+    const listing = this.listFromServer(token).then((result) => {
       // A listing whose request the host cancelled is not an answer about the server (the
       // client returns no models for a cancelled token): it neither becomes the count nor
       // clears the one already known.
       if (generation === this.refreshGeneration && !token?.isCancellationRequested) {
         this.lastListing = result.ok ? result : undefined;
       }
+      if (!options.silent) this.explainFailure(result);
       return result;
     });
     const entry = {
@@ -261,6 +279,14 @@ export class OmniRouteChatProvider
       if (this.inFlightListing === entry) this.inFlightListing = undefined;
     });
     return listing;
+  }
+
+  /** Tells the user why this listing failed, unless it succeeded or someone already did. */
+  private explainFailure(listing: ModelListing): void {
+    const notice = this.failureNotices.get(listing);
+    if (!notice) return;
+    this.failureNotices.delete(listing);
+    notice();
   }
 
   /**
@@ -296,10 +322,9 @@ export class OmniRouteChatProvider
     return listing;
   }
 
-  private async listFromServer(
-    options: { silent: boolean },
-    token?: vscode.CancellationToken
-  ): Promise<ModelListing> {
+  /** Lists the server's models. A failed listing is not explained here: it carries (in
+   * `failureNotices`) how to explain it, for each caller that wants to be told. */
+  private async listFromServer(token?: vscode.CancellationToken): Promise<ModelListing> {
     const { client, connection } = await this.connect();
     const serverUrl = serverRootUrl(client.baseUrl);
 
@@ -316,16 +341,7 @@ export class OmniRouteChatProvider
       this.deps.log.warn(`Model discovery failed: ${String(err)}`);
       const status = err instanceof OmniRouteRequestError ? err.info.status : undefined;
       const message = err instanceof Error ? err.message : String(err);
-      if (!options.silent) {
-        if (!isKeyRejection(status)) {
-          void this.offerConnectionHelp(serverUrl);
-        } else if (!connection.keyWithheld) {
-          void this.offerKeyHelp(serverUrl, status, connection.hasStoredKey);
-        }
-        // With the key withheld a 401/403 is the expected answer: the
-        // withheld-key warning and the panel already say why.
-      }
-      return {
+      const listing: ModelListing = {
         infos: [],
         ok: false,
         count: 0,
@@ -333,6 +349,14 @@ export class OmniRouteChatProvider
         failure: { status, message },
         keyWithheld: connection.keyWithheld,
       };
+      if (!isKeyRejection(status)) {
+        this.failureNotices.set(listing, () => void this.offerConnectionHelp(serverUrl));
+      } else if (!connection.keyWithheld) {
+        this.failureNotices.set(listing, () => void this.offerKeyHelp(serverUrl, status, connection.hasStoredKey));
+      }
+      // With the key withheld a 401/403 is the expected answer: the
+      // withheld-key warning and the panel already say why.
+      return listing;
     }
 
     const infos = this.toModelInfos(models, combos);
