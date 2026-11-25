@@ -1,0 +1,36 @@
+version: 2
+
+updates:
+  - package-ecosystem: "github-actions"
+    directory: "/"
+    schedule:
+      interval: weekly
+    groups:
+      # Review workflow updates together to reduce PR volume.
+      github-actions:
+        patterns: ["*"]
+    commit-message:
+      prefix: ci
+
+  - package-ecosystem: "npm"
+    directory: "/"
+    schedule:
+      interval: weekly
+    groups:
+      # Batch minor and patch updates to reduce PR volume. Review majors individually.
+      npm-minor-patch:
+        patterns: ["*"]
+        update-types: ["minor", "patch"]
+    versioning-strategy: increase-if-necessary
+    open-pull-requests-limit: 5
+    commit-message:
+      prefix: chore
+      include: "scope"
+    ignore:
+      # The types follow engines.vscode, the oldest VS Code the extension supports. Raise both
+      # together, by hand: vsce refuses a types range newer than the engine.
+      - dependency-name: "@types/vscode"
+      # The Node types must not get ahead of the Node bundled with the oldest VS Code the
+      # extension supports. Raise the major by hand.
+      - dependency-name: "@types/node"
+        update-types: ["version-update:semver-major"]
