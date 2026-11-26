@@ -1,7 +1,7 @@
 {
   "name": "omnicopilot",
   "displayName": "OmniRoute by Cheaper Inference for GitHub Copilot Chat",
-  "description": "1200+ AI models in your Copilot Chat — free & forever free. Powered by OmniRoute: 340+ providers (90+ free) — Kimi, Claude, GPT, Gemini, GLM, DeepSeek, Qwen — with agent mode, tool calling, vision and auto-fallback. MIT open source.",
+  "description": "OmniRoute by Cheaper Inference. Created by Diego Souza. Unified AI router, MIT, self-hosted, free.",
   "version": "1.5.1",
   "publisher": "diegosouzapw",
   "author": {
