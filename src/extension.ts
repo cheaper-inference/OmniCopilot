@@ -281,7 +281,7 @@ function registerCommands(context: vscode.ExtensionContext, log: vscode.LogOutpu
     const githubLabel = vscode.l10n.t("Open GitHub");
     const pick = await vscode.window.showInformationMessage(
       vscode.l10n.t(
-        "OmniRoute is a free, open-source AI router: one endpoint, 340+ providers (90+ free), auto-fallback. Install it with npm and this extension lights up automatically."
+        "OmniRoute is a free, open-source AI router: one endpoint, hundreds of providers (many of them free), auto-fallback. Install it with npm and this extension lights up automatically."
       ),
       copyLabel,
       githubLabel
@@ -438,7 +438,7 @@ async function checkFirstRun(
     const configureLabel = vscode.l10n.t("Configure connection");
     const pick = await vscode.window.showInformationMessage(
       vscode.l10n.t(
-        "OmniCopilot: bring 1200+ AI models to Copilot Chat with OmniRoute — 90+ free providers, free forever. No OmniRoute server detected yet."
+        "OmniCopilot: bring hundreds of AI models to Copilot Chat with OmniRoute — many free providers, free forever. No OmniRoute server detected yet."
       ),
       installLabel,
       configureLabel

@@ -66,7 +66,7 @@ OmniRoute advertises models from:
 
 1. every provider with an **active connection**, plus
 2. every **noAuth** provider — the ones that need no credential at all. This is
-   the "90+ free providers" part of OmniRoute, and it is intentional.
+   the free-providers part of OmniRoute, and it is intentional.
 
 To hide the keyless ones, add them to `blockedProviders` in the OmniRoute
 dashboard settings. Nothing needs to change in the extension.
