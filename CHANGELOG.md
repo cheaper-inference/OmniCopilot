@@ -1,5 +1,22 @@
 # Changelog
 
+## 1.5.2
+
+A text-only release: the store listing and the notices no longer quote counts that go out of date.
+
+### Changed
+
+- **New store description.** The listing now reads "OmniRoute by Cheaper Inference. Created by
+  Diego Souza. Unified AI router, MIT, self-hosted, free."
+  ([#50](https://github.com/cheaper-inference/OmniCopilot/pull/50)).
+- **No more model and provider counts.** The README, the first-run notice and the install prompt
+  said "1200+ models", "340+ providers" and "90+ free providers". They now say hundreds of models
+  and providers, many of them free, in English and in the 41 translations
+  ([#51](https://github.com/cheaper-inference/OmniCopilot/pull/51)).
+- **Newer development tools.** TypeScript 6.0, ESLint 10, `@vscode/vsce` 4, typescript-eslint 8.73
+  and Vitest 5.1. Dependabot now reports new versions every week. Apart from the two notices above,
+  the extension's code is the same as in 1.5.1.
+
 ## 1.5.1
 
 Small fixes found in review after 1.5.0, fewer downloads of the model catalog, and automatic checks

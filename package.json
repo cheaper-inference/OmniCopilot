@@ -2,7 +2,7 @@
   "name": "omnicopilot",
   "displayName": "OmniRoute by Cheaper Inference for GitHub Copilot Chat",
   "description": "OmniRoute by Cheaper Inference. Created by Diego Souza. Unified AI router, MIT, self-hosted, free.",
-  "version": "1.5.1",
+  "version": "1.5.2",
   "publisher": "diegosouzapw",
   "author": {
     "name": "Diego Souza",
