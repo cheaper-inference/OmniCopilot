@@ -7,8 +7,8 @@
 </p>
 
 <p align="center">
-  <strong>1200+ AI models in your Copilot Chat — free &amp; forever free.</strong><br>
-  <em>340+ providers, 90+ with free tiers, one endpoint. MIT open source.</em>
+  <strong>Hundreds of AI models in your Copilot Chat — free &amp; forever free.</strong><br>
+  <em>Hundreds of providers, many with free tiers, one endpoint. MIT open source.</em>
 </p>
 
 <p align="center">
@@ -24,13 +24,13 @@
 
 ---
 
-**Don't replace Copilot — power it up.** No new sidebar to learn, no new chat UI. This extension drops every model from your [OmniRoute](https://github.com/cheaper-inference/OmniRoute) server — Kimi, Claude, GPT, Gemini, GLM, DeepSeek, Qwen, Llama and hundreds more across **340+ providers, 90+ of them with free tiers that stay free** — straight into the model picker of the Copilot Chat you already use. Including **VS Code Insiders**.
+**Don't replace Copilot — power it up.** No new sidebar to learn, no new chat UI. This extension drops every model from your [OmniRoute](https://github.com/cheaper-inference/OmniRoute) server — Kimi, Claude, GPT, Gemini, GLM, DeepSeek, Qwen, Llama and hundreds more, **many of them from providers with free tiers that stay free** — straight into the model picker of the Copilot Chat you already use. Including **VS Code Insiders**.
 
 > 🆓 **No Copilot subscription required.** Since VS Code 1.122, provider models work without a GitHub sign-in and without any Copilot plan. VS Code + OmniRoute + this extension = a fully working AI chat with agent mode, for free.
 
 ## Why this extension?
 
-- **1200+ models, one picker.** OmniRoute unifies 340+ providers (OpenAI-compatible, Anthropic, Gemini, Ollama, local, OAuth-based free tiers…) behind a single endpoint — **90+ providers are free, and free forever**. Every model it serves shows up in your Copilot Chat model dropdown.
+- **Every model, one picker.** OmniRoute unifies hundreds of providers (OpenAI-compatible, Anthropic, Gemini, Ollama, local, OAuth-based free tiers…) behind a single endpoint — **many of them free, and free forever**. Every model it serves shows up in your Copilot Chat model dropdown.
 - **Agent mode, tool calling, MCP, instructions — all of it still works.** This plugs into VS Code's native language-model provider API, so Copilot's entire stack now runs on the model *you* choose.
 - **Vision included.** Models flagged as vision-capable in the OmniRoute catalog accept image attachments directly in chat.
 - **Reasoning you can read.** Thinking models show their reasoning in the chat as it streams, above the answer.
